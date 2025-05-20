@@ -13,7 +13,7 @@ const sequelize = new Sequelize(
     },
   }*/
 
-  "postgres://postgres:123456@localhost:5433/ordenesdeservicio"
+  "postgresql://postgres:RoyAYLcYXaylAXQlvDtLrpQCPdZbWiwb@postgres.railway.internal:5432/railway"
 );
 
 module.exports = sequelize;
