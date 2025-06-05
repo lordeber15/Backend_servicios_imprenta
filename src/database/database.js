@@ -3,7 +3,7 @@ const { DATABASE_URL } = process.env;
 console.log(DATABASE_URL)
 const sequelize = new Sequelize(
   DATABASE_URL,
-  {
+  /*{
     dialect: "postgres",
     dialectOptions: {
       ssl: {
@@ -11,7 +11,7 @@ const sequelize = new Sequelize(
         rejectUnauthorized: false, // Esto es opcional, dependiendo de la configuración de tu servidor PostgreSQL
       },
     },
-  }
+  }*/
 
 );
 
