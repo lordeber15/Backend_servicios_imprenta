@@ -4,7 +4,7 @@ const {
   createLogin,
   deleteLogin,
   updateLogin,
-} = require("../controllers/login.controlles");
+} = require("../controllers/login.controller");
 const router = Router();
 
 router.get("/login", getLogin);
