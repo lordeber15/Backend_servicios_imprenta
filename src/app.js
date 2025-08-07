@@ -1,14 +1,43 @@
 const express = require("express");
 const serviciosRoutes = require("./routes/servicios.routes");
-const login = require("./routes/login.routes");
-const reniec = require("./routes/reniec.routes");
+const loginRoutes = require("./routes/login.routes");
+const clienteRoutes = require("./routes/facturacion/cliente.routes");
+const comprobanteRoutes = require("./routes/facturacion/comprobante.routes");
+const cuotaRoutes = require("./routes/facturacion/cuota.routes");
+const detalleRoutes = require("./routes/facturacion/detalle.routes");
+const emisorRoutes = require("./routes/facturacion/emisor.routes");
+const envioResumenRoutes = require("./routes/facturacion/envio_resumen.routes");
+const envioResumenDetalleRoutes = require("./routes/facturacion/envio_resumen_detalle.routes");
+const monedaRoutes = require("./routes/facturacion/moneda.routes");
+const productoRoutes = require("./routes/facturacion/producto.routes");
+const serieRoutes = require("./routes/facturacion/serie.routes");
+const tablaParametricaRoutes = require("./routes/facturacion/tabla_parametrica.routes");
+const tipoAfectacionRoutes = require("./routes/facturacion/tipo_afectacion.routes");
+const tipoComprobanteRoutes = require("./routes/facturacion/tipo_comprobante.routes");
+const tipoDocumentoRoutes = require("./routes/facturacion/tipo_documento.routes");
+const unidadRoutes = require("./routes/facturacion/unidad.routes");
 const cors = require("cors");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
 app.use(serviciosRoutes);
-app.use(login);
-app.use(reniec);
+app.use(loginRoutes);
+app.use(clienteRoutes);
+app.use(comprobanteRoutes);
+app.use(cuotaRoutes);
+app.use(detalleRoutes);
+app.use(emisorRoutes);
+app.use(envioResumenRoutes);
+app.use(envioResumenDetalleRoutes);
+app.use(monedaRoutes);
+app.use(productoRoutes);
+app.use(serieRoutes);
+app.use(tablaParametricaRoutes);
+app.use(tipoAfectacionRoutes);
+app.use(tipoComprobanteRoutes);
+app.use(tipoDocumentoRoutes);
+app.use(unidadRoutes);
 
 module.exports = app;
