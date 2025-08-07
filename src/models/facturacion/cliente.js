@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const Cliente = sequelize.define(
   "Cliente",
@@ -21,7 +21,7 @@ const Cliente = sequelize.define(
     direccion: DataTypes.STRING(100),
   },
   {
-    tableName: "cliente",
+    tableName: "Cliente",
     timestamps: false,
   }
 );

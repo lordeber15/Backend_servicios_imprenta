@@ -4,7 +4,7 @@ const {
   createProducto,
   deleteProducto,
   updateProducto,
-} = require("../facturacion/producto.routes");
+} = require("../../controllers/facturacion/producto.controller");
 const router = Router();
 
 router.get("/producto", getProducto);

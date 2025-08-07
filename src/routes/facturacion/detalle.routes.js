@@ -4,7 +4,7 @@ const {
   createDetalle,
   deleteDetalle,
   updateDetalle,
-} = require("../facturacion/detalle.routes");
+} = require("../../controllers/facturacion/detalle.controller");
 const router = Router();
 
 router.get("/detalle", getDetalle);

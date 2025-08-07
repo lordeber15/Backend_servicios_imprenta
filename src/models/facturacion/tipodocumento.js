@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const TipoDocumento = sequelize.define(
   "TipoDocumento",
@@ -11,7 +11,7 @@ const TipoDocumento = sequelize.define(
     descripcion: DataTypes.STRING(50),
   },
   {
-    tableName: "tipo_documento",
+    tableName: "TipoDocumento",
     timestamps: false,
   }
 );

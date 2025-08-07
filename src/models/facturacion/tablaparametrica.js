@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const TablaParametrica = sequelize.define(
   "TablaParametrica",
@@ -15,7 +15,7 @@ const TablaParametrica = sequelize.define(
     descripcion: DataTypes.STRING(200),
   },
   {
-    tableName: "tabla_parametrica",
+    tableName: "TablaParametrica",
     timestamps: false,
   }
 );

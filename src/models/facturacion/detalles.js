@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const Detalle = sequelize.define(
   "Detalle",
@@ -33,7 +33,7 @@ const Detalle = sequelize.define(
     importe_total: DataTypes.DECIMAL(15, 6),
   },
   {
-    tableName: "detalle",
+    tableName: "Detalle",
     timestamps: false,
   }
 );

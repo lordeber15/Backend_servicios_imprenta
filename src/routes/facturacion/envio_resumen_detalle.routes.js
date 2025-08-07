@@ -4,7 +4,7 @@ const {
   createEnvio_resumen_detalle,
   deleteEnvio_resumen_detalle,
   updateEnvio_resumen_detalle,
-} = require("../facturacion/envio_resumen_detalle.routes");
+} = require("../../controllers/facturacion/envio_resumen_detalle.controller");
 const router = Router();
 
 router.get("/envio_resumen_detalle", getEnvio_resumen_detalle);

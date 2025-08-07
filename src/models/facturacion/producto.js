@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const Producto = sequelize.define(
   "Producto",
@@ -30,7 +30,7 @@ const Producto = sequelize.define(
     factor_icbper: DataTypes.DECIMAL(15, 2),
   },
   {
-    tableName: "producto",
+    tableName: "Producto",
     timestamps: false,
   }
 );

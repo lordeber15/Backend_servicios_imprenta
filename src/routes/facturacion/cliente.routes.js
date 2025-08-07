@@ -4,7 +4,7 @@ const {
   createCliente,
   deleteCliente,
   updateCliente,
-} = require("../facturacion/cliente.routes");
+} = require("../../controllers/facturacion/cliente.controller");
 const router = Router();
 
 router.get("/cliente", getCliente);

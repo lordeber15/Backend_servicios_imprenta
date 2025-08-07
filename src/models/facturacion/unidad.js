@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const Unidad = sequelize.define(
   "Unidad",
@@ -11,7 +11,7 @@ const Unidad = sequelize.define(
     descripcion: DataTypes.STRING(50),
   },
   {
-    tableName: "unidad",
+    tableName: "Unidad",
     timestamps: false,
   }
 );

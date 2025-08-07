@@ -4,7 +4,7 @@ const {
   createTabla_parametrica,
   deleteTabla_parametrica,
   updateTabla_parametrica,
-} = require("../facturacion/tabla_parametrica.routes");
+} = require("../../controllers/facturacion/tabla_parametrica.controller");
 const router = Router();
 
 router.get("/tabla_parametrica", getTabla_parametrica);

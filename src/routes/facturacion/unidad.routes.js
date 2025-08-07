@@ -4,7 +4,7 @@ const {
   createUnidad,
   deleteUnidad,
   updateUnidad,
-} = require("../facturacion/unidad.routes");
+} = require("../../controllers/facturacion/unidad.controller");
 const router = Router();
 
 router.get("/unidad", getUnidad);

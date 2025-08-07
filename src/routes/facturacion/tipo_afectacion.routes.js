@@ -4,7 +4,7 @@ const {
   createTipo_afectacion,
   deleteTipo_afectacion,
   updateTipo_afectacion,
-} = require("../facturacion/tipo_afectacion.routes");
+} = require("../../controllers/facturacion/tipo_afectacion.controller");
 const router = Router();
 
 router.get("/tipo_afectacion", getTipo_afectacion);

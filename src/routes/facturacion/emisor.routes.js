@@ -4,7 +4,7 @@ const {
   createEmisor,
   deleteEmisor,
   updateEmisor,
-} = require("../facturacion/emisor.routes");
+} = require("../../controllers/facturacion/emisor.controller");
 const router = Router();
 
 router.get("/emisor", getEmisor);

@@ -4,7 +4,7 @@ const {
   createSerie,
   deleteSerie,
   updateSerie,
-} = require("../facturacion/serie.routes");
+} = require("../../controllers/facturacion/serie.controller");
 const router = Router();
 
 router.get("/serie", getSerie);

@@ -4,7 +4,7 @@ const {
   createMoneda,
   deleteMoneda,
   updateMoneda,
-} = require("../facturacion/moneda.routes");
+} = require("../../controllers/facturacion/moneda.controller");
 const router = Router();
 
 router.get("/moneda", getMoneda);

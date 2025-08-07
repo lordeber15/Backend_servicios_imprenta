@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const Emisor = sequelize.define(
   "Emisor",
@@ -23,7 +23,7 @@ const Emisor = sequelize.define(
     clave_sol: DataTypes.STRING(20),
   },
   {
-    tableName: "emisor",
+    tableName: "Emisor",
     timestamps: false,
   }
 );

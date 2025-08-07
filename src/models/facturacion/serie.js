@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const Serie = sequelize.define(
   "Serie",
@@ -20,7 +20,7 @@ const Serie = sequelize.define(
     correlativo: DataTypes.INTEGER,
   },
   {
-    tableName: "serie",
+    tableName: "Serie",
     timestamps: false,
   }
 );

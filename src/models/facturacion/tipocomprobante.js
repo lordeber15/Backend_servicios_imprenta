@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const TipoComprobante = sequelize.define(
   "TipoComprobante",
@@ -11,7 +11,7 @@ const TipoComprobante = sequelize.define(
     descripcion: DataTypes.STRING(100),
   },
   {
-    tableName: "tipo_comprobante",
+    tableName: "TipoComprobante",
     timestamps: false,
   }
 );

@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const Moneda = sequelize.define(
   "Moneda",
@@ -11,7 +11,7 @@ const Moneda = sequelize.define(
     descripcion: DataTypes.STRING(50),
   },
   {
-    tableName: "moneda",
+    tableName: "Moneda",
     timestamps: false,
   }
 );

@@ -4,7 +4,7 @@ const {
   createTipo_comprobante,
   deleteTipo_comprobante,
   updateTipo_comprobante,
-} = require("../facturacion/tipo_comprobante.routes");
+} = require("../../controllers/facturacion/tipo_comprobante.controller");
 const router = Router();
 
 router.get("/tipo_comprobante", getTipo_comprobante);

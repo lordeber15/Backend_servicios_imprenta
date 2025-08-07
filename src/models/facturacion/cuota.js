@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const Cuota = sequelize.define(
   "Cuota",
@@ -22,7 +22,7 @@ const Cuota = sequelize.define(
     estado: DataTypes.CHAR(1),
   },
   {
-    tableName: "cuota",
+    tableName: "Cuota",
     timestamps: false,
   }
 );

@@ -4,7 +4,7 @@ const {
   createComprobante,
   deleteComprobante,
   updateComprobante,
-} = require("../facturacion/comprobante.routes");
+} = require("../../controllers/facturacion/comprobante.controller");
 const router = Router();
 
 router.get("/comprobante", getComprobante);

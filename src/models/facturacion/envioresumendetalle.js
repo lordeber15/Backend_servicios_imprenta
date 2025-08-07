@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../database/database");
+const sequelize = require("../../database/database");
 
 const EnvioResumenDetalle = sequelize.define(
   "EnvioResumenDetalle",
@@ -26,7 +26,7 @@ const EnvioResumenDetalle = sequelize.define(
     condicion: DataTypes.SMALLINT,
   },
   {
-    tableName: "envio_resumen_detalle",
+    tableName: "EnvioResumenDetalle",
     timestamps: false,
   }
 );

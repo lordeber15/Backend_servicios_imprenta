@@ -4,7 +4,7 @@ const {
   createCuota,
   deleteCuota,
   updateCuota,
-} = require("../facturacion/cuota.routes");
+} = require("../../controllers/facturacion/cuota.controller");
 const router = Router();
 
 router.get("/cuota", getCuota);
