@@ -19,7 +19,6 @@ const Login = sequelize.define("login", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  
 });
 
 module.exports = { Login };
