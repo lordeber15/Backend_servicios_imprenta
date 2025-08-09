@@ -17,6 +17,8 @@ const tipoComprobanteRoutes = require("./routes/facturacion/tipo_comprobante.rou
 const tipoDocumentoRoutes = require("./routes/facturacion/tipo_documento.routes");
 const unidadRoutes = require("./routes/facturacion/unidad.routes");
 const apireniec = require("./routes/reniec.routes");
+const ingreso = require("./routes/ingresosyegresos/ingresos.routes");
+const egreso = require("./routes/ingresosyegresos/egresos.routes");
 const cors = require("cors");
 
 const app = express();
@@ -41,5 +43,7 @@ app.use(tipoComprobanteRoutes);
 app.use(tipoDocumentoRoutes);
 app.use(unidadRoutes);
 app.use(apireniec);
+app.use(ingreso);
+app.use(egreso);
 
 module.exports = app;
