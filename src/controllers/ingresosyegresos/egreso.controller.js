@@ -11,11 +11,12 @@ const getEgresos = async (req, res) => {
 
 const createEgresos = async (req, res) => {
   try {
-    const { monto, descripcion, fecha } = req.body;
+    const { monto, descripcion, fecha, metodo } = req.body;
     const newEgresos = await Egreso.create({
       monto,
       descripcion,
       fecha,
+      metodo,
     });
     res.json(newEgresos);
   } catch (error) {
@@ -42,7 +43,7 @@ const deleteEgresos = async (req, res) => {
 const updateEgresos = async (req, res) => {
   try {
     const { id } = req.params;
-    const { monto, descripcion, fecha } = req.body;
+    const { monto, descripcion, fecha, metodo } = req.body;
 
     const egresoupdate = await Egreso.findByPk(id);
 
@@ -53,6 +54,7 @@ const updateEgresos = async (req, res) => {
     egresoupdate.monto = monto;
     egresoupdate.descripcion = descripcion;
     egresoupdate.fecha = fecha;
+    egresoupdate.metodo = metodo;
 
     await egresoupdate.save();
 

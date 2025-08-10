@@ -19,6 +19,10 @@ const Egreso = sequelize.define("egreso", {
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
+  metodo: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
 });
 
 module.exports = { Egreso };

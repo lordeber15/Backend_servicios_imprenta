@@ -11,11 +11,12 @@ const getIngreso = async (req, res) => {
 
 const createIngreso = async (req, res) => {
   try {
-    const { monto, descripcion, fecha } = req.body;
+    const { monto, descripcion, fecha, metodo } = req.body;
     const newIngreso = await Ingresos.create({
       monto,
       descripcion,
       fecha,
+      metodo,
     });
     res.json(newIngreso);
   } catch (error) {
@@ -42,7 +43,7 @@ const deleteIngreso = async (req, res) => {
 const updateIngreso = async (req, res) => {
   try {
     const { id } = req.params;
-    const { monto, descripcion, fecha } = req.body;
+    const { monto, descripcion, fecha, metodo } = req.body;
 
     const ingresoupdate = await Ingresos.findByPk(id);
 
@@ -53,6 +54,7 @@ const updateIngreso = async (req, res) => {
     ingresoupdate.monto = monto;
     ingresoupdate.descripcion = descripcion;
     ingresoupdate.fecha = fecha;
+    ingresoupdate.metodo = metodo;
 
     await ingresoupdate.save();
 

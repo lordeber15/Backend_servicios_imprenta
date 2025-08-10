@@ -19,6 +19,10 @@ const Ingresos = sequelize.define("ingresos", {
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
+  metodo: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
 });
 
 module.exports = { Ingresos };
