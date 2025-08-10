@@ -4,7 +4,7 @@ const port = process.env.DB_PORT || 3000;
 
 async function main() {
   try {
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ force: false });
     console.log("Estas Conectado");
     app.listen(port, () => {
       console.log("Escuchando en el puerto:", port);
