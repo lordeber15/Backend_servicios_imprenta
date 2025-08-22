@@ -1,4 +1,4 @@
-const { Unidad } = require("../../models/facturacion/unidad");
+const Unidad = require("../../models/facturacion/unidad");
 
 const getUnidad = async (req, res) => {
   try {

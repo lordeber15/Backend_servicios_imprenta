@@ -1,4 +1,4 @@
-const { Serie } = require("../../models/facturacion/serie");
+const Serie = require("../../models/facturacion/serie");
 
 const getSerie = async (req, res) => {
   try {

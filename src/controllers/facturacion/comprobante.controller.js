@@ -1,4 +1,4 @@
-const { Comprobante } = require("../../models/facturacion/comprobante");
+const Comprobante = require("../../models/facturacion/comprobante");
 
 const getComprobante = async (req, res) => {
   try {

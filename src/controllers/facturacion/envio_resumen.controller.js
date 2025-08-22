@@ -1,4 +1,4 @@
-const { Envio_resumen } = require("../../models/facturacion/envioresumen");
+const Envio_resumen = require("../../models/facturacion/envioresumen");
 
 const getEnvio_resumen = async (req, res) => {
   try {

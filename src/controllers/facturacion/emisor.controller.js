@@ -1,4 +1,4 @@
-const { Emisor } = require("../../models/facturacion/emisor");
+const Emisor = require("../../models/facturacion/emisor");
 
 const getEmisor = async (req, res) => {
   try {

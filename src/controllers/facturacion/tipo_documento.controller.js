@@ -1,4 +1,4 @@
-const { Tipo_documento } = require("../../models/facturacion/tipodocumento");
+const Tipo_documento = require("../../models/facturacion/tipodocumento");
 
 const getTipo_documento = async (req, res) => {
   try {

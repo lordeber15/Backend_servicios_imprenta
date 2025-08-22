@@ -1,6 +1,4 @@
-const {
-  Envio_resumen_detalle,
-} = require("../../models/facturacion/envioresumendetalle");
+const Envio_resumen_detalle = require("../../models/facturacion/envioresumendetalle");
 
 const getEnvio_resumen_detalle = async (req, res) => {
   try {

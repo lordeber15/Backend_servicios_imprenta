@@ -1,4 +1,4 @@
-const { Moneda } = require("../../models/facturacion/moneda");
+const Moneda = require("../../models/facturacion/moneda");
 
 const getMoneda = async (req, res) => {
   try {

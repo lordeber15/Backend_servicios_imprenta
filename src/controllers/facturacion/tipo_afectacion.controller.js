@@ -1,4 +1,4 @@
-const { Tipo_afectacion } = require("../../models/facturacion/tipoafectacion");
+const Tipo_afectacion = require("../../models/facturacion/tipoafectacion");
 
 const getTipo_afectacion = async (req, res) => {
   try {

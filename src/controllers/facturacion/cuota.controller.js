@@ -1,4 +1,4 @@
-const { Cuota } = require("../../models/facturacion/cuota");
+const Cuota = require("../../models/facturacion/cuota");
 
 const getCuota = async (req, res) => {
   try {

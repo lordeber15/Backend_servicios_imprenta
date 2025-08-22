@@ -1,4 +1,4 @@
-const { Detalle } = require("../../models/facturacion/detalles");
+const Detalle = require("../../models/facturacion/detalles");
 
 const getDetalle = async (req, res) => {
   try {

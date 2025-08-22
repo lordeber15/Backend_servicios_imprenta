@@ -1,6 +1,4 @@
-const {
-  Tabla_parametrica,
-} = require("../../models/facturacion/tablaparametrica");
+const Tabla_parametrica = require("../../models/facturacion/tablaparametrica");
 
 const getTabla_parametrica = async (req, res) => {
   try {

@@ -1,6 +1,4 @@
-const {
-  Tipo_comprobante,
-} = require("../../models/facturacion/tipocomprobante");
+const Tipo_comprobante = require("../../models/facturacion/tipocomprobante");
 
 const getTipo_comprobante = async (req, res) => {
   try {
