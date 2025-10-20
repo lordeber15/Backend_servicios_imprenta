@@ -19,6 +19,8 @@ const unidadRoutes = require("./routes/facturacion/unidad.routes");
 const apireniec = require("./routes/reniec.routes");
 const ingreso = require("./routes/ingresosyegresos/ingresos.routes");
 const egreso = require("./routes/ingresosyegresos/egresos.routes");
+const Ticket = require("./routes/Tickets/tickets.routes");
+const Almanaque = require("./routes/almanaque/almanaque.route");
 const cors = require("cors");
 
 const app = express();
@@ -45,5 +47,7 @@ app.use(unidadRoutes);
 app.use(apireniec);
 app.use(ingreso);
 app.use(egreso);
+app.use(Ticket);
+app.use(Almanaque);
 
 module.exports = app;
