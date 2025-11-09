@@ -13,7 +13,7 @@ const Almanaque = sequelize.define("almanaque", {
   },
   tipoDocumento: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   numeroDocumento: {
     type: DataTypes.STRING,
@@ -24,6 +24,10 @@ const Almanaque = sequelize.define("almanaque", {
   },
   fechaEmision: {
     type: DataTypes.DATE,
+    allowNull: false,
+  },
+  aCuenta: {
+    type: DataTypes.FLOAT,
     allowNull: false,
   },
   precioTotal: {

@@ -12,6 +12,31 @@ const getAlmanaque = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Obtener un dato de Almanaques con sus detalles
+const getAlmanaqueById = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    // Validar que el id sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    // Buscar un solo registro incluyendo sus detalles
+    const almanaque = await Almanaque.findByPk(id, {
+      include: [{ model: Detalle, as: "detalles" }],
+    });
+
+    if (!almanaque) {
+      return res.status(404).json({ message: "Almanaque no encontrado" });
+    }
+
+    res.json(almanaque);
+  } catch (error) {
+    console.error("Error al obtener almanaque:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
 
 // Crear Almanaque con detalles
 const createAlmanaque = async (req, res) => {
@@ -22,6 +47,7 @@ const createAlmanaque = async (req, res) => {
       numeroDocumento,
       direccion,
       fechaEmision,
+      aCuenta,
       precioTotal,
       detalles,
     } = req.body;
@@ -30,9 +56,10 @@ const createAlmanaque = async (req, res) => {
       {
         cliente,
         tipoDocumento,
-        numeroDocumento,
+        numeroDocumento: numeroDocumento || null,
         direccion,
         fechaEmision,
+        aCuenta,
         precioTotal,
         detalles, // Sequelize insertará automáticamente en DetalleAlmanaque
       },
@@ -43,7 +70,9 @@ const createAlmanaque = async (req, res) => {
 
     res.json(nuevoAlmanaque);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.log("📦 Datos recibidos:", req.body);
+    console.error("❌ Error en createAlmanaque:", error);
+    res.status(500).json({ message: error.message, stack: error.stack });
   }
 };
 
@@ -57,6 +86,7 @@ const updateAlmanaque = async (req, res) => {
       numeroDocumento,
       direccion,
       fechaEmision,
+      aCuenta,
       precioTotal,
       detalles,
     } = req.body;
@@ -71,6 +101,7 @@ const updateAlmanaque = async (req, res) => {
     registro.numeroDocumento = numeroDocumento;
     registro.direccion = direccion;
     registro.fechaEmision = fechaEmision;
+    registro.aCuenta = aCuenta;
     registro.precioTotal = precioTotal;
     await registro.save();
 
@@ -113,4 +144,5 @@ module.exports = {
   createAlmanaque,
   updateAlmanaque,
   deleteAlmanaque,
+  getAlmanaqueById,
 };

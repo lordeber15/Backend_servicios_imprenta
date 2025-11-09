@@ -16,11 +16,11 @@ const DetalleAlmanaque = sequelize.define("DetalleAlmanaque", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  precioUnitario: {
-    type: DataTypes.FLOAT,
+  unidad: {
+    type: DataTypes.CHAR(50),
     allowNull: false,
   },
-  subtotal: {
+  precioUnitario: {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
