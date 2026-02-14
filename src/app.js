@@ -121,39 +121,39 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const apiRouter = express.Router();
 
 // Rutas principales
-apiRouter.use(serviciosRoutes);    // Órdenes de servicio/trabajos
-apiRouter.use(loginRoutes);        // Autenticación y usuarios
+app.use(serviciosRoutes);    // Órdenes de servicio/trabajos
+app.use(loginRoutes);        // Autenticación y usuarios
 // Rutas de facturación electrónica
-apiRouter.use(clienteRoutes);
-apiRouter.use(comprobanteRoutes);
-apiRouter.use(cuotaRoutes);
-apiRouter.use(detalleRoutes);
-apiRouter.use(emisorRoutes);
-apiRouter.use(envioResumenRoutes);
-apiRouter.use(envioResumenDetalleRoutes);
-apiRouter.use(monedaRoutes);
-apiRouter.use(productoRoutes);
-apiRouter.use(serieRoutes);
-apiRouter.use(tablaParametricaRoutes);
-apiRouter.use(tipoAfectacionRoutes);
-apiRouter.use(tipoComprobanteRoutes);
-apiRouter.use(tipoDocumentoRoutes);
-apiRouter.use(unidadRoutes);
+app.use(clienteRoutes);
+app.use(comprobanteRoutes);
+app.use(cuotaRoutes);
+app.use(detalleRoutes);
+app.use(emisorRoutes);
+app.use(envioResumenRoutes);
+app.use(envioResumenDetalleRoutes);
+app.use(monedaRoutes);
+app.use(productoRoutes);
+app.use(serieRoutes);
+app.use(tablaParametricaRoutes);
+app.use(tipoAfectacionRoutes);
+app.use(tipoComprobanteRoutes);
+app.use(tipoDocumentoRoutes);
+app.use(unidadRoutes);
 // Rutas de servicios externos y módulos adicionales
-apiRouter.use(apireniec);          // Consulta RENIEC
-apiRouter.use(ingreso);            // Ingresos
-apiRouter.use(egreso);             // Egresos
-apiRouter.use(Ticket);             // Tickets
-apiRouter.use(Almanaque);          // Almanaques
-apiRouter.use(cajaRoutes);         // Caja POS
+app.use(apireniec);          // Consulta RENIEC
+app.use(ingreso);            // Ingresos
+app.use(egreso);             // Egresos
+app.use(Ticket);             // Tickets
+app.use(Almanaque);          // Almanaques
+app.use(cajaRoutes);         // Caja POS
 // SUNAT — Facturación Electrónica
-apiRouter.use(sunatRoutes);
-apiRouter.use(resumenDiarioRoutes);
-apiRouter.use(comunicacionBajaRoutes);
-apiRouter.use(guiaRoutes);
+app.use(sunatRoutes);
+app.use(resumenDiarioRoutes);
+app.use(comunicacionBajaRoutes);
+app.use(guiaRoutes);
 
 // Registrar todas las rutas bajo /api
-app.use("/api", apiRouter);
+//app.use("/api", apiRouter);
 
 
 // ============================================
