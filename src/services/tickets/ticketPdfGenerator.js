@@ -15,7 +15,7 @@ try {
 function getLogoBase64(emisor) {
   if (emisor?.logo_url) {
     try {
-      const logoPath = path.resolve(__dirname, "../../..", emisor.logo_url.replace(/^\//, ""));
+      const logoPath = path.resolve(__dirname, "../..", emisor.logo_url.replace(/^\//, ""));
       if (fs.existsSync(logoPath)) {
         const ext = path.extname(logoPath).slice(1) || "png";
         const buf = fs.readFileSync(logoPath);
@@ -42,6 +42,7 @@ function build80mmHtml(ticket, detalles, emisor) {
   const logo = getLogoBase64(emisor);
   const nombre = escHtml(emisor?.nombre_comercial || emisor?.razon_social || "IMPRENTA ALEXANDER");
   const ruc = escHtml(emisor?.ruc || "20608582011");
+  const desc = escHtml(emisor?.descripcion || "");
   const dir = escHtml(emisor?.direccion || "");
   const tel = escHtml(emisor?.telefono || "");
 
@@ -82,6 +83,7 @@ function build80mmHtml(ticket, detalles, emisor) {
 <body>
   ${logo ? `<div class="center" style="margin-bottom:4px"><img src="${logo}" alt="Logo" style="height:40px"></div>` : ""}
   <div class="center bold" style="font-size:13px">${nombre}</div>
+  ${desc ? `<div class="center" style="font-size:10px">${desc}</div>` : ""}
   <div class="center">RUC: ${ruc}</div>
   ${dir ? `<div class="center">${dir}</div>` : ""}
   ${tel ? `<div class="center">Tel: ${tel}</div>` : ""}
@@ -117,6 +119,7 @@ function buildA5Html(ticket, detalles, emisor) {
   const logo = getLogoBase64(emisor);
   const nombre = escHtml(emisor?.nombre_comercial || emisor?.razon_social || "IMPRENTA ALEXANDER");
   const ruc = escHtml(emisor?.ruc || "20608582011");
+  const desc = escHtml(emisor?.descripcion || "");
   const dir = escHtml(emisor?.direccion || "");
   const tel = escHtml(emisor?.telefono || "");
 
@@ -152,6 +155,7 @@ function buildA5Html(ticket, detalles, emisor) {
     ${logo ? `<img src="${logo}" alt="Logo" style="height:48px">` : "<div></div>"}
     <div style="text-align:center">
       <div style="font-weight:bold;font-size:14px">${nombre}</div>
+      ${desc ? `<div style="font-size:10px;color:#555">${desc}</div>` : ""}
       <div>RUC: ${ruc}</div>
       ${dir ? `<div>${dir}</div>` : ""}
       ${tel ? `<div>Tel: ${tel}</div>` : ""}
