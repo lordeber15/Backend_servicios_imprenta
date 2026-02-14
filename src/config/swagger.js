@@ -12,7 +12,7 @@ const swaggerOptions = {
       },
       servers: [
         {
-          url: "https://impalexander.store/api",
+          url: "https://apiimpalexander.store",
           description: "Servidor de Desarrollo",
         },
       ],
