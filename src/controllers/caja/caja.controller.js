@@ -1,4 +1,5 @@
 const { Op } = require("sequelize");
+const sequelize = require("../../database/database");
 const AperturaCaja = require("../../models/caja/aperturaCaja");
 const Ticket = require("../../models/Tickets/tickets");
 const Comprobante = require("../../models/facturacion/comprobante");
@@ -189,15 +190,15 @@ const getVentasDia = async (req, res) => {
     const fecha = req.query.fecha || new Date().toISOString().split("T")[0];
     const tipo = req.query.tipo || "all"; // all | ticket | boleta | factura
 
-    const inicioFecha = new Date(`${fecha}T00:00:00`);
-    const finFecha = new Date(`${fecha}T23:59:59`);
-
     const resultado = [];
 
-    // Tickets
+    // Tickets — usamos DATE() para comparar solo la fecha (sin timezone)
     if (tipo === "all" || tipo === "ticket") {
       const tickets = await Ticket.findAll({
-        where: { fechaEmision: { [Op.between]: [inicioFecha, finFecha] } },
+        where: sequelize.where(
+          sequelize.fn("DATE", sequelize.col("fechaEmision")),
+          fecha
+        ),
         order: [["createdAt", "DESC"]],
       });
       for (const t of tickets) {
@@ -222,8 +223,10 @@ const getVentasDia = async (req, res) => {
 
       const comprobantes = await Comprobante.findAll({
         where: {
-          fecha_emision: { [Op.between]: [inicioFecha, finFecha] },
-          tipo_comprobante_id: { [Op.in]: tipoFilter },
+          [Op.and]: [
+            sequelize.where(sequelize.fn("DATE", sequelize.col("fecha_emision")), fecha),
+            { tipo_comprobante_id: { [Op.in]: tipoFilter } },
+          ],
         },
         include: [{ model: Cliente, attributes: ["razon_social", "nrodoc"] }],
         order: [["fecha_emision", "DESC"]],
