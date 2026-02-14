@@ -24,6 +24,10 @@ const DetalleTicket = sequelize.define("DetalleTicket", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
+  producto_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
 });
 
 // 🔗 Relaciones

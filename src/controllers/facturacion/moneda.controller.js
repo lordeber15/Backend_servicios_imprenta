@@ -1,5 +1,10 @@
 const Moneda = require("../../models/facturacion/moneda");
+const Tipo_afectacion = require("../../models/facturacion/tipoafectacion");
 
+/**
+ * Obtener listado de monedas (PEN, USD)
+ * @route GET /api/moneda
+ */
 const getMoneda = async (req, res) => {
   try {
     const monedas = await Moneda.findAll();
@@ -9,6 +14,39 @@ const getMoneda = async (req, res) => {
   }
 };
 
+/**
+ * Obtener listado de tipos de afectación del IGV (Catálogo 07 SUNAT)
+ * @route GET /api/tipo_afectacion
+ */
+const getTipo_afectacion = async (req, res) => {
+  try {
+    const tipo_afectacions = await Tipo_afectacion.findAll();
+    res.json(tipo_afectacions);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Crear un nuevo tipo de afectación
+ * @route POST /api/tipo_afectacion
+ */
+const createTipo_afectacion = async (req, res) => {
+  try {
+    const tipoAfectacionData = req.body;
+    const newTipoAfectacion = await Tipo_afectacion.create({
+      ...tipoAfectacionData,
+    });
+    res.json(newTipoAfectacion);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Registrar una nueva moneda
+ * @route POST /api/moneda
+ */
 const createMoneda = async (req, res) => {
   try {
     const monedaData = req.body;

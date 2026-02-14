@@ -21,6 +21,8 @@ const Emisor = sequelize.define(
     ubigeo: DataTypes.CHAR(6),
     usuario_sol: DataTypes.STRING(20),
     clave_sol: DataTypes.STRING(20),
+    telefono: DataTypes.STRING(20),
+    logo_url: DataTypes.STRING(255),
   },
   {
     tableName: "Emisor",

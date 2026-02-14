@@ -1,5 +1,10 @@
 const Comprobante = require("../../models/facturacion/comprobante");
+const Moneda = require("../../models/facturacion/moneda"); // Assuming Moneda model is needed for new functions
 
+/**
+ * Obtener listado de comprobantes
+ * @route GET /api/comprobante
+ */
 const getComprobante = async (req, res) => {
   try {
     const comprobantes = await Comprobante.findAll();
@@ -9,6 +14,39 @@ const getComprobante = async (req, res) => {
   }
 };
 
+/**
+ * Obtener listado de series configuradas (Ej: F001, B001)
+ * @route GET /api/serie
+ */
+const getSerie = async (req, res) => {
+  try {
+    const series = await Serie.findAll();
+    res.json(series);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Crear una nueva serie de facturación
+ * @route POST /api/serie
+ */
+const createSerie = async (req, res) => {
+  try {
+    const serieData = req.body;
+    const newSerie = await Serie.create({
+      ...serieData,
+    });
+    res.json(newSerie);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Registrar un nuevo comprobante (Solo cabecera)
+ * @route POST /api/comprobante
+ */
 const createComprobante = async (req, res) => {
   try {
     const comprobanteData = req.body;

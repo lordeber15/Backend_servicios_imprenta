@@ -1,5 +1,9 @@
 const Producto = require("../../models/facturacion/producto");
 
+/**
+ * Obtener todos los productos
+ * @route GET /api/productos
+ */
 const getProducto = async (req, res) => {
   try {
     const productos = await Producto.findAll();
@@ -9,6 +13,10 @@ const getProducto = async (req, res) => {
   }
 };
 
+/**
+ * Crear un nuevo producto
+ * @route POST /api/productos
+ */
 const createProducto = async (req, res) => {
   try {
     const productoData = req.body;
@@ -21,6 +29,10 @@ const createProducto = async (req, res) => {
   }
 };
 
+/**
+ * Eliminar un producto por ID
+ * @route DELETE /api/productos/:id
+ */
 const deleteProducto = async (req, res) => {
   try {
     const { id } = req.params;
@@ -37,6 +49,10 @@ const deleteProducto = async (req, res) => {
   }
 };
 
+/**
+ * Actualizar un producto existente
+ * @route PUT /api/productos/:id
+ */
 const updateProducto = async (req, res) => {
   try {
     const { id } = req.params;

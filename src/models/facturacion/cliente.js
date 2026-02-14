@@ -1,3 +1,9 @@
+/**
+ * MODELO CLIENTE
+ * 
+ * Gestiona la información de los clientes para la facturación.
+ * Incluye el enlace con el tipo de documento (DNI, RUC, etc.).
+ */
 const { DataTypes } = require("sequelize");
 const sequelize = require("../../database/database");
 
@@ -12,13 +18,13 @@ const Cliente = sequelize.define(
     tipo_documento_id: {
       type: DataTypes.CHAR(1),
       references: {
-        model: "TipoDocumento",
+        model: "TipoDocumento", // Catálogo de tipos de documento oficiales
         key: "id",
       },
     },
-    nrodoc: DataTypes.STRING(15),
-    razon_social: DataTypes.STRING(100),
-    direccion: DataTypes.STRING(100),
+    nrodoc: DataTypes.STRING(15), // Número de documento (DNI o RUC)
+    razon_social: DataTypes.STRING(100), // Nombre completo o denominación social
+    direccion: DataTypes.STRING(100), // Dirección fiscal o domiciliaria
   },
   {
     tableName: "Cliente",

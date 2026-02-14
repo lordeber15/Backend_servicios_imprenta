@@ -19,6 +19,16 @@ const EnvioResumen = sequelize.define(
     codigo_sunat: DataTypes.STRING(20),
     ticket: DataTypes.STRING(50),
     estado: DataTypes.CHAR(1),
+    // Campos adicionales para gestión SUNAT
+    emisor_id: {
+      type: DataTypes.INTEGER,
+      references: { model: "Emisor", key: "id" },
+    },
+    // RC=Resumen Diario, RA=Comunicación de Baja
+    tipo: DataTypes.CHAR(2),
+    // PE=Pendiente consulta, PR=Procesado, ER=Error
+    estado_ticket: { type: DataTypes.CHAR(2), defaultValue: "PE" },
+    xml_firmado: DataTypes.TEXT,
   },
   {
     tableName: "EnvioResumen",

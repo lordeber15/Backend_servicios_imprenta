@@ -1,5 +1,15 @@
 const Cliente = require("../../models/facturacion/cliente");
 
+/**
+ * Obtener listado de clientes
+ * @route GET /api/cliente
+ */
+/**
+ * Obtiene el listado completo de todos los clientes registrados.
+ * 
+ * @param {import('express').Request} req 
+ * @param {import('express').Response} res - Array de objetos de clientes.
+ */
 const getCliente = async (req, res) => {
   try {
     const clientes = await Cliente.findAll();
@@ -9,6 +19,12 @@ const getCliente = async (req, res) => {
   }
 };
 
+/**
+ * Registra un nuevo cliente en el padrón.
+ * 
+ * @param {import('express').Request} req - Body: { tipo_documento_id, nrodoc, razon_social, direccion }
+ * @param {import('express').Response} res - El cliente creado.
+ */
 const createCliente = async (req, res) => {
   try {
     const { tipo_documento_id, nrodoc, razon_social, direccion } = req.body;
@@ -24,6 +40,12 @@ const createCliente = async (req, res) => {
   }
 };
 
+/**
+ * Elimina un cliente de la base de datos por su ID.
+ * 
+ * @param {import('express').Request} req - Params: { id }
+ * @param {import('express').Response} res - Mensaje de confirmación.
+ */
 const deleteCliente = async (req, res) => {
   try {
     const { id } = req.params;
@@ -42,6 +64,12 @@ const deleteCliente = async (req, res) => {
   }
 };
 
+/**
+ * Actualiza la información de un cliente existente.
+ * 
+ * @param {import('express').Request} req - Params: { id }; Body: { tipo_documento_id, nrodoc, razon_social, direccion }
+ * @param {import('express').Response} res - El cliente actualizado.
+ */
 const updateCliente = async (req, res) => {
   try {
     const { id } = req.params;
@@ -65,5 +93,6 @@ const updateCliente = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 
 module.exports = { getCliente, createCliente, deleteCliente, updateCliente };

@@ -1,5 +1,9 @@
 const Unidad = require("../../models/facturacion/unidad");
 
+/**
+ * Obtener todas las unidades de medida
+ * @route GET /api/unidad
+ */
 const getUnidad = async (req, res) => {
   try {
     const unidads = await Unidad.findAll();
@@ -9,6 +13,10 @@ const getUnidad = async (req, res) => {
   }
 };
 
+/**
+ * Crear una nueva unidad de medida
+ * @route POST /api/unidad
+ */
 const createUnidad = async (req, res) => {
   try {
     const unidadData = req.body;

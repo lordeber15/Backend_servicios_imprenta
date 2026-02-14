@@ -1,4 +1,5 @@
 const Detalle = require("../../models/facturacion/detalles");
+const Producto = require("../../models/facturacion/producto");
 
 const getDetalle = async (req, res) => {
   try {
@@ -15,6 +16,15 @@ const createDetalle = async (req, res) => {
     const newDetalle = await Detalle.create({
       ...detalleData,
     });
+
+    // Decrementar stock si el detalle está vinculado a un producto (no servicio)
+    if (detalleData.producto_id) {
+      await Producto.decrement("stock", {
+        by: detalleData.cantidad,
+        where: { id: detalleData.producto_id, es_servicio: false },
+      });
+    }
+
     res.json(newDetalle);
   } catch (error) {
     return res.status(500).json({ message: error.message });
