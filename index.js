@@ -46,7 +46,7 @@ async function main() {
      * Esto crea automáticamente las tablas basadas en los modelos definidos
      * si no existen, o las actualiza si hay cambios en la estructura.
      */
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ alter: true });
     console.log("Conectado a la base de datos");
     
     /**
