@@ -4,6 +4,7 @@ const AperturaCaja = require("../../../database/models/caja/aperturaCaja");
 const Ticket = require("../../../database/models/Tickets/tickets");
 const Comprobante = require("../../../database/models/facturacion/comprobante");
 const Cliente = require("../../../database/models/facturacion/cliente");
+require("../../../database/models/facturacion/asociation");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
