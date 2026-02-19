@@ -1,4 +1,4 @@
-const { Servicios } = require("../../database/models/servicios");
+const { Servicios } = require("../database/models/servicios");
 const { Op } = require("sequelize");
 
 class ServicioRepository {

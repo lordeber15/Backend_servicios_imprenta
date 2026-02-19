@@ -5,7 +5,7 @@
  * Delega la lógica de negocio al servicio correspondiente.
  */
 
-const servicioService = require("../../application/services/servicio.service");
+const servicioService = require("../../../application/services/servicio.service");
 
 /**
  * Obtener todos los servicios (paginado y filtrado)
