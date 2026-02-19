@@ -10,13 +10,17 @@ const swaggerOptions = {
       contact: {
         name: "Soporte Técnico",
       },
-      servers: [
-        {
-          url: "https://apiimpalexander.store",
-          description: "Servidor de Desarrollo",
-        },
-      ],
     },
+    servers: [
+      {
+        url: "http://localhost:3000",
+        description: "Servidor Local",
+      },
+      {
+        url: "https://apiimpalexander.store",
+        description: "Servidor de Producción",
+      },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -32,10 +36,14 @@ const swaggerOptions = {
       },
     ],
   },
-  // Rutas a escanear para las anotaciones
-  apis: ["./src/routes/**/*.js", "./src/routes/*.js"],
+  // Rutas a escanear para las anotaciones @swagger
+  apis: [
+    "./src/infrastructure/web/routes/**/*.js",
+    "./src/infrastructure/web/controllers/**/*.js",
+  ],
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 module.exports = swaggerDocs;
+
