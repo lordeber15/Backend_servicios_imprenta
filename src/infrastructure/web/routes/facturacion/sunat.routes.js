@@ -146,8 +146,11 @@ router.get("/comprobante/:id/pdf", descargarPdf);
  *         description: Archivo XML
  */
 router.get("/comprobante/:id/xml", descargarXml);
+<<<<<<< HEAD
 
 // Utilidad de recuperación: reescribe estados de comprobantes en masa → solo admin.
 router.post("/admin/recuperar-estados", authenticate, authorize("Administrador"), recuperarEstados);
+=======
+>>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
 
 module.exports = router;

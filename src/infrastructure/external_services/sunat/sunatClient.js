@@ -27,6 +27,10 @@ const LOCAL_WSDL = path.resolve(process.cwd(), "storage/wsdl/billService.wsdl");
  */
 async function createClient(endpointUrl, emisor) {
   const username = `${emisor.ruc}${emisor.usuario_sol}`;
+<<<<<<< HEAD
+=======
+  const basicAuth = Buffer.from(`${username}:${emisor.clave_sol}`).toString("base64");
+>>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
 
   // Crear cliente desde WSDL local
   const client = await soap.createClientAsync(LOCAL_WSDL);
@@ -35,7 +39,11 @@ async function createClient(endpointUrl, emisor) {
   const endpoint = endpointUrl.replace(/\?wsdl$/i, "");
   client.setEndpoint(endpoint);
 
+<<<<<<< HEAD
   // WSSecurity (UsernameToken) — requerido en todos los entornos de SUNAT
+=======
+  // Seguridad WSSecurity (UsernameToken) en el header SOAP
+>>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
   const wsSecurity = new soap.WSSecurity(username, emisor.clave_sol, {
     passwordType: "PasswordText",
     hasTimeStamp: false,
@@ -43,6 +51,7 @@ async function createClient(endpointUrl, emisor) {
   });
   client.setSecurity(wsSecurity);
 
+<<<<<<< HEAD
   // Content-Type explícito para SOAP 1.1
   client.addHttpHeader("Content-Type", "text/xml; charset=utf-8");
 
@@ -78,6 +87,10 @@ async function createClient(endpointUrl, emisor) {
       console.error(`[SUNAT SOAP Error][${eid}]`, error.message);
     });
   }
+=======
+  // Basic Auth en headers HTTP (requerido por SUNAT beta)
+  client.addHttpHeader("Authorization", `Basic ${basicAuth}`);
+>>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
 
   return client;
 }
