@@ -59,6 +59,10 @@ Detalle.belongsTo(Producto, { foreignKey: "producto_id" });
 Comprobante.hasMany(Detalle, { foreignKey: "comprobante_id" });
 Detalle.belongsTo(Comprobante, { foreignKey: "comprobante_id" });
 
+// Comprobante <-> Cuota (cuotas de pago a crédito)
+Comprobante.hasMany(Cuota, { foreignKey: "comprobante_id" });
+Cuota.belongsTo(Comprobante, { foreignKey: "comprobante_id" });
+
 // TipoAfectacion <-> Producto (IGV)
 TipoAfectacion.hasMany(Producto, { foreignKey: "tipo_afectacion_id" });
 Producto.belongsTo(TipoAfectacion, { foreignKey: "tipo_afectacion_id" });

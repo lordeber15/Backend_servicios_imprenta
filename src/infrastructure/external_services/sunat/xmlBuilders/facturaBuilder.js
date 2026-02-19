@@ -46,8 +46,8 @@ function build(comprobante) {
   // Tipo documento del cliente: catalogo 06 SUNAT
   // DNI=1, RUC=6, CE=4, Pasaporte=7, 0=sin doc
   const tipoDocCliente = mapTipoDoc(cliente ? cliente.tipo_documento_id : "-");
-  const nroDocCliente = cliente ? (cliente.nrodoc || "") : "";
-  const razonCliente = cliente ? (cliente.razon_social || "") : "";
+  const nroDocCliente = cliente ? (cliente.nrodoc || "0") : "0";
+  const razonCliente = cliente ? (cliente.razon_social || "CLIENTE VARIOS") : "CLIENTE VARIOS";
 
   // Totales
   const opGravadas = parseDecimal(c.op_gravadas);
@@ -145,8 +145,8 @@ function buildNota(comprobante) {
   const moneda = c.moneda_id || "PEN";
 
   const tipoDocCliente = mapTipoDoc(cliente ? cliente.tipo_documento_id : "-");
-  const nroDocCliente = cliente ? (cliente.nrodoc || "") : "";
-  const razonCliente = cliente ? (cliente.razon_social || "") : "";
+  const nroDocCliente = cliente ? (cliente.nrodoc || "0") : "0";
+  const razonCliente = cliente ? (cliente.razon_social || "CLIENTE VARIOS") : "CLIENTE VARIOS";
 
   const opGravadas = parseDecimal(c.op_gravadas);
   const opExoneradas = parseDecimal(c.op_exoneradas);
@@ -241,9 +241,10 @@ function buildFirmaBlock(emisor) {
 
 function buildEmisorBlock(emisor) {
   return `<cac:AccountingSupplierParty>
-    <cbc:CustomerAssignedAccountID>${emisor.ruc}</cbc:CustomerAssignedAccountID>
-    <cbc:AdditionalAccountID>6</cbc:AdditionalAccountID>
     <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">${emisor.ruc}</cbc:ID>
+      </cac:PartyIdentification>
       <cac:PartyName>
         <cbc:Name><![CDATA[${emisor.nombre_comercial || emisor.razon_social}]]></cbc:Name>
       </cac:PartyName>
@@ -269,9 +270,10 @@ function buildEmisorBlock(emisor) {
 
 function buildClienteBlock(tipoDoc, nroDoc, razonSocial) {
   return `<cac:AccountingCustomerParty>
-    <cbc:CustomerAssignedAccountID>${nroDoc}</cbc:CustomerAssignedAccountID>
-    <cbc:AdditionalAccountID>${tipoDoc}</cbc:AdditionalAccountID>
     <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="${tipoDoc}" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">${nroDoc}</cbc:ID>
+      </cac:PartyIdentification>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName><![CDATA[${razonSocial}]]></cbc:RegistrationName>
       </cac:PartyLegalEntity>

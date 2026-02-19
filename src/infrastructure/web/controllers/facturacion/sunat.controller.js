@@ -27,6 +27,9 @@ const Moneda = require("../../../database/models/facturacion/moneda");
 const Serie = require("../../../database/models/facturacion/serie");
 const Cuota = require("../../../database/models/facturacion/cuota");
 
+// Cargar asociaciones entre modelos (DEBE estar antes de cualquier include)
+require("../../../database/models/facturacion/asociation");
+
 const facturaBuilder = require("../../../external_services/sunat/xmlBuilders/facturaBuilder");
 const boletaBuilder = require("../../../external_services/sunat/xmlBuilders/boletaBuilder");
 const xmlSigner = require("../../../external_services/sunat/xmlSigner");
@@ -140,8 +143,10 @@ const emitirComprobante = async (req, res) => {
       cdrBase64 = await sunatClient.sendBill(xmlBuffer, nombreArchivo, comprobante.Emisor);
     } catch (soapErr) {
       // SUNAT rechazó directamente con SOAP fault
-      const codigoErr = soapErr.root?.Envelope?.Body?.Fault?.detail?.fault?.faultCode || "SOAP_ERR";
-      const mensajeErr = soapErr.message || "Error en comunicación con SUNAT";
+      console.error("[SUNAT SOAP Error]", JSON.stringify(soapErr.root || soapErr.body || soapErr.message, null, 2));
+      const faultDetail = soapErr.root?.Envelope?.Body?.Fault?.detail?.fault;
+      const codigoErr = faultDetail?.faultCode || faultDetail?.faultcode || "SOAP_ERR";
+      const mensajeErr = faultDetail?.faultString || faultDetail?.faultstring || soapErr.message || "Error en comunicación con SUNAT";
 
       await comprobante.update({
         estado_sunat: "RR",
@@ -153,7 +158,7 @@ const emitirComprobante = async (req, res) => {
       });
 
       return res.status(422).json({
-        message: "SUNAT rechazó el comprobante",
+        message: `SUNAT rechazó: ${codigoErr} - ${mensajeErr}`,
         codigo_sunat: String(codigoErr),
         mensaje_sunat: mensajeErr,
       });
@@ -309,6 +314,8 @@ const consultarEstado = async (req, res) => {
  */
 const descargarPdf = async (req, res) => {
   try {
+    const format = req.query.format || "a5";
+
     const comprobante = await Comprobante.findByPk(req.params.id, {
       include: [
         Emisor,
@@ -318,14 +325,11 @@ const descargarPdf = async (req, res) => {
         Moneda,
       ],
     });
-    require("../../../database/models/facturacion/asociation");
 
     if (!comprobante) return res.status(404).json({ message: "Comprobante no encontrado" });
     if (!comprobante.nombre_xml) {
       return res.status(400).json({ message: "El comprobante no tiene un XML generado aún. Emitirlo primero." });
     }
-
-    const pdfPath = storageHelper.getPdfPath(comprobante.nombre_xml);
 
     // Generar QR si hay hash
     let qrBase64 = "";
@@ -333,12 +337,12 @@ const descargarPdf = async (req, res) => {
       qrBase64 = await qrGenerator.generarQr(comprobante, comprobante.hash_cpe);
     } catch (_) { /* continúa sin QR */ }
 
-    // Generar PDF si no existe o forzar regeneración
-    if (!storageHelper.existsPdf(comprobante.nombre_xml)) {
-      await pdfGenerator.generarPdf(comprobante, qrBase64);
-    }
+    // Generar PDF on-demand según formato solicitado
+    const pdfBuffer = await pdfGenerator.generarPdf(comprobante, qrBase64, format);
 
-    return res.download(pdfPath, `${comprobante.nombre_xml}.pdf`);
+    res.set("Content-Type", "application/pdf");
+    res.set("Content-Disposition", `inline; filename="${comprobante.nombre_xml}.pdf"`);
+    return res.send(pdfBuffer);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }

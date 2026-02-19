@@ -9,16 +9,17 @@
 
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
-const sequelize = require("./src/database/database");
+const sequelize = require("./src/infrastructure/database/database");
 
 // Modelos
-const { Login } = require("./src/models/login");
-const Unidad = require("./src/models/facturacion/unidad");
-const TipoAfectacion = require("./src/models/facturacion/tipoafectacion");
-const TipoComprobante = require("./src/models/facturacion/tipocomprobante");
-const TipoDocumento = require("./src/models/facturacion/tipodocumento");
-const Moneda = require("./src/models/facturacion/moneda");
-const Serie = require("./src/models/facturacion/serie");
+const { Login } = require("./src/infrastructure/database/models/login");
+const Unidad = require("./src/infrastructure/database/models/facturacion/unidad");
+const TipoAfectacion = require("./src/infrastructure/database/models/facturacion/tipoafectacion");
+const TipoComprobante = require("./src/infrastructure/database/models/facturacion/tipocomprobante");
+const TipoDocumento = require("./src/infrastructure/database/models/facturacion/tipodocumento");
+const Moneda = require("./src/infrastructure/database/models/facturacion/moneda");
+const Serie = require("./src/infrastructure/database/models/facturacion/serie");
+const Emisor = require("./src/infrastructure/database/models/facturacion/emisor");
 
 async function seed() {
   try {
@@ -123,6 +124,26 @@ async function seed() {
       });
       console.log(`${created ? "✅ Creada" : "⏭️  Ya existe"} — Serie: ${s.serie} (${s.tipo_comprobante_id})`);
     }
+
+    // ─── 8. EMISOR DE PRUEBA (entorno beta SUNAT) ─────────────────────────
+    const [, createdEmisor] = await Emisor.findOrCreate({
+      where: { ruc: "20000000001" },
+      defaults: {
+        tipodoc: "6",
+        ruc: "20000000001",
+        razon_social: "EMPRESA DE PRUEBA SAC",
+        nombre_comercial: "IMPRENTA ALEXANDER",
+        usuario_sol: "MODDATOS",
+        clave_sol: "MODDATOS",
+        direccion: "AV. PRUEBA 123",
+        ubigeo: "150101",
+        pais: "PE",
+        departamento: "LIMA",
+        provincia: "LIMA",
+        distrito: "LIMA",
+      },
+    });
+    console.log(`${createdEmisor ? "✅ Creado" : "⏭️  Ya existe"} — Emisor: 20000000001 (EMPRESA DE PRUEBA SAC)`);
 
     console.log("\n🌱 Seed completado correctamente.");
     process.exit(0);

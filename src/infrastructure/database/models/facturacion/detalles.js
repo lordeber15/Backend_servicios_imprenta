@@ -17,8 +17,11 @@ const Detalle = sequelize.define(
       },
     },
     item: DataTypes.INTEGER,
+    descripcion: DataTypes.STRING(500),
+    unidad_id: DataTypes.STRING(10),
     producto_id: {
       type: DataTypes.INTEGER,
+      allowNull: true,
       references: {
         model: "Producto",
         key: "id",

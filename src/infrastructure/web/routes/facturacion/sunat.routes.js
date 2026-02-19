@@ -100,7 +100,7 @@ router.get("/comprobante/:id/estado", authenticate, consultarEstado);
  *       200:
  *         description: Archivo PDF
  */
-router.get("/comprobante/:id/pdf", authenticate, descargarPdf);
+router.get("/comprobante/:id/pdf", descargarPdf);
 
 /**
  * @swagger
@@ -118,6 +118,6 @@ router.get("/comprobante/:id/pdf", authenticate, descargarPdf);
  *       200:
  *         description: Archivo XML
  */
-router.get("/comprobante/:id/xml", authenticate, descargarXml);
+router.get("/comprobante/:id/xml", descargarXml);
 
 module.exports = router;

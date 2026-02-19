@@ -1,24 +1,56 @@
 /**
  * GENERADOR DE PDF (REPRESENTACIÓN IMPRESA)
- * 
+ *
  * Este módulo utiliza Puppeteer para convertir una plantilla HTML dinámica en un
  * archivo PDF profesional que sirve como representación impresa del comprobante.
- * 
+ *
  * @module services/sunat/pdfGenerator
  */
 
+const puppeteer = require("puppeteer");
+const fs = require("fs");
+const path = require("path");
+
+// Logo fallback (se carga una sola vez al iniciar)
+let defaultLogoBase64 = "";
+try {
+  const logoPath = path.resolve(process.cwd(), "../ordenServicio/src/assets/ALEXANDER.webp");
+  if (fs.existsSync(logoPath)) {
+    const buf = fs.readFileSync(logoPath);
+    defaultLogoBase64 = `data:image/webp;base64,${buf.toString("base64")}`;
+  }
+} catch (_) { /* logo no disponible */ }
+
+function getLogoBase64(emisor) {
+  if (emisor?.logo_url) {
+    try {
+      const lp = path.resolve(process.cwd(), emisor.logo_url.replace(/^\//, ""));
+      if (fs.existsSync(lp)) {
+        const ext = path.extname(lp).slice(1) || "png";
+        return `data:image/${ext};base64,${fs.readFileSync(lp).toString("base64")}`;
+      }
+    } catch (_) { /* fallback */ }
+  }
+  return defaultLogoBase64;
+}
+
 /**
  * Genera la representación impresa (PDF) del comprobante electrónico.
- * Usa Puppeteer para renderizar una plantilla HTML con todos los datos.
  *
  * @param {object} comprobante  Instancia de Comprobante con includes cargados
  * @param {string} qrBase64    Data URL del QR generado por qrGenerator
+ * @param {string} format      "a4" | "a5" | "ticket" (default: "a4")
  * @returns {Promise<Buffer>}  Buffer del PDF generado
  */
-async function generarPdf(comprobante, qrBase64) {
-  const html = buildHtml(comprobante, qrBase64);
-  const nombreArchivo = comprobante.nombre_xml;
-  const outputPath = storageHelper.getPdfPath(nombreArchivo);
+async function generarPdf(comprobante, qrBase64, format = "a4") {
+  let html;
+  if (format === "ticket") {
+    html = buildTicketHtml(comprobante, qrBase64);
+  } else if (format === "a5") {
+    html = buildA5Html(comprobante, qrBase64);
+  } else {
+    html = buildHtml(comprobante, qrBase64);
+  }
 
   const browser = await puppeteer.launch({
     headless: "new",
@@ -29,18 +61,28 @@ async function generarPdf(comprobante, qrBase64) {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "15mm", right: "15mm", bottom: "15mm", left: "15mm" },
-    });
+    let pdfOptions;
+    if (format === "ticket") {
+      pdfOptions = {
+        width: "72mm",
+        printBackground: true,
+        margin: { top: "3mm", right: "0mm", bottom: "3mm", left: "0mm" },
+      };
+    } else if (format === "a5") {
+      pdfOptions = {
+        format: "A5",
+        printBackground: true,
+        margin: { top: "12mm", right: "15mm", bottom: "12mm", left: "15mm" },
+      };
+    } else {
+      pdfOptions = {
+        format: "A4",
+        printBackground: true,
+        margin: { top: "15mm", right: "15mm", bottom: "15mm", left: "15mm" },
+      };
+    }
 
-    // Asegurar directorio y guardar en disco
-    const dir = path.dirname(outputPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(outputPath, pdfBuffer);
-
-    return pdfBuffer;
+    return Buffer.from(await page.pdf(pdfOptions));
   } finally {
     await browser.close();
   }
@@ -163,6 +205,181 @@ function buildHtml(c, qrBase64) {
       ${qrBase64 ? `<img src="${qrBase64}" alt="QR SUNAT">` : ""}
       <p style="font-size:7px;margin-top:4px;">Escanee para verificar</p>
     </div>
+  </div>
+</body>
+</html>`;
+}
+
+// ─── Template 80mm (térmica) — Comprobante SUNAT ─────────────────────────────
+
+function buildTicketHtml(c, qrBase64) {
+  const emisor = c.Emisor || {};
+  const cliente = c.Cliente || {};
+  const detalles = c.Detalles || [];
+  const logo = getLogoBase64(emisor);
+  const tipo = c.TipoComprobante ? c.TipoComprobante.descripcion : tipoDescripcion(c.tipo_comprobante_id);
+  const correlativoStr = String(c.correlativo).padStart(8, "0");
+  const serieCorrelativo = `${c.serie}-${correlativoStr}`;
+  const moneda = c.moneda_id === "USD" ? "USD" : "PEN";
+  const simbolo = moneda === "USD" ? "$" : "S/";
+
+  const filas = detalles.map((d) => {
+    const nombre = d.descripcion || (d.Producto ? d.Producto.nombre : "-");
+    return `
+      <div class="item">
+        <div class="item-desc">${escHtml(nombre)}</div>
+        <div class="item-row">
+          <span></span>
+          <span class="right">${parseFloat(d.cantidad).toFixed(2)}</span>
+          <span class="right">${simbolo} ${parseFloat(d.importe_total).toFixed(2)}</span>
+        </div>
+      </div>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Courier New", monospace; font-size: 11px; width: 72mm; padding: 3mm 2mm; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .sep { text-align: center; color: #888; margin: 2px 0; }
+  .item-row { display: flex; justify-content: space-between; }
+  .item-desc { word-break: break-word; }
+  .right { text-align: right; }
+  .total-row { display: flex; justify-content: space-between; }
+  .total-row.big { font-weight: bold; font-size: 13px; }
+  .footer { font-size: 9px; text-align: center; margin-top: 4px; }
+</style>
+</head>
+<body>
+  ${logo ? `<div class="center" style="margin-bottom:4px"><img src="${logo}" alt="Logo" style="height:40px"></div>` : ""}
+  <div class="center bold" style="font-size:12px">${escHtml(emisor.razon_social || "")}</div>
+  <div class="center">RUC: ${emisor.ruc || ""}</div>
+  ${emisor.direccion ? `<div class="center" style="font-size:10px">${escHtml(emisor.direccion)}</div>` : ""}
+  <div class="sep">-------------------------------------</div>
+  <div class="center bold">${escHtml(tipo)}</div>
+  <div class="center bold" style="font-size:13px">${serieCorrelativo}</div>
+  <div>Fecha: ${formatFecha(c.fecha_emision)}</div>
+  <div class="sep">-------------------------------------</div>
+  <div>Cliente: ${escHtml(cliente.razon_social || "CLIENTE VARIOS")}</div>
+  ${cliente.nrodoc ? `<div>${tipoDocLabel(cliente.tipo_documento_id)}: ${cliente.nrodoc}</div>` : ""}
+  ${cliente.direccion ? `<div style="font-size:10px">Dir: ${escHtml(cliente.direccion)}</div>` : ""}
+  <div class="sep">-------------------------------------</div>
+  <div class="item-row bold">
+    <span style="width:50%">Descripcion</span>
+    <span style="width:15%;text-align:right">Cant</span>
+    <span style="width:35%;text-align:right">Total</span>
+  </div>
+  <div class="sep">-------------------------------------</div>
+  ${filas}
+  <div class="sep">-------------------------------------</div>
+  <div class="total-row"><span>Op. Gravada:</span><span>${simbolo} ${parseFloat(c.op_gravadas || 0).toFixed(2)}</span></div>
+  ${c.op_exoneradas > 0 ? `<div class="total-row"><span>Op. Exonerada:</span><span>${simbolo} ${parseFloat(c.op_exoneradas).toFixed(2)}</span></div>` : ""}
+  <div class="total-row"><span>IGV (18%):</span><span>${simbolo} ${parseFloat(c.igv || 0).toFixed(2)}</span></div>
+  <div class="total-row big"><span>TOTAL:</span><span>${simbolo} ${parseFloat(c.total || 0).toFixed(2)}</span></div>
+  <div class="sep">-------------------------------------</div>
+  ${c.forma_pago ? `<div>Forma de Pago: ${c.forma_pago}</div>` : ""}
+  ${qrBase64 ? `<div class="center" style="margin-top:4px"><img src="${qrBase64}" alt="QR" style="width:70px;height:70px"></div>` : ""}
+  ${c.hash_cpe ? `<div class="footer">Hash: ${c.hash_cpe}</div>` : ""}
+  <div class="footer">Representacion impresa del</div>
+  <div class="footer">comprobante electronico</div>
+  ${c.estado_sunat === "AC" ? `<div class="footer bold">ACEPTADO POR SUNAT</div>` : ""}
+</body>
+</html>`;
+}
+
+// ─── Template A5 (profesional) — Comprobante SUNAT ───────────────────────────
+
+function buildA5Html(c, qrBase64) {
+  const emisor = c.Emisor || {};
+  const cliente = c.Cliente || {};
+  const detalles = c.Detalles || [];
+  const logo = getLogoBase64(emisor);
+  const tipo = c.TipoComprobante ? c.TipoComprobante.descripcion : tipoDescripcion(c.tipo_comprobante_id);
+  const correlativoStr = String(c.correlativo).padStart(8, "0");
+  const serieCorrelativo = `${c.serie}-${correlativoStr}`;
+  const moneda = c.moneda_id === "USD" ? "USD" : "PEN";
+  const simbolo = moneda === "USD" ? "$" : "S/";
+
+  const filas = detalles.map((d, i) => {
+    const nombre = d.descripcion || (d.Producto ? d.Producto.nombre : "-");
+    const unidad = d.unidad_id || (d.Producto && d.Producto.Unidad ? d.Producto.Unidad.id : "NIU");
+    return `<tr style="background:${i % 2 === 0 ? "#fff" : "#f0f9ff"}">
+      <td style="padding:3px 5px;text-align:center;font-size:9px">${d.item || i + 1}</td>
+      <td style="padding:3px 5px;font-size:9px">${escHtml(nombre)}</td>
+      <td style="padding:3px 5px;text-align:center;font-size:9px">${escHtml(unidad)}</td>
+      <td style="padding:3px 5px;text-align:center;font-size:9px">${parseFloat(d.cantidad).toFixed(2)}</td>
+      <td style="padding:3px 5px;text-align:right;font-size:9px">${simbolo} ${parseFloat(d.valor_unitario).toFixed(2)}</td>
+      <td style="padding:3px 5px;text-align:right;font-size:9px">${simbolo} ${parseFloat(d.importe_total).toFixed(2)}</td>
+    </tr>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #222; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #0c4a6e; color: white; padding: 3px 5px; font-size: 8px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0369a1;padding-bottom:6px;margin-bottom:6px">
+    ${logo ? `<img src="${logo}" alt="Logo" style="height:40px">` : "<div></div>"}
+    <div style="text-align:center">
+      <div style="font-weight:bold;font-size:12px">${escHtml(emisor.razon_social || "")}</div>
+      <div style="font-size:9px">RUC: ${emisor.ruc || ""}</div>
+      ${emisor.direccion ? `<div style="font-size:8px">${escHtml(emisor.direccion)}</div>` : ""}
+      ${emisor.distrito ? `<div style="font-size:8px">${escHtml(emisor.distrito)} - ${escHtml(emisor.provincia)} - ${escHtml(emisor.departamento)}</div>` : ""}
+    </div>
+    <div style="border:2px solid #0369a1;padding:6px 8px;text-align:center;min-width:130px">
+      <div style="font-weight:bold;font-size:9px;text-transform:uppercase">${escHtml(tipo)}</div>
+      <div style="font-weight:bold;font-size:12px;margin-top:2px">${serieCorrelativo}</div>
+    </div>
+  </div>
+
+  <div style="background:#f0f9ff;padding:5px 7px;margin-bottom:6px;border-radius:3px;font-size:9px">
+    <div><strong>Cliente:</strong> ${escHtml(cliente.razon_social || "CLIENTE VARIOS")}</div>
+    ${cliente.nrodoc ? `<div><strong>${tipoDocLabel(cliente.tipo_documento_id)}:</strong> ${cliente.nrodoc}</div>` : ""}
+    ${cliente.direccion ? `<div><strong>Direccion:</strong> ${escHtml(cliente.direccion)}</div>` : ""}
+    <div><strong>Emision:</strong> ${formatFecha(c.fecha_emision)} &nbsp;|&nbsp; <strong>Moneda:</strong> ${moneda} &nbsp;|&nbsp; <strong>Pago:</strong> ${c.forma_pago || "Contado"}</div>
+  </div>
+
+  <table style="margin-bottom:6px">
+    <thead>
+      <tr>
+        <th style="width:5%">#</th>
+        <th style="text-align:left">Descripcion</th>
+        <th style="width:10%">Unid.</th>
+        <th style="width:8%">Cant.</th>
+        <th style="width:14%;text-align:right">V.Unit.(${simbolo})</th>
+        <th style="width:14%;text-align:right">Importe(${simbolo})</th>
+      </tr>
+    </thead>
+    <tbody>${filas}</tbody>
+  </table>
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-end">
+    <div style="max-width:55%">
+      ${qrBase64 ? `<img src="${qrBase64}" alt="QR" style="width:70px;height:70px">` : ""}
+      ${c.hash_cpe ? `<div style="font-size:7px;color:#666;margin-top:2px">Hash: ${c.hash_cpe}</div>` : ""}
+      <div style="font-size:7px;color:#666">Representacion impresa de comprobante electronico</div>
+      ${c.estado_sunat === "AC" ? `<div style="font-size:8px;color:green;font-weight:bold">ACEPTADO POR SUNAT</div>` : ""}
+    </div>
+    <table style="min-width:180px;width:auto">
+      <tr><td style="padding:2px 6px;font-size:9px">Op. Gravadas:</td><td style="padding:2px 6px;text-align:right;font-size:9px">${simbolo} ${parseFloat(c.op_gravadas || 0).toFixed(2)}</td></tr>
+      ${c.op_exoneradas > 0 ? `<tr><td style="padding:2px 6px;font-size:9px">Op. Exoneradas:</td><td style="padding:2px 6px;text-align:right;font-size:9px">${simbolo} ${parseFloat(c.op_exoneradas).toFixed(2)}</td></tr>` : ""}
+      <tr><td style="padding:2px 6px;font-size:9px">IGV (18%):</td><td style="padding:2px 6px;text-align:right;font-size:9px">${simbolo} ${parseFloat(c.igv || 0).toFixed(2)}</td></tr>
+      <tr style="background:#0c4a6e;color:white;font-weight:bold">
+        <td style="padding:3px 6px;font-size:10px">TOTAL:</td>
+        <td style="padding:3px 6px;text-align:right;font-size:10px">${simbolo} ${parseFloat(c.total || 0).toFixed(2)}</td>
+      </tr>
+    </table>
   </div>
 </body>
 </html>`;

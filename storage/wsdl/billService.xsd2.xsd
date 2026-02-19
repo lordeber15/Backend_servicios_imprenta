@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:tns="http://service.sunat.gob.pe"
+            targetNamespace="http://service.sunat.gob.pe">
+
+  <!-- sendBill -->
+  <xsd:element name="sendBill">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="fileName" type="xsd:string" minOccurs="0"/>
+        <xsd:element name="contentFile" type="xsd:base64Binary" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="sendBillResponse">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="applicationResponse" type="xsd:base64Binary" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- sendSummary -->
+  <xsd:element name="sendSummary">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="fileName" type="xsd:string" minOccurs="0"/>
+        <xsd:element name="contentFile" type="xsd:base64Binary" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="sendSummaryResponse">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="ticket" type="xsd:string" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- sendPack -->
+  <xsd:element name="sendPack">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="fileName" type="xsd:string" minOccurs="0"/>
+        <xsd:element name="contentFile" type="xsd:base64Binary" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="sendPackResponse">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="applicationResponse" type="xsd:base64Binary" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- getStatus -->
+  <xsd:element name="getStatus">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="ticket" type="xsd:string" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="getStatusResponse">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="status" type="tns:statusResponse" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- getStatusAR -->
+  <xsd:element name="getStatusAR">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="ticket" type="xsd:string" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="getStatusResponseAR">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="status" type="tns:statusResponse" minOccurs="0"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- statusResponse type -->
+  <xsd:complexType name="statusResponse">
+    <xsd:sequence>
+      <xsd:element name="content" type="xsd:base64Binary" minOccurs="0"/>
+      <xsd:element name="statusCode" type="xsd:string" minOccurs="0"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+</xsd:schema>

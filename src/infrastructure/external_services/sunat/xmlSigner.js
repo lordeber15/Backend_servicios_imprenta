@@ -1,11 +1,14 @@
 /**
  * FIRMADOR DIGITAL DE XML
- * 
- * Este módulo se encarga de aplicar la firma digital X509 (XMLDSig) sobre los 
+ *
+ * Este módulo se encarga de aplicar la firma digital X509 (XMLDSig) sobre los
  * comprobantes electrónicos, requisito indispensable para SUNAT.
- * 
+ *
  * @module services/sunat/xmlSigner
  */
+
+const crypto = require("xml-crypto");
+const certificateLoader = require("./certificateLoader");
 
 /**
  * Firma un XML UBL 2.1 con XMLDSig usando los algoritmos requeridos por SUNAT:
@@ -22,22 +25,25 @@
  * @returns {string}  XML con la firma digital incrustada
  */
 function signXml(xmlString, certPath, certPassword) {
-  const { privateKeyPem, certBase64 } = certificateLoader.loadCertificate(
+  const { privateKeyPem, certPem } = certificateLoader.loadCertificate(
     certPath,
     certPassword
   );
 
-  const sig = new crypto.SignedXml({ idMode: "wssecurity" });
+  const sig = new crypto.SignedXml({
+    privateKey: privateKeyPem,
+    publicCert: certPem,
+    signatureAlgorithm: "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+    canonicalizationAlgorithm: "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+  });
 
-  // Algoritmos exigidos por SUNAT
-  sig.signatureAlgorithm =
-    "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
-  sig.canonicalizationAlgorithm =
-    "http://www.w3.org/TR/2001/REC-xml-c14n-20010315";
-
-  // Referencia al documento completo con enveloped-signature + c14n
+  // Referencia al documento completo.
+  // xpath:"/*" selecciona el nodo, uri:"" genera <Reference URI="">
+  // isEmptyUri:true evita que xml-crypto agregue atributo Id al root
   sig.addReference({
     xpath: "/*",
+    uri: "",
+    isEmptyUri: true,
     digestAlgorithm: "http://www.w3.org/2000/09/xmldsig#sha1",
     transforms: [
       "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
@@ -45,25 +51,24 @@ function signXml(xmlString, certPath, certPassword) {
     ],
   });
 
-  sig.signingKey = privateKeyPem;
-
-  // Incluir el certificado X.509 en el bloque KeyInfo
-  sig.keyInfoProvider = {
-    getKeyInfo: () =>
-      `<ds:X509Data><ds:X509Certificate>${certBase64}</ds:X509Certificate></ds:X509Data>`,
-    getKey: () => Buffer.from(privateKeyPem),
-  };
-
   sig.computeSignature(xmlString);
-  const signedXml = sig.getSignedXml();
+  let signedXml = sig.getSignedXml();
 
-  // La librería inserta la firma como último hijo del elemento raíz.
+  // xml-crypto inserta la Signature como último hijo del root.
   // SUNAT requiere que esté dentro de <ext:ExtensionContent/>.
-  // Si el builder ya dejó el ExtensionContent vacío, reemplazamos:
-  return signedXml.replace(
+  // 1. Extraer el bloque Signature
+  const signatureBlock = extractSignatureBlock(signedXml);
+
+  // 2. Remover la Signature de su posición actual (fin del root)
+  signedXml = signedXml.replace(/<Signature[\s\S]*?<\/Signature>/, "");
+
+  // 3. Insertar dentro del ExtensionContent vacío
+  signedXml = signedXml.replace(
     "<ext:ExtensionContent/>",
-    `<ext:ExtensionContent>${extractSignatureBlock(signedXml)}</ext:ExtensionContent>`
+    `<ext:ExtensionContent>${signatureBlock}</ext:ExtensionContent>`
   );
+
+  return signedXml;
 }
 
 /**
