@@ -18,6 +18,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path"); // Importar módulo 'path'
+const compression = require("compression");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("../../config/swagger"); // Renombrado de swaggerDocs a swaggerSpec
 
@@ -65,6 +66,13 @@ const app = express();
 // ============================================
 // CONFIGURACIÓN DE MIDDLEWARES GLOBALES
 // ============================================
+
+/**
+ * MIDDLEWARE: Compression
+ * 
+ * Comprime las respuestas HTTP usando Gzip para reducir el tamaño de los datos transferidos.
+ */
+app.use(compression());
 
 /**
  * MIDDLEWARE: CORS (Cross-Origin Resource Sharing)
