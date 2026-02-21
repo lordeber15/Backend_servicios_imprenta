@@ -24,14 +24,21 @@ try {
 function getLogoBase64(emisor) {
   if (emisor?.logo_url) {
     try {
-      const lp = path.resolve(process.cwd(), emisor.logo_url.replace(/^\//, ""));
+      // Intentar resolver la ruta relativa desde el directorio del proyecto
+      // Si la URL empieza con /uploads, lo buscamos en src/uploads
+      const relativePath = emisor.logo_url.startsWith("/uploads")
+        ? `src${emisor.logo_url}`
+        : emisor.logo_url.replace(/^\//, "");
+
+      const lp = path.resolve(process.cwd(), relativePath);
+      
       if (fs.existsSync(lp)) {
         const ext = path.extname(lp).slice(1) || "png";
         return `data:image/${ext};base64,${fs.readFileSync(lp).toString("base64")}`;
       }
-    } catch (_) { /* fallback */ }
+    } catch (_) { /* fallback silent */ }
   }
-  return defaultLogoBase64;
+  return ""; // Si no hay logo, no devolvemos nada
 }
 
 /**
@@ -92,6 +99,7 @@ function buildHtml(c, qrBase64) {
   const emisor = c.Emisor || {};
   const cliente = c.Cliente || {};
   const detalles = c.Detalles || [];
+  const logo = getLogoBase64(emisor);
   const tipo = c.TipoComprobante
     ? c.TipoComprobante.descripcion
     : tipoDescripcion(c.tipo_comprobante_id);
@@ -126,6 +134,8 @@ function buildHtml(c, qrBase64) {
   body { font-family: Arial, sans-serif; font-size: 10px; color: #222; }
   .header { display: flex; justify-content: space-between; align-items: flex-start;
             border-bottom: 2px solid #0369a1; padding-bottom: 8px; margin-bottom: 8px; }
+  .header-left { display: flex; gap: 15px; align-items: flex-start; }
+  .logo img { height: 60px; object-fit: contain; }
   .emisor-info h2 { font-size: 13px; color: #0369a1; }
   .doc-box { border: 2px solid #0369a1; padding: 8px 12px; text-align: center;
              min-width: 180px; }
@@ -150,11 +160,14 @@ function buildHtml(c, qrBase64) {
 </head>
 <body>
   <div class="header">
-    <div class="emisor-info">
-      <h2>${escHtml(emisor.razon_social || "")}</h2>
-      <p>RUC: <strong>${emisor.ruc || ""}</strong></p>
-      <p>${escHtml(emisor.direccion || "")}</p>
-      ${emisor.distrito ? `<p>${escHtml(emisor.distrito)} - ${escHtml(emisor.provincia)} - ${escHtml(emisor.departamento)}</p>` : ""}
+    <div class="header-left">
+      ${logo ? `<div class="logo"><img src="${logo}" alt="Logo emisor"></div>` : ""}
+      <div class="emisor-info">
+        <h2>${escHtml(emisor.razon_social || "")}</h2>
+        <p>RUC: <strong>${emisor.ruc || ""}</strong></p>
+        <p>${escHtml(emisor.direccion || "")}</p>
+        ${emisor.distrito ? `<p>${escHtml(emisor.distrito)} - ${escHtml(emisor.provincia)} - ${escHtml(emisor.departamento)}</p>` : ""}
+      </div>
     </div>
     <div class="doc-box">
       <h3>${escHtml(tipo)}</h3>
