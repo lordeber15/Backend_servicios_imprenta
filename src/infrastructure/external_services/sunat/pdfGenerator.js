@@ -180,6 +180,8 @@ function buildHtml(c, qrBase64) {
     <p><strong>Doc:</strong> ${tipoDocLabel(cliente.tipo_documento_id)}: ${cliente.nrodoc || ""}</p>
     ${cliente.direccion ? `<p><strong>Dirección:</strong> ${escHtml(cliente.direccion)}</p>` : ""}
     <p><strong>Fecha emisión:</strong> ${formatFecha(c.fecha_emision)} &nbsp;|&nbsp; <strong>Moneda:</strong> ${moneda} &nbsp;|&nbsp; <strong>Forma de pago:</strong> ${c.forma_pago || ""}</p>
+    ${c.comprobanteRef ? `<p><strong>Doc. Referencia:</strong> ${c.comprobanteRef.serie}-${String(c.comprobanteRef.correlativo).padStart(8, '0')}</p>` : ""}
+    ${c.descripcion_nota ? `<p><strong>Motivo:</strong> ${escHtml(c.descripcion_nota)}</p>` : ""}
   </div>
 
   <table>
@@ -238,13 +240,14 @@ function buildTicketHtml(c, qrBase64) {
 
   const filas = detalles.map((d) => {
     const nombre = d.descripcion || (d.Producto ? d.Producto.nombre : "-");
+    const unidad = d.unidad_id || (d.Producto && d.Producto.Unidad ? d.Producto.Unidad.id : "NIU");
     return `
-      <div class="item">
-        <div class="item-desc">${escHtml(nombre)}</div>
+      <div class="item" style="margin-bottom: 4px;">
         <div class="item-row">
-          <span></span>
-          <span class="right">${parseFloat(d.cantidad).toFixed(2)}</span>
-          <span class="right">${simbolo} ${parseFloat(d.importe_total).toFixed(2)}</span>
+          <span style="width:45%; word-break: break-word; padding-right: 2px;">${escHtml(nombre)}</span>
+          <span style="width:15%; text-align:center;">${escHtml(unidad)}</span>
+          <span style="width:15%; text-align:right;">${parseFloat(d.cantidad).toFixed(2)}</span>
+          <span style="width:25%; text-align:right;">${simbolo} ${parseFloat(d.importe_total).toFixed(2)}</span>
         </div>
       </div>`;
   }).join("");
@@ -259,7 +262,7 @@ function buildTicketHtml(c, qrBase64) {
   .center { text-align: center; }
   .bold { font-weight: bold; }
   .sep { text-align: center; color: #888; margin: 2px 0; }
-  .item-row { display: flex; justify-content: space-between; }
+  .item-row { display: flex; width: 100%; align-items: flex-start; }
   .item-desc { word-break: break-word; }
   .right { text-align: right; }
   .total-row { display: flex; justify-content: space-between; }
@@ -280,11 +283,14 @@ function buildTicketHtml(c, qrBase64) {
   <div>Cliente: ${escHtml(cliente.razon_social || "CLIENTE VARIOS")}</div>
   ${cliente.nrodoc ? `<div>${tipoDocLabel(cliente.tipo_documento_id)}: ${cliente.nrodoc}</div>` : ""}
   ${cliente.direccion ? `<div style="font-size:10px">Dir: ${escHtml(cliente.direccion)}</div>` : ""}
+  ${c.comprobanteRef ? `<div style="font-size:10px">Ref: ${c.comprobanteRef.serie}-${String(c.comprobanteRef.correlativo).padStart(8, '0')}</div>` : ""}
+  ${c.descripcion_nota ? `<div style="font-size:10px">Motivo: ${escHtml(c.descripcion_nota)}</div>` : ""}
   <div class="sep">-------------------------------------</div>
   <div class="item-row bold">
-    <span style="width:50%">Descripcion</span>
+    <span style="width:45%;text-align:left">Descripcion</span>
+    <span style="width:15%;text-align:center">Unid</span>
     <span style="width:15%;text-align:right">Cant</span>
-    <span style="width:35%;text-align:right">Total</span>
+    <span style="width:25%;text-align:right">Total</span>
   </div>
   <div class="sep">-------------------------------------</div>
   ${filas}
@@ -361,6 +367,7 @@ function buildA5Html(c, qrBase64) {
     ${cliente.nrodoc ? `<div><strong>${tipoDocLabel(cliente.tipo_documento_id)}:</strong> ${cliente.nrodoc}</div>` : ""}
     ${cliente.direccion ? `<div><strong>Direccion:</strong> ${escHtml(cliente.direccion)}</div>` : ""}
     <div><strong>Emision:</strong> ${formatFecha(c.fecha_emision)} &nbsp;|&nbsp; <strong>Moneda:</strong> ${moneda} &nbsp;|&nbsp; <strong>Pago:</strong> ${c.forma_pago || "Contado"}</div>
+    ${c.comprobanteRef ? `<div><strong>Ref:</strong> ${c.comprobanteRef.serie}-${String(c.comprobanteRef.correlativo).padStart(8, '0')} &nbsp;|&nbsp; <strong>Motivo:</strong> ${escHtml(c.descripcion_nota || "")}</div>` : ""}
   </div>
 
   <table style="margin-bottom:6px">

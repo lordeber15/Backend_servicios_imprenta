@@ -1,5 +1,7 @@
 const Almanaque = require("../../../database/models/almanaque/almanaque");
 const Detalle = require("../../../database/models/almanaque/detallesAlmanaque");
+const Emisor = require("../../../database/models/facturacion/emisor");
+const { generarCotizacionPdf } = require("../../../external_services/cotizacion/cotizacionPdfGenerator");
 
 // Obtener todos los Almanaques con sus detalles
 const getAlmanaque = async (req, res) => {
@@ -139,10 +141,35 @@ const deleteAlmanaque = async (req, res) => {
   }
 };
 
+// Generar PDF de cotización
+const getCotizacionPdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const format = req.query.format || "a5";
+
+    const cotizacion = await Almanaque.findByPk(id, {
+      include: [{ model: Detalle, as: "detalles" }],
+    });
+    if (!cotizacion) return res.status(404).json({ message: "Cotización no encontrada" });
+
+    const emisor = await Emisor.findOne();
+    const pdfBuffer = await generarCotizacionPdf(cotizacion, cotizacion.detalles, format, emisor);
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="cotizacion-${String(id).padStart(6, "0")}.pdf"`,
+    });
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAlmanaque,
   createAlmanaque,
   updateAlmanaque,
   deleteAlmanaque,
   getAlmanaqueById,
+  getCotizacionPdf,
 };

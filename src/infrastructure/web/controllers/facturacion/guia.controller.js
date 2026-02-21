@@ -6,6 +6,7 @@ const Emisor = require("../../../database/models/facturacion/emisor");
 const Cliente = require("../../../database/models/facturacion/cliente");
 const Unidad = require("../../../database/models/facturacion/unidad");
 const Comprobante = require("../../../database/models/facturacion/comprobante");
+const Serie = require("../../../database/models/facturacion/serie");
 require("../../../database/models/facturacion/asociation");
 
 const guiaRemisionBuilder = require("../../../external_services/sunat/xmlBuilders/guiaRemisionBuilder");
@@ -14,6 +15,26 @@ const sunatClient = require("../../../external_services/sunat/sunatClient");
 const cdrParser = require("../../../external_services/sunat/cdrParser");
 const pdfGenerator = require("../../../external_services/sunat/pdfGenerator");
 const storageHelper = require("../../../external_services/sunat/storageHelper");
+
+const createGuia = async (req, res) => {
+  try {
+    const guia = await GuiaRemision.create(req.body);
+    return res.status(201).json(guia);
+  } catch (err) {
+    console.error("Error creating guia:", err);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+const createDetalleGuia = async (req, res) => {
+  try {
+    const detalle = await DetalleGuia.create(req.body);
+    return res.status(201).json(detalle);
+  } catch (err) {
+    console.error("Error creating detalle guia:", err);
+    return res.status(500).json({ message: err.message });
+  }
+};
 
 /**
  * POST /guia/emitir
@@ -100,6 +121,13 @@ const emitirGuia = async (req, res) => {
       intentos_envio: (guia.intentos_envio || 0) + 1,
     });
 
+    if (cdr.accepted) {
+      const serieRec = await Serie.findOne({ where: { serie: guia.serie } });
+      if (serieRec) {
+        await serieRec.update({ correlativo: guia.correlativo + 1 });
+      }
+    }
+
     return res.json({
       success: cdr.accepted,
       guia_id: guia.id,
@@ -182,4 +210,4 @@ const descargarXmlGuia = async (req, res) => {
   }
 };
 
-module.exports = { emitirGuia, consultarEstadoGuia, descargarPdfGuia, descargarXmlGuia };
+module.exports = { createGuia, createDetalleGuia, emitirGuia, consultarEstadoGuia, descargarPdfGuia, descargarXmlGuia };

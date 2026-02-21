@@ -9,6 +9,8 @@
 const { Router } = require("express");
 const authenticate = require("../../middleware/auth.middleware");
 const {
+  createGuia,
+  createDetalleGuia,
   emitirGuia,
   consultarEstadoGuia,
   descargarPdfGuia,
@@ -16,6 +18,34 @@ const {
 } = require("../../controllers/facturacion/guia.controller");
 
 const router = Router();
+
+/**
+ * @swagger
+ * /guia:
+ *   post:
+ *     summary: Crear la cabecera de la Guía de Remisión
+ *     tags: [Guías]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Cabecera creada
+ */
+router.post("/guia", authenticate, createGuia);
+
+/**
+ * @swagger
+ * /guia/detalle:
+ *   post:
+ *     summary: Crear un detalle de la Guía de Remisión
+ *     tags: [Guías]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Detalle creado
+ */
+router.post("/guia/detalle", authenticate, createDetalleGuia);
 
 /**
  * @swagger

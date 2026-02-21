@@ -12,6 +12,7 @@ const {
   deleteAlmanaque,
   updateAlmanaque,
   getAlmanaqueById,
+  getCotizacionPdf,
 } = require("../../controllers/almanaque/almanaque.controller");
 const router = Router();
 
@@ -68,6 +69,7 @@ router.post("/almanaque", createAlmanaque);
  *       200:
  *         description: Pedido actualizado
  */
+router.get("/almanaque/:id/pdf", getCotizacionPdf);
 router.get("/almanaque/:id", getAlmanaqueById);
 router.delete("/almanaque/:id", deleteAlmanaque);
 router.put("/almanaque/:id", updateAlmanaque);
