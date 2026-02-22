@@ -11,7 +11,7 @@ require("../../../database/models/facturacion/asociation");
 
 const guiaRemisionBuilder = require("../../../external_services/sunat/xmlBuilders/guiaRemisionBuilder");
 const xmlSigner = require("../../../external_services/sunat/xmlSigner");
-const sunatClient = require("../../../external_services/sunat/sunatClient");
+const sunatRestClient = require("../../../external_services/sunat/sunatRestClient");
 const cdrParser = require("../../../external_services/sunat/cdrParser");
 const pdfGenerator = require("../../../external_services/sunat/pdfGenerator");
 const storageHelper = require("../../../external_services/sunat/storageHelper");
@@ -87,41 +87,36 @@ const emitirGuia = async (req, res) => {
 
     storageHelper.saveXml(nombreArchivo, xmlFirmado);
 
-    // Enviar a SUNAT (WS de guías, síncrono)
-    let cdrBase64;
+    // Enviar a SUNAT (WS de guías, REST ASÍNCRONO)
+    let restResponse;
     try {
       const xmlBuffer = Buffer.from(xmlFirmado, "utf8");
-      cdrBase64 = await sunatClient.sendBillGuia(xmlBuffer, nombreArchivo, emisor);
-    } catch (soapErr) {
+      restResponse = await sunatRestClient.sendGuiaRest(xmlBuffer, nombreArchivo, emisor);
+    } catch (restErr) {
       await guia.update({
         estado_sunat: "RR",
-        codigo_sunat: "SOAP_ERR",
-        mensaje_sunat: soapErr.message,
+        codigo_sunat: "REST_ERR",
+        mensaje_sunat: restErr.message,
         nombre_xml: nombreArchivo,
         fecha_envio_sunat: new Date(),
         intentos_envio: (guia.intentos_envio || 0) + 1,
       });
-      return res.status(422).json({ message: "SUNAT rechazó la guía", error: soapErr.message });
+      return res.status(422).json({ message: "SUNAT rechazó la guía", error: restErr.message });
     }
 
-    if (cdrBase64) storageHelper.saveCdr(nombreArchivo, cdrBase64);
-
-    let cdr = { responseCode: "0", description: "Aceptado", digestValue: "", notes: [], accepted: true };
-    if (cdrBase64) {
-      try { cdr = cdrParser.parseCdr(cdrBase64); } catch (_) {}
-    }
-
+    const ticket = restResponse?.numTicket || restResponse?.ticket;
+    const isAccepted = !!ticket;
+    
     await guia.update({
-      estado_sunat: cdr.accepted ? "AC" : "RR",
-      codigo_sunat: cdr.responseCode,
-      mensaje_sunat: cdr.description + (cdr.notes.length ? " | " + cdr.notes.join(" | ") : ""),
-      hash_cpe: cdr.digestValue,
+      estado_sunat: isAccepted ? "AC" : "RR",
+      codigo_sunat: ticket ? "TICKET" : "ERROR",
+      mensaje_sunat: isAccepted ? `Enviado con Ticket Nro: ${ticket}` : "Recepción fallida",
       nombre_xml: nombreArchivo,
       fecha_envio_sunat: new Date(),
       intentos_envio: (guia.intentos_envio || 0) + 1,
     });
 
-    if (cdr.accepted) {
+    if (isAccepted) {
       const serieRec = await Serie.findOne({ where: { serie: guia.serie } });
       if (serieRec) {
         await serieRec.update({ correlativo: guia.correlativo + 1 });
@@ -129,12 +124,12 @@ const emitirGuia = async (req, res) => {
     }
 
     return res.json({
-      success: cdr.accepted,
+      success: isAccepted,
       guia_id: guia.id,
       nombre_xml: nombreArchivo,
-      codigo_sunat: cdr.responseCode,
-      mensaje_sunat: cdr.description,
-      estado_sunat: cdr.accepted ? "AC" : "RR",
+      codigo_sunat: ticket ? "TICKET" : "ERROR",
+      mensaje_sunat: isAccepted ? `Enviado con Ticket Nro: ${ticket}` : "Recepción fallida",
+      estado_sunat: isAccepted ? "AC" : "RR",
       pdf_url: `/guia/${guia.id}/pdf`,
       xml_url: `/guia/${guia.id}/xml`,
     });

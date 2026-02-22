@@ -24,6 +24,8 @@ const Emisor = sequelize.define(
     telefono: DataTypes.STRING(20),
     logo_url: DataTypes.STRING(255),
     descripcion: DataTypes.STRING(200),
+    client_id: DataTypes.STRING(200),
+    client_secret: DataTypes.STRING(200),
   },
   {
     tableName: "Emisor",

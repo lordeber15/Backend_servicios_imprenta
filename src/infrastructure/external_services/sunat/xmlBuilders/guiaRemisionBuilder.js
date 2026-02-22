@@ -24,7 +24,7 @@ function build(guia) {
   const g = guia;
   const emisor = g.Emisor;
   const destinatario = g.Destinatario || {};
-  const detalles = g.DetalleGuias || [];
+  const detalles = g.DetalleGuia || g.DetalleGuias || [];
 
   const correlativoStr = String(g.correlativo).padStart(8, "0");
   const serieCorrelativo = `${g.serie}-${correlativoStr}`;
@@ -79,7 +79,7 @@ function build(guia) {
   </ext:UBLExtensions>
 
   <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
-  <cbc:CustomizationID>2.0</cbc:CustomizationID>
+  <cbc:CustomizationID>1.0</cbc:CustomizationID>
   <cbc:ID>${serieCorrelativo}</cbc:ID>
   <cbc:IssueDate>${fechaEmision}</cbc:IssueDate>
   <cbc:IssueTime>00:00:00</cbc:IssueTime>
@@ -104,6 +104,28 @@ function build(guia) {
   </cac:Signature>
 
   ${refComprobanteXml}
+
+  <cac:DespatchSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6">${emisor.ruc}</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName><![CDATA[${emisor.razon_social}]]></cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:DespatchSupplierParty>
+
+  <cac:DeliveryCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="${mapTipoDoc(destinatario.tipo_documento_id)}">${destinatario.nrodoc || ""}</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName><![CDATA[${destinatario.razon_social || ""}]]></cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:DeliveryCustomerParty>
 
   <cac:Shipment>
     <cbc:ID>SUNAT_Envio</cbc:ID>
@@ -137,28 +159,6 @@ function build(guia) {
     </cac:OriginAddress>
   </cac:Shipment>
 
-  <cac:DeliveryCustomerParty>
-    <cac:Party>
-      <cac:PartyIdentification>
-        <cbc:ID schemeID="${mapTipoDoc(destinatario.tipo_documento_id)}">${destinatario.nrodoc || ""}</cbc:ID>
-      </cac:PartyIdentification>
-      <cac:PartyLegalEntity>
-        <cbc:RegistrationName><![CDATA[${destinatario.razon_social || ""}]]></cbc:RegistrationName>
-      </cac:PartyLegalEntity>
-    </cac:Party>
-  </cac:DeliveryCustomerParty>
-
-  <cac:SellerSupplierParty>
-    <cac:Party>
-      <cac:PartyIdentification>
-        <cbc:ID schemeID="6">${emisor.ruc}</cbc:ID>
-      </cac:PartyIdentification>
-      <cac:PartyLegalEntity>
-        <cbc:RegistrationName><![CDATA[${emisor.razon_social}]]></cbc:RegistrationName>
-      </cac:PartyLegalEntity>
-    </cac:Party>
-  </cac:SellerSupplierParty>
-
   ${lineas}
 </DespatchAdvice>`;
 }
@@ -170,6 +170,9 @@ function buildLinea(d, numero) {
   return `<cac:DespatchLine>
     <cbc:ID>${numero}</cbc:ID>
     <cbc:DeliveredQuantity unitCode="${unidad.id || "NIU"}">${cantidad.toFixed(6)}</cbc:DeliveredQuantity>
+    <cac:OrderLineReference>
+      <cbc:LineID>${numero}</cbc:LineID>
+    </cac:OrderLineReference>
     ${d.numero_serie ? `<cbc:Note>${d.numero_serie}</cbc:Note>` : ""}
     <cac:Item>
       <cbc:Description><![CDATA[${d.descripcion || ""}]]></cbc:Description>
