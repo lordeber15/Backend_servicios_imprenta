@@ -42,6 +42,7 @@ const Producto = sequelize.define(
       },
     },
     codigo_sunat: DataTypes.STRING(12),
+    codigo_barras: DataTypes.STRING(100),
     afecto_icbper: DataTypes.SMALLINT,
     factor_icbper: DataTypes.DECIMAL(15, 2),
     stock: { type: DataTypes.INTEGER, defaultValue: 0 },
