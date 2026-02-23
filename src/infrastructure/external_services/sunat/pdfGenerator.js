@@ -240,14 +240,22 @@ function buildTicketHtml(c, qrBase64) {
 
   const filas = detalles.map((d) => {
     const nombre = d.descripcion || (d.Producto ? d.Producto.nombre : "-");
-    const unidad = d.unidad_id || (d.Producto && d.Producto.Unidad ? d.Producto.Unidad.id : "NIU");
+    const unidadId = d.unidad_id || (d.Producto && d.Producto.Unidad ? d.Producto.Unidad.id : "NIU");
+    const unidadNombre = d.Producto?.Unidad?.nombre || d.Producto?.Unidad?.descripcion;
+    const precioUnitario = d.cantidad > 0 ? (d.importe_total / d.cantidad) : 0;
+    
+    // Si viene el nombre de la unidad lo usamos, sino fallback a "UNIDA" para "NIU" o el ID
+    let displayUnidad = unidadNombre || (unidadId === "NIU" ? "UNIDA" : unidadId);
+    displayUnidad = String(displayUnidad).toUpperCase();
+
     return `
       <div class="item" style="margin-bottom: 4px;">
-        <div class="item-row">
-          <span style="width:45%; word-break: break-word; padding-right: 2px;">${escHtml(nombre)}</span>
-          <span style="width:15%; text-align:center;">${escHtml(unidad)}</span>
-          <span style="width:15%; text-align:right;">${parseFloat(d.cantidad).toFixed(2)}</span>
-          <span style="width:25%; text-align:right;">${simbolo} ${parseFloat(d.importe_total).toFixed(2)}</span>
+        <div class="item-row" style="align-items: flex-start;">
+          <span style="width:12%; text-align:center;">${parseFloat(d.cantidad).toFixed(2)}</span>
+          <span style="width:16%; text-align:center; overflow:hidden;">${escHtml(displayUnidad)}</span>
+          <span style="width:42%; word-break: break-word; text-align:left; padding-left: 2px; padding-right: 2px;">${escHtml(nombre)}</span>
+          <span style="width:13%; text-align:right;">${parseFloat(precioUnitario).toFixed(2)}</span>
+          <span style="width:17%; text-align:right;">${parseFloat(d.importe_total).toFixed(2)}</span>
         </div>
       </div>`;
   }).join("");
@@ -276,21 +284,22 @@ function buildTicketHtml(c, qrBase64) {
   <div class="center">RUC: ${emisor.ruc || ""}</div>
   ${emisor.direccion ? `<div class="center" style="font-size:10px">${escHtml(emisor.direccion)}</div>` : ""}
   <div class="sep">-------------------------------------</div>
-  <div class="center bold">${escHtml(tipo)}</div>
+  <div class="center bold">${escHtml(tipo).toUpperCase()} ELECTRÓNICA</div>
   <div class="center bold" style="font-size:13px">${serieCorrelativo}</div>
   <div>Fecha: ${formatFecha(c.fecha_emision)}</div>
   <div class="sep">-------------------------------------</div>
-  <div>Cliente: ${escHtml(cliente.razon_social || "CLIENTE VARIOS")}</div>
+  <div>RAZON SOCIAL: ${escHtml(cliente.razon_social || "CLIENTE VARIOS")}</div>
   ${cliente.nrodoc ? `<div>${tipoDocLabel(cliente.tipo_documento_id)}: ${cliente.nrodoc}</div>` : ""}
   ${cliente.direccion ? `<div style="font-size:10px">Dir: ${escHtml(cliente.direccion)}</div>` : ""}
   ${c.comprobanteRef ? `<div style="font-size:10px">Ref: ${c.comprobanteRef.serie}-${String(c.comprobanteRef.correlativo).padStart(8, '0')}</div>` : ""}
   ${c.descripcion_nota ? `<div style="font-size:10px">Motivo: ${escHtml(c.descripcion_nota)}</div>` : ""}
   <div class="sep">-------------------------------------</div>
-  <div class="item-row bold">
-    <span style="width:45%;text-align:left">Descripcion</span>
-    <span style="width:15%;text-align:center">Unid</span>
-    <span style="width:15%;text-align:right">Cant</span>
-    <span style="width:25%;text-align:right">Total</span>
+  <div class="item-row bold" style="margin-bottom: 2px;">
+    <span style="width:12%; text-align:center;">CANT.</span>
+    <span style="width:16%; text-align:center;">U.M.</span>
+    <span style="width:42%; text-align:left; padding-left: 2px;">DESCRIP</span>
+    <span style="width:13%; text-align:right;">P.U.</span>
+    <span style="width:17%; text-align:right;">IMPORTE</span>
   </div>
   <div class="sep">-------------------------------------</div>
   ${filas}
@@ -416,7 +425,9 @@ function escHtml(str) {
 
 function formatFecha(fecha) {
   if (!fecha) return "";
-  return new Date(fecha).toLocaleDateString("es-PE");
+  //return new Date(fecha).toLocaleDateString("es-PE");
+  const d = new Date(fecha);
+  return `${d.toLocaleDateString("es-PE")} ${d.toLocaleTimeString("es-PE", { hour12: false })}`;
 }
 
 function tipoDescripcion(id) {

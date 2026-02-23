@@ -46,17 +46,24 @@ function build80mmHtml(ticket, detalles, emisor) {
   const dir = escHtml(emisor?.direccion || "");
   const tel = escHtml(emisor?.telefono || "");
 
-  const filas = detalles
-    .map((d) => `
-      <div class="item">
-        <div class="item-desc">${escHtml(d.descripcion)}${d._unidad ? ` (${escHtml(d._unidad)})` : ""}</div>
-        <div class="item-row">
-          <span></span>
-          <span class="right">${d.cantidad}</span>
-          <span class="right">S/ ${parseFloat(d.subtotal).toFixed(2)}</span>
+  const filas = detalles.map((d) => {
+    const nombre = d.descripcion || "-";
+    const unidadId = d._unidad || "NIU";
+    let displayUnidad = unidadId === "NIU" ? "UNIDA" : unidadId;
+    displayUnidad = String(displayUnidad).toUpperCase();
+    const precioUnitario = d.cantidad > 0 ? (d.subtotal / d.cantidad) : 0;
+
+    return `
+      <div class="item" style="margin-bottom: 4px;">
+        <div class="item-row" style="align-items: flex-start;">
+          <span style="width:12%; text-align:center;">${parseFloat(d.cantidad).toFixed(2)}</span>
+          <span style="width:16%; text-align:center; overflow:hidden;">${escHtml(displayUnidad)}</span>
+          <span style="width:42%; word-break: break-word; text-align:left; padding-left: 2px; padding-right: 2px;">${escHtml(nombre)}</span>
+          <span style="width:13%; text-align:right;">${parseFloat(precioUnitario).toFixed(2)}</span>
+          <span style="width:17%; text-align:right;">${parseFloat(d.subtotal).toFixed(2)}</span>
         </div>
-      </div>`)
-    .join("");
+      </div>`;
+  }).join("");
 
   const total = parseFloat(ticket.precioTotal || 0);
   const opGravada = total / 1.18;
@@ -72,7 +79,7 @@ function build80mmHtml(ticket, detalles, emisor) {
   .center { text-align: center; }
   .bold { font-weight: bold; }
   .sep { text-align: center; color: #888; margin: 2px 0; }
-  .item-row { display: flex; justify-content: space-between; }
+  .item-row { display: flex; width: 100%; align-items: flex-start; }
   .item-desc { word-break: break-word; }
   .right { text-align: right; }
   .total-row { display: flex; justify-content: space-between; }
@@ -87,26 +94,28 @@ function build80mmHtml(ticket, detalles, emisor) {
   <div class="center">RUC: ${ruc}</div>
   ${dir ? `<div class="center">${dir}</div>` : ""}
   ${tel ? `<div class="center">Tel: ${tel}</div>` : ""}
-  <div class="sep">─────────────────────────────────</div>
+  <div class="sep">-------------------------------------</div>
   <div class="center bold">TICKET N° ${String(ticket.id).padStart(6, "0")}</div>
   <div>Fecha: ${formatFecha(ticket.fechaEmision)}</div>
-  <div class="sep">─────────────────────────────────</div>
+  <div class="sep">-------------------------------------</div>
   <div>Cliente: ${escHtml(ticket.cliente || "Sin nombre")}</div>
   ${ticket.tipoDocumento && ticket.tipoDocumento !== "Sin Documento" && ticket.numeroDocumento ? `<div>${escHtml(ticket.tipoDocumento)}: ${escHtml(ticket.numeroDocumento)}</div>` : ""}
   ${ticket.direccion ? `<div>Dir: ${escHtml(ticket.direccion)}</div>` : ""}
-  <div class="sep">─────────────────────────────────</div>
-  <div class="item-row bold">
-    <span style="width:50%">Descripción</span>
-    <span style="width:15%;text-align:right">Cant</span>
-    <span style="width:35%;text-align:right">Total</span>
+  <div class="sep">-------------------------------------</div>
+  <div class="item-row bold" style="margin-bottom: 2px;">
+    <span style="width:12%; text-align:center;">CANT.</span>
+    <span style="width:16%; text-align:center;">U.M.</span>
+    <span style="width:42%; text-align:left; padding-left: 2px;">DESCRIP</span>
+    <span style="width:13%; text-align:right;">P.U.</span>
+    <span style="width:17%; text-align:right;">IMPORTE</span>
   </div>
-  <div class="sep">─────────────────────────────────</div>
+  <div class="sep">-------------------------------------</div>
   ${filas}
-  <div class="sep">─────────────────────────────────</div>
+  <div class="sep">-------------------------------------</div>
   <div class="total-row"><span>Op. Gravada:</span><span>S/ ${opGravada.toFixed(2)}</span></div>
   <div class="total-row"><span>IGV (18%):</span><span>S/ ${igv.toFixed(2)}</span></div>
   <div class="total-row big"><span>TOTAL:</span><span>S/ ${total.toFixed(2)}</span></div>
-  <div class="sep">─────────────────────────────────</div>
+  <div class="sep">-------------------------------------</div>
   <div class="footer">¡Gracias por su preferencia!</div>
   <div class="footer">Conserve este comprobante</div>
 </body>
