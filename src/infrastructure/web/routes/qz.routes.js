@@ -35,23 +35,24 @@ router.post('/sign', (req, res) => {
     const { toSign } = req.body || {};
     
     if (!toSign) {
-      return res.status(400).send('Missing toSign format');
+      return res.status(400).type("text/plain").send('Missing toSign format');
     }
 
     // Leemos la llave privada
     const privateKey = fs.readFileSync(PRIVATE_KEY_PATH, 'utf8');
 
-    // Firmar con SHA256 según estándar de QZ Tray 2.x
-    const signer = crypto.createSign('RSA-SHA256');
+    // Firmar con SHA512 según estándar estricto de QZ Tray
+    const signer = crypto.createSign('RSA-SHA512');
     signer.update(toSign, 'utf8');
     signer.end();
 
     const signature = signer.sign(privateKey, 'base64');
     
-    res.type('text/plain').send(signature);
+    // Es CRÍTICO hacer un .trim() para evitar que saltos de línea invaliden la firma en el frontend
+    res.type('text/plain').send(signature.trim());
   } catch (error) {
     console.error('Error firmando la petición de QZ:', error);
-    res.status(500).send('Error interno firmando petición');
+    res.status(500).type("text/plain").send('Error interno firmando petición');
   }
 });
 
