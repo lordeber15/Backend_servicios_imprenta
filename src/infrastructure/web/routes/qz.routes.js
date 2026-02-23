@@ -13,7 +13,7 @@ const PRIVATE_KEY_PATH = path.join(KEYS_DIR, 'qz-private-key.pem');
 const PUBLIC_CERT_PATH = path.join(KEYS_DIR, 'qz-public-cert.crt');
 
 /**
- * @route GET /api/qz/certificate
+ * @route GET /qz/certificate
  * @desc Devuelve el certificado público (.crt) en texto plano para que QZ Tray confíe en este dominio
  */
 router.get('/certificate', (req, res) => {

@@ -162,7 +162,7 @@ app.use(comunicacionBajaRoutes);
 app.use(guiaRoutes);
 
 // Nuevas rutas con prefijo /api
-app.use("/api/qz", qzRoutes);
+app.use("/qz", qzRoutes);
 
 // Registrar todas las rutas bajo /api
 //app.use("/api", apiRouter);
