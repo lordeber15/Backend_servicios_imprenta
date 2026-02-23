@@ -57,6 +57,7 @@ const sunatRoutes = require("./routes/facturacion/sunat.routes");
 const resumenDiarioRoutes = require("./routes/facturacion/resumen_diario.routes");
 const comunicacionBajaRoutes = require("./routes/facturacion/comunicacion_baja.routes");
 const guiaRoutes = require("./routes/facturacion/guia.routes");
+const qzRoutes = require("./routes/qz.routes"); // Rutas para QZ Tray
 
 // ============================================
 // INICIALIZACIÓN DE EXPRESS
@@ -159,6 +160,9 @@ app.use(sunatRoutes);
 app.use(resumenDiarioRoutes);
 app.use(comunicacionBajaRoutes);
 app.use(guiaRoutes);
+
+// Nuevas rutas con prefijo /api
+app.use("/api/qz", qzRoutes);
 
 // Registrar todas las rutas bajo /api
 //app.use("/api", apiRouter);
