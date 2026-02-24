@@ -28,6 +28,14 @@ const DetalleTicket = sequelize.define("DetalleTicket", {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  es_servicio: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  adelanto: {
+    type: DataTypes.DECIMAL,
+    defaultValue: 0,
+  },
 });
 
 // 🔗 Relaciones

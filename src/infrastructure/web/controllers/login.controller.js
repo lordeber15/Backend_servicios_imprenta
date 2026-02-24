@@ -1,9 +1,9 @@
 const SequelizeUserRepository = require("../../database/repositories/SequelizeUserRepository");
 const LoginUserUseCase = require("../../../application/use_cases/auth/LoginUser");
-const GetAllUsersUseCase = require("../../../application/use_cases/auth/GetAllUsers");
 const CreateUserUseCase = require("../../../application/use_cases/auth/CreateUser");
 const DeleteUserUseCase = require("../../../application/use_cases/auth/DeleteUser");
 const UpdateUserUseCase = require("../../../application/use_cases/auth/UpdateUser");
+const { Login } = require("../../database/models/login");
 const path = require("path");
 
 const userRepository = new SequelizeUserRepository();
@@ -13,13 +13,17 @@ const userRepository = new SequelizeUserRepository();
  */
 const getLogin = async (_req, res) => {
   try {
-    const useCase = new GetAllUsersUseCase(userRepository);
-    const users = await useCase.execute();
-    const sanitizedUsers = users.map(u => ({
+    const usersWithFormatos = await Login.findAll({
+      where: { activo: true },
+      include: [{ association: "formatos", attributes: ["key"] }],
+      attributes: ["id", "usuario", "cargo", "image_url"],
+    });
+    const sanitizedUsers = usersWithFormatos.map(u => ({
       id: u.id,
       usuario: u.usuario,
       cargo: u.cargo,
-      image_url: u.image_url
+      image_url: u.image_url,
+      formatos: (u.formatos || []).map(f => f.key),
     }));
     res.json(sanitizedUsers);
   } catch (error) {

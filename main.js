@@ -19,6 +19,8 @@ require("dotenv").config();
 
 const app = require("./src/infrastructure/web/app.js");
 const sequelize = require("./src/infrastructure/database/database");
+const { Formato } = require("./src/infrastructure/database/models/formatos");
+require("./src/infrastructure/database/models/usuario_formatos"); // Registrar relaciones
 
 // Puerto del servidor (por defecto 3000 si no está en .env)
 const port = process.env.PORT || 3000;
@@ -48,6 +50,22 @@ async function main() {
      */
     await sequelize.sync({ alter: true });
     console.log("Conectado a la base de datos");
+
+    // Seed: insertar formatos iniciales si la tabla está vacía
+    const formatosCount = await Formato.count();
+    if (formatosCount === 0) {
+      await Formato.bulkCreate([
+        { key: "ticket", nombre: "Ticket" },
+        { key: "boleta", nombre: "Boleta de Venta" },
+        { key: "factura", nombre: "Factura" },
+        { key: "guiarem", nombre: "Guía de Remisión" },
+        { key: "guiatransp", nombre: "Guía Transportista" },
+        { key: "notacredito", nombre: "Nota de Crédito" },
+        { key: "ingresos", nombre: "Ingresos y Egresos" },
+        { key: "cotizacion", nombre: "Cotización" },
+      ]);
+      console.log("Formatos iniciales creados");
+    }
     
     /**
      * INICIO DEL SERVIDOR HTTP

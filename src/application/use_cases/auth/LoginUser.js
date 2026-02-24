@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { Login } = require("../../../infrastructure/database/models/login");
 
 class LoginUser {
   constructor(userRepository) {
@@ -35,8 +36,14 @@ class LoginUser {
       throw new Error("Usuario o contraseña incorrectos");
     }
 
+    // Obtener formatos asignados al usuario
+    const userWithFormatos = await Login.findByPk(user.id, {
+      include: [{ association: "formatos", attributes: ["key"] }],
+    });
+    const formatos = (userWithFormatos?.formatos || []).map((f) => f.key);
+
     const token = jwt.sign(
-      { id: user.id, usuario: user.usuario, cargo: user.cargo, image_url: user.image_url },
+      { id: user.id, usuario: user.usuario, cargo: user.cargo, image_url: user.image_url, formatos },
       process.env.JWT_SECRET,
       { expiresIn: "8h" }
     );
@@ -46,7 +53,8 @@ class LoginUser {
       id: user.id,
       usuario: user.usuario,
       cargo: user.cargo,
-      image_url: user.image_url
+      image_url: user.image_url,
+      formatos
     };
   }
 }

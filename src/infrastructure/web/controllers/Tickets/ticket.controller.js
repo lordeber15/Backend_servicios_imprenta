@@ -3,6 +3,7 @@ const Detalle = require("../../../database/models/Tickets/detalles");
 const Producto = require("../../../database/models/facturacion/producto");
 const Unidad = require("../../../database/models/facturacion/unidad");
 const Emisor = require("../../../database/models/facturacion/emisor");
+const { Servicios } = require("../../../database/models/servicios");
 const { generarTicketPdf } = require("../../../external_services/tickets/ticketPdfGenerator");
 
 // Obtener todos los tickets con sus detalles
@@ -51,6 +52,19 @@ const createTicket = async (req, res) => {
       await Producto.decrement("stock", {
         by: d.cantidad,
         where: { id: d.producto_id, es_servicio: false },
+      });
+    }
+
+    // Auto-crear trabajo en Dashboard para ítems de tipo servicio
+    const detallesServicio = (ticket.detalles || []).filter((d) => d.es_servicio);
+    for (const d of detallesServicio) {
+      await Servicios.create({
+        nombre: ticket.cliente,
+        cantidad: d.cantidad,
+        descripcion: d.descripcion,
+        estado: "Pendiente",
+        total: d.subtotal,
+        acuenta: d.adelanto || 0,
       });
     }
 
