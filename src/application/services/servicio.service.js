@@ -72,6 +72,27 @@ class ServicioService {
 
     return await servicioRepository.update(servicio, updatedValues);
   }
+
+  /**
+   * Obtener estadísticas de servicios (conteos por estado)
+   * @returns {Promise<Object>}
+   */
+  async getStats() {
+    const counts = await servicioRepository.countByStatus();
+    const stats = {
+      total: 0,
+      Pendiente: 0,
+      "Diseño": 0,
+      "Impresión": 0,
+      Terminado: 0,
+      Entregado: 0,
+    };
+    counts.forEach(({ estado, count }) => {
+      stats[estado] = parseInt(count, 10);
+      stats.total += parseInt(count, 10);
+    });
+    return stats;
+  }
 }
 
 module.exports = new ServicioService();

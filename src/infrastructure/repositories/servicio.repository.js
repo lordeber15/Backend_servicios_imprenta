@@ -67,6 +67,19 @@ class ServicioRepository {
   async delete(servicio) {
     return await servicio.destroy();
   }
+
+  /**
+   * Obtener conteo de servicios agrupados por estado
+   * @returns {Promise<Array<{estado: string, count: number}>>}
+   */
+  async countByStatus() {
+    const { fn, col } = require("sequelize");
+    return await Servicios.findAll({
+      attributes: ["estado", [fn("COUNT", col("estado")), "count"]],
+      group: ["estado"],
+      raw: true,
+    });
+  }
 }
 
 module.exports = new ServicioRepository();

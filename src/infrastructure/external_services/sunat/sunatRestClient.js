@@ -16,7 +16,7 @@ const crypto = require('crypto');
  * @returns {Promise<string>} Access Token
  */
 async function getAccessToken(emisor) {
-  const url = `https://api-seguridad.sunat.gob.pe/v1/clientessol/${emisor.client_id}/oauth2/token/`;
+  const url = `https://api-seguridad-test.sunat.gob.pe/v1/clientessol/${emisor.client_id}/oauth2/token/`;
   
   const params = new URLSearchParams();
   params.append('grant_type', 'password');

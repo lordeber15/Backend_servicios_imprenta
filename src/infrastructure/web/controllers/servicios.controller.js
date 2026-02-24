@@ -79,8 +79,23 @@ const updateServicios = async (req, res) => {
   }
 };
 
+/**
+ * Obtener estadísticas de servicios (conteos por estado)
+ *
+ * Ruta: GET /servicios/stats
+ */
+const getServiciosStats = async (req, res) => {
+  try {
+    const stats = await servicioService.getStats();
+    res.json(stats);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getServicios,
+  getServiciosStats,
   createServicios,
   deleteServicios,
   updateServicios,

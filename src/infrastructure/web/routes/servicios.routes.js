@@ -8,6 +8,7 @@
 const { Router } = require("express");
 const {
   getServicios,
+  getServiciosStats,
   createServicios,
   deleteServicios,
   updateServicios,
@@ -51,6 +52,7 @@ const router = Router();
  *         description: Servicio creado
  */
 router.get("/servicios", getServicios);
+router.get("/servicios/stats", getServiciosStats);
 router.post("/servicios", createServicios);
 
 /**
