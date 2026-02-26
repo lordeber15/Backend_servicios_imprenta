@@ -3,14 +3,14 @@
 
   <ext:UBLExtensions>
     <ext:UBLExtension>
-      <ext:ExtensionContent><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>nftjDHdpntW0tP32oif99dC0gmE=</DigestValue></Reference></SignedInfo><SignatureValue>WxHupW843x9QLV1MQegX5MTDoa5/lbPlhktUUGNRae9qMX5ca0hOUxO9bIOD9zoqdCavVIaJCoRcsruHlH4sH/LRGDgatbILYE7qBFFX6NS1U7f0NXVrvnjr1S1ui5yXqXiKFEiSOyw8ZMF/iBZN94sF03avwXEeCNTdHaKLTaBEAHYJVbO7VrTLcBEJmKtxOaOG7HuyqCX5Hkj2ELw9uaRy88QCZu3NMzwNeQVZV4DPdP22GI5IeOpnFtip74lTQOeMHoEd9b1bcqJOiqax3r4Uk633yvAFEoiOht0egD46TEkGoeiHK8BxOgTUAZ8Ynq8s/XbKYaqO4SfJNt4I5Q==</SignatureValue><KeyInfo><X509Data><X509Certificate>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</X509Certificate></X509Data></KeyInfo></Signature></ext:ExtensionContent>
+      <ext:ExtensionContent><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>UteBMUuOOzbQ4yJKlS1TxKYnn0A=</DigestValue></Reference></SignedInfo><SignatureValue>OtKFzPnEOq2wgOQWSSXmWpOCUfomvOvw5YyzGi6+oxSlTckngpDFDTCEwAwHlPKeqP2zUnR5l7Fg3MAz68lIKS7ZT4FS6z1HQ1jMoI2bH5+dMgARW2wSq6W37pGtPZpLaZ7diX0aFebXXuKS8XvE+SZ6cJP6A7m5rmqaNlii7K8utC2lDXoG37N78eO8B2OzMXicTYds5h8kaphYUugrqx0B4rTRP6vxO5h2ZvifKYcaVgFuWV33wbooDOaAwy8dP2Mjx6YhcZpXUJeKaulA6NSr4vcRlzM3jiH5s7SNWxQARTcLvPQHWH4Hgedu51Kg7VhcHWbT3JPPuhLVgn32bw==</SignatureValue><KeyInfo><X509Data><X509Certificate>MIIIvTCCBqWgAwIBAgIUeyAbRti2Ivu57UjYf6eG/q8sa7AwDQYJKoZIhvcNAQELBQAwbzELMAkGA1UEBhMCUEUxPDA6BgNVBAoMM1JlZ2lzdHJvIE5hY2lvbmFsIGRlIElkZW50aWZpY2FjacOzbiB5IEVzdGFkbyBDaXZpbDEiMCAGA1UEAwwZRUNFUC1SRU5JRUMgQ0EgQ2xhc3MgMSBJSTAeFw0yNjAyMjQwMzQ2MjhaFw0yOTAyMjMwMzQ2MjhaMIIBHDELMAkGA1UEBhMCUEUxGjAYBgNVBAgMEUFZQUNVQ0hPLUhVQU1BTkdBMREwDwYDVQQHDAhBWUFDVUNITzEyMDAGA1UECgwpRElTVFJJQlVJRE9SQSBJTVBSRU5UQSBBTEVYQU5ERVIgRS5JLlIuTC4xGjAYBgNVBGEMEU5UUlBFLTIwNjA4NTgyMDExMSEwHwYDVQQLDBhFUkVQX1NVTkFUXzIwMjYwMDA3NjE2OTgxFDASBgNVBAsMCzIwNjA4NTgyMDExMVUwUwYDVQQDDEx8fFVTTyBUUklCVVRBUklPfHwgRElTVFJJQlVJRE9SQSBJTVBSRU5UQSBBTEVYQU5ERVIgRS5JLlIuTC4gQ0RUIDIwNjA4NTgyMDExMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuxlnp7Pb/AoyE3mpeRS5caspF0/BVGeVGHwmhuCWbr8WB7zTYjNYRSjQFjxHN4/pMCuPZrdnDHczCrL1aVz2IJnpL4jkHCTSFT8zvBSBYElXE2s/bEcj0HkuFXDemuYhzG+L15TLDk537r0IYnRiDRLFbRvXCRGT9harwW4Zbw2hQMaxyHgHC9dbpwwE8Zo3a0IHVy8LmE2cvzyFu1ZSshuVapNJ22y9RWHb3AmZKpDqdEJH13K0/IpVP0phRKRkBoIf7/8RsZSZrmt5JbvAC+2DZEz7YwsJHdG2GuT8U/6qceDQHFqmarp7YFrPC+vK4ohlD0eIHNXkgcu4QazWUQIDAQABo4IDoDCCA5wwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBTMfR9W4om/vkPtld/BRnu/S/3dJTBwBggrBgEFBQcBAQRkMGIwOQYIKwYBBQUHMAKGLWh0dHA6Ly9jcnQucmVuaWVjLmdvYi5wZS9yb290My9jYWNsYXNzMWlpLmNydDAlBggrBgEFBQcwAYYZaHR0cDovL29jc3AucmVuaWVjLmdvYi5wZTCCAjcGA1UdIASCAi4wggIqMHcGESsGAQQBgpNkAgEDAQBlh2gAMGIwMQYIKwYBBQUHAgEWJWh0dHBzOi8vd3d3LnJlbmllYy5nb2IucGUvcmVwb3NpdG9yeS8wLQYIKwYBBQUHAgEWIVBvbO10aWNhIEdlbmVyYWwgZGUgQ2VydGlmaWNhY2nzbjCBxAYRKwYBBAGCk2QCAQMBAGeHaAAwga4wMgYIKwYBBQUHAgEWJmh0dHBzOi8vcGtpLnJlbmllYy5nb2IucGUvcmVwb3NpdG9yaW8vMHgGCCsGAQUFBwICMGweagBEAGUAYwBsAGEAcgBhAGMAaQDzAG4AIABkAGUAIABQAHIA4QBjAHQAaQBjAGEAcwAgAGQAZQAgAEMAZQByAHQAaQBmAGkAYwBhAGMAaQDzAG4AIABFAEMARQBQAC0AUgBFAE4ASQBFAEMwgecGESsGAQQBgpNkAgEDAQFnh3MDMIHRMIHOBggrBgEFBQcCAjCBwR6BvgBDAGUAcgB0AGkAZgBpAGMAYQBkAG8AIABEAGkAZwBpAHQAYQBsACAAVAByAGkAYgB1AHQAYQByAGkAbwAgAHAAYQByAGEAIABBAGcAZQBuAHQAZQAgAEEAdQB0AG8AbQBhAHQAaQB6AGEAZABvACAAQwBsAGEAcwBzACAAMQAsACAAZQBuACAAYwB1AG0AcABsAGkAbQBpAGUAbgB0AG8AIABkAGUAbAAgAEQATAAgAE4AugAgADEAMwA3ADAwEwYDVR0lBAwwCgYIKwYBBQUHAwQwegYDVR0fBHMwcTA2oDSgMoYwaHR0cDovL2NybC5yZW5pZWMuZ29iLnBlL2NybC9zaGEyL2NhY2xhc3MxaWkuY3JsMDegNaAzhjFodHRwOi8vY3JsMi5yZW5pZWMuZ29iLnBlL2NybC9zaGEyL2NhY2xhc3MxaWkuY3JsMB0GA1UdDgQWBBQf4pPyvUcat4StayIWnyVNw7N+sTAOBgNVHQ8BAf8EBAMCBsAwDQYJKoZIhvcNAQELBQADggIBAGmigTTCKHxlUwEMGb++tKXcpWJoytznK3qRFha3LpbTsdeJYkNVxdUEZm4W2N4CZyoUByVJVTn1zBSdl4+9YvUGiXA8tyvSfpOoTkQt96VjlEVVlyQY9eFIQzjoebjDcf/V8a9otEJH2dH8YCcRlWL9HnqDhInxsSiJBRWgP+Iptzxcc/0HI5ikSAFy165cnZGQqm0MIpYVBwzEC3HrgwpmSmLl3SxdKLmf5lJJBJJ1nWJhUieUiYBdEdotioKm6C3n6n3s83FKpt2a+2BoedIb9agWTGNe4OIEDmUz7ojhZJ67XPUKT+t3lyggbq2KEgjJkRYaL8ViMKCwT8FlLjuMHJKYHOnZ02r0ceuppPsqcliZ14TBPQE24UiisE4Gu+RE9f/+zYeWOAk0TNyiTcAkdQslxSv3LC00+UPJA2AEjIxHP0fHR26BkpTe5cRi3j5x+pzwjqph1sFndkSGW2rxur5NAy0HELJ290y0KLAlAk3HNjpOnida3XnR+wED6ehl+6eenTFkj7DN+27jeZAv/whfAAAOnINH+V8cVCWyIDLQ8FNFZVDICEZL4Top1vZm7PqghaTEOS2HbTcNELVE6CIZ7C1I8/ZSNttuXmnztcxpK+XYyw4V1ZGq6u/1KaJECnuujl7dsrG4O4BUeTg8/SaEuyxvmMyp7VWWEc8N</X509Certificate></X509Data></KeyInfo></Signature></ext:ExtensionContent>
     </ext:UBLExtension>
   </ext:UBLExtensions>
 
   <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
   <cbc:CustomizationID>2.0</cbc:CustomizationID>
   <cbc:ID>B001-00000001</cbc:ID>
-  <cbc:IssueDate>2026-02-23</cbc:IssueDate>
+  <cbc:IssueDate>2026-02-25</cbc:IssueDate>
   <cbc:IssueTime>00:00:00</cbc:IssueTime>
   <cbc:InvoiceTypeCode listAgencyName="PE:SUNAT" listName="Tipo de Documento" listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo01" listID="0301">03</cbc:InvoiceTypeCode>
   <cbc:DocumentCurrencyCode listID="ISO 4217 Alpha" listName="Currency" listAgencyName="United Nations Economic Commission for Europe">PEN</cbc:DocumentCurrencyCode>
@@ -23,7 +23,7 @@
         <cbc:ID>20608582011</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name><![CDATA[DISTRIBUIDORA IMPRENTA ALEXANDER]]></cbc:Name>
+        <cbc:Name><![CDATA[DISTRIBUIDORA IMPRENTA ALEXANDER E.I.R.L.]]></cbc:Name>
       </cac:PartyName>
     </cac:SignatoryParty>
     <cac:DigitalSignatureAttachment>
@@ -39,20 +39,20 @@
         <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20608582011</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name><![CDATA[IMPRENTA ALEXANDER]]></cbc:Name>
+        <cbc:Name><![CDATA[DISTRIBUIDORA IMPRENTA ALEXANDER E.I.R.L.]]></cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
         <cbc:ID>05003 </cbc:ID>
-        <cbc:StreetName><![CDATA[JR. BELLIDO 579]]></cbc:StreetName>
-        <cbc:CitySubdivisionName>AYACUCHO</cbc:CitySubdivisionName>
-        <cbc:CityName>HUAMANGA</cbc:CityName>
-        <cbc:CountrySubentity>AYACUCHO</cbc:CountrySubentity>
+        <cbc:StreetName><![CDATA[JR. BELLIDO 579 - AYACUCHO - HUAMANGA]]></cbc:StreetName>
+        <cbc:CitySubdivisionName>Ayacucho </cbc:CitySubdivisionName>
+        <cbc:CityName>Humanga </cbc:CityName>
+        <cbc:CountrySubentity>Ayacucho </cbc:CountrySubentity>
         <cac:Country>
           <cbc:IdentificationCode>PE</cbc:IdentificationCode>
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName><![CDATA[DISTRIBUIDORA IMPRENTA ALEXANDER]]></cbc:RegistrationName>
+        <cbc:RegistrationName><![CDATA[DISTRIBUIDORA IMPRENTA ALEXANDER E.I.R.L.]]></cbc:RegistrationName>
         <cac:RegistrationAddress>
           <cbc:AddressTypeCode>0000</cbc:AddressTypeCode>
         </cac:RegistrationAddress>
@@ -63,7 +63,7 @@
   <cac:AccountingCustomerParty>
     <cac:Party>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">10702516752</cbc:ID>
+        <cbc:ID schemeID="1" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">70251675</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName><![CDATA[Eberson Palomino Aguilar]]></cbc:RegistrationName>
@@ -79,10 +79,10 @@
   
 
   <cac:TaxTotal>
-    <cbc:TaxAmount currencyID="PEN">19.83</cbc:TaxAmount>
+    <cbc:TaxAmount currencyID="PEN">0.15</cbc:TaxAmount>
     <cac:TaxSubtotal>
-      <cbc:TaxableAmount currencyID="PEN">110.17</cbc:TaxableAmount>
-      <cbc:TaxAmount currencyID="PEN">19.83</cbc:TaxAmount>
+      <cbc:TaxableAmount currencyID="PEN">0.85</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="PEN">0.15</cbc:TaxAmount>
       <cac:TaxCategory>
         <cac:TaxScheme>
           <cbc:ID>1000</cbc:ID>
@@ -94,29 +94,29 @@
   </cac:TaxTotal>
 
   <cac:LegalMonetaryTotal>
-    <cbc:LineExtensionAmount currencyID="PEN">110.17</cbc:LineExtensionAmount>
-    <cbc:TaxExclusiveAmount currencyID="PEN">110.17</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="PEN">130</cbc:TaxInclusiveAmount>
+    <cbc:LineExtensionAmount currencyID="PEN">0.85</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="PEN">0.85</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="PEN">1</cbc:TaxInclusiveAmount>
     <cbc:AllowanceTotalAmount currencyID="PEN">0.00</cbc:AllowanceTotalAmount>
     <cbc:ChargeTotalAmount currencyID="PEN">0.00</cbc:ChargeTotalAmount>
-    <cbc:PayableAmount currencyID="PEN">130</cbc:PayableAmount>
+    <cbc:PayableAmount currencyID="PEN">1</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
 
   <cac:InvoiceLine>
     <cbc:ID>1</cbc:ID>
     <cbc:InvoicedQuantity unitCode="NIU">1.000000</cbc:InvoicedQuantity>
-    <cbc:LineExtensionAmount currencyID="PEN">110.17</cbc:LineExtensionAmount>
+    <cbc:LineExtensionAmount currencyID="PEN">0.85</cbc:LineExtensionAmount>
     <cac:PricingReference>
       <cac:AlternativeConditionPrice>
-        <cbc:PriceAmount currencyID="PEN">130.000000</cbc:PriceAmount>
+        <cbc:PriceAmount currencyID="PEN">1.000000</cbc:PriceAmount>
         <cbc:PriceTypeCode>01</cbc:PriceTypeCode>
       </cac:AlternativeConditionPrice>
     </cac:PricingReference>
     <cac:TaxTotal>
-      <cbc:TaxAmount currencyID="PEN">19.83</cbc:TaxAmount>
+      <cbc:TaxAmount currencyID="PEN">0.15</cbc:TaxAmount>
       <cac:TaxSubtotal>
-        <cbc:TaxableAmount currencyID="PEN">110.17</cbc:TaxableAmount>
-        <cbc:TaxAmount currencyID="PEN">19.83</cbc:TaxAmount>
+        <cbc:TaxableAmount currencyID="PEN">0.85</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="PEN">0.15</cbc:TaxAmount>
         <cac:TaxCategory>
           <cbc:Percent>18.00</cbc:Percent>
           <cbc:TaxExemptionReasonCode>10</cbc:TaxExemptionReasonCode>
@@ -129,13 +129,13 @@
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:Item>
-      <cbc:Description><![CDATA[Boleta]]></cbc:Description>
+      <cbc:Description><![CDATA[Lapicero]]></cbc:Description>
       <cac:SellersItemIdentification>
         <cbc:ID>1</cbc:ID>
       </cac:SellersItemIdentification>
     </cac:Item>
     <cac:Price>
-      <cbc:PriceAmount currencyID="PEN">110.169492</cbc:PriceAmount>
+      <cbc:PriceAmount currencyID="PEN">0.847458</cbc:PriceAmount>
     </cac:Price>
   </cac:InvoiceLine>
 </Invoice>

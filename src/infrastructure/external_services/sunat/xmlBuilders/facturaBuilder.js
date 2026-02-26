@@ -103,7 +103,7 @@ function build(comprobante) {
     ? `<cac:PaymentTerms>
     <cbc:ID>FormaPago</cbc:ID>
     <cbc:PaymentMeansID>Credito</cbc:PaymentMeansID>
-    <cbc:Amount currencyID="${moneda}">${total}</cbc:Amount>
+    <cbc:Amount currencyID="${moneda}">${total.toFixed(2)}</cbc:Amount>
   </cac:PaymentTerms>`
     : `<cac:PaymentTerms>
     <cbc:ID>FormaPago</cbc:ID>
@@ -117,10 +117,10 @@ function build(comprobante) {
   <cac:LegalMonetaryTotal>
     <cbc:LineExtensionAmount currencyID="${moneda}">${lineExtension.toFixed(2)}</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount currencyID="${moneda}">${opGravadas.toFixed(2)}</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="${moneda}">${total}</cbc:TaxInclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="${moneda}">${total.toFixed(2)}</cbc:TaxInclusiveAmount>
     <cbc:AllowanceTotalAmount currencyID="${moneda}">0.00</cbc:AllowanceTotalAmount>
     <cbc:ChargeTotalAmount currencyID="${moneda}">0.00</cbc:ChargeTotalAmount>
-    <cbc:PayableAmount currencyID="${moneda}">${total}</cbc:PayableAmount>
+    <cbc:PayableAmount currencyID="${moneda}">${total.toFixed(2)}</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
 
   ${lineas}
@@ -208,8 +208,8 @@ function buildNota(comprobante) {
   <cac:RequestedMonetaryTotal>
     <cbc:LineExtensionAmount currencyID="${moneda}">${lineExtension.toFixed(2)}</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount currencyID="${moneda}">${opGravadas.toFixed(2)}</cbc:TaxExclusiveAmount>
-    <cbc:TaxInclusiveAmount currencyID="${moneda}">${total}</cbc:TaxInclusiveAmount>
-    <cbc:PayableAmount currencyID="${moneda}">${total}</cbc:PayableAmount>
+    <cbc:TaxInclusiveAmount currencyID="${moneda}">${total.toFixed(2)}</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="${moneda}">${total.toFixed(2)}</cbc:PayableAmount>
   </cac:RequestedMonetaryTotal>
 
   ${lineas}

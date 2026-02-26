@@ -16,7 +16,9 @@ const crypto = require('crypto');
  * @returns {Promise<string>} Access Token
  */
 async function getAccessToken(emisor) {
-  const url = `https://api-seguridad-test.sunat.gob.pe/v1/clientessol/${emisor.client_id}/oauth2/token/`;
+  const isBeta = process.env.SUNAT_ENV === 'beta' || process.env.SUNAT_WS_FACTURAS?.includes('beta');
+  const authHost = isBeta ? 'api-seguridad-test.sunat.gob.pe' : 'api-seguridad.sunat.gob.pe';
+  const url = `https://${authHost}/v1/clientessol/${emisor.client_id}/oauth2/token/`;
   
   const params = new URLSearchParams();
   params.append('grant_type', 'password');
