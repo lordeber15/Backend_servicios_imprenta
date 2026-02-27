@@ -93,15 +93,26 @@ const emitirGuia = async (req, res) => {
       const xmlBuffer = Buffer.from(xmlFirmado, "utf8");
       restResponse = await sunatRestClient.sendGuiaRest(xmlBuffer, nombreArchivo, emisor);
     } catch (restErr) {
+      const codigoErr = restErr.sunatCode || "REST_ERR";
+      const mensajeErr = restErr.sunatMessage || restErr.message;
+      const erroresDetalle = restErr.sunatErrors || [];
+
       await guia.update({
         estado_sunat: "RR",
-        codigo_sunat: "REST_ERR",
-        mensaje_sunat: restErr.message,
+        codigo_sunat: codigoErr,
+        mensaje_sunat: String(restErr.message).substring(0, 500),
         nombre_xml: nombreArchivo,
         fecha_envio_sunat: new Date(),
         intentos_envio: (guia.intentos_envio || 0) + 1,
       });
-      return res.status(422).json({ message: "SUNAT rechazó la guía", error: restErr.message });
+
+      return res.status(422).json({
+        message: "SUNAT rechazó la guía",
+        codigo_sunat: codigoErr,
+        mensaje_sunat: mensajeErr,
+        errores: erroresDetalle,
+        error: restErr.message,
+      });
     }
 
     const ticket = restResponse?.numTicket || restResponse?.ticket;

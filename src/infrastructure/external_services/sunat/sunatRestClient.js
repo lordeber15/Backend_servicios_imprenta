@@ -95,8 +95,21 @@ async function sendGuiaRest(xmlBuffer, nombreArchivo, emisor) {
     return response.data;
   } catch (error) {
     if (error.response) {
-      const respData = error.response.data;
-      throw new Error(`Error enviando Guía (REST): ${respData.cod} - ${respData.msg}`);
+      const { status, data } = error.response;
+      console.error("[SUNAT GRE Error]", JSON.stringify({ status, data }, null, 2));
+
+      const errores = data.errors || data.exc || [];
+      const detalles = Array.isArray(errores)
+        ? errores.map(e => `${e.cod}: ${e.msg}`).join(" | ")
+        : "";
+
+      const err = new Error(
+        `Error enviando Guía (REST): ${data.cod || status} - ${data.msg || "Error de validación"}${detalles ? ` [${detalles}]` : ""}`
+      );
+      err.sunatErrors = errores;
+      err.sunatCode = data.cod || String(status);
+      err.sunatMessage = data.msg || "Error de validación";
+      throw err;
     }
     throw new Error(`Error de conexión con API de guías: ${error.message}`);
   }
@@ -124,7 +137,21 @@ async function getTicketStatus(ticket, emisor) {
     return response.data; // { codRespuesta, arcCdr, error }
   } catch (error) {
     if (error.response) {
-      throw new Error(`Error en consulta de ticket REST: ${JSON.stringify(error.response.data)}`);
+      const { status, data } = error.response;
+      console.error("[SUNAT GRE Ticket Error]", JSON.stringify({ status, data }, null, 2));
+
+      const errores = data.errors || data.exc || [];
+      const detalles = Array.isArray(errores)
+        ? errores.map(e => `${e.cod}: ${e.msg}`).join(" | ")
+        : "";
+
+      const err = new Error(
+        `Error en consulta de ticket REST: ${data.cod || status} - ${data.msg || "Error"}${detalles ? ` [${detalles}]` : ""}`
+      );
+      err.sunatErrors = errores;
+      err.sunatCode = data.cod || String(status);
+      err.sunatMessage = data.msg || "Error en consulta de ticket";
+      throw err;
     }
     throw new Error(`Error de conexión con SUNAT: ${error.message}`);
   }
