@@ -65,7 +65,7 @@ async function sendGuiaRest(xmlBuffer, nombreArchivo, emisor) {
   const zipBuffer = zip.toBuffer();
 
   const zipBase64 = zipBuffer.toString('base64');
-  const zipHash = crypto.createHash('sha256').update(zipBuffer).digest('base64');
+  const zipHash = crypto.createHash('sha256').update(zipBuffer).digest('hex');
 
   const payload = {
     archivo: {
