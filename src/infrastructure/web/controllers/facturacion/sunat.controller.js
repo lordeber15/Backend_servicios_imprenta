@@ -40,6 +40,38 @@ const qrGenerator = require("../../../external_services/sunat/qrGenerator");
 const pdfGenerator = require("../../../external_services/sunat/pdfGenerator");
 
 /**
+ * Extrae código y mensaje de error de las diferentes estructuras de SOAP fault
+ * que SUNAT puede retornar según el tipo de error y endpoint.
+ */
+function extractSoapError(soapErr) {
+  const fault = soapErr.root?.Envelope?.Body?.Fault;
+  const faultDetail = fault?.detail?.fault;
+
+  let codigoErr = "SOAP_ERR";
+  let mensajeErr = "Error en comunicación con SUNAT";
+
+  if (faultDetail?.faultCode || faultDetail?.faultcode) {
+    // Error de negocio SUNAT típico (dentro de detail.fault)
+    codigoErr = faultDetail.faultCode || faultDetail.faultcode;
+    mensajeErr = faultDetail.faultString || faultDetail.faultstring || mensajeErr;
+  } else if (fault?.faultcode || fault?.faultCode) {
+    // SOAP fault directo (faultcode en raíz del Fault)
+    codigoErr = fault.faultcode || fault.faultCode;
+    mensajeErr = fault.faultstring || fault.faultString || fault.detail || mensajeErr;
+  } else if (soapErr.message) {
+    // Error de gateway o red — extraer código numérico si existe
+    const codeMatch = soapErr.message.match(/(\d{3,4})/);
+    if (codeMatch) codigoErr = codeMatch[1];
+    mensajeErr = soapErr.message;
+  }
+
+  return {
+    codigoErr: String(codigoErr),
+    mensajeErr: String(mensajeErr).substring(0, 500),
+  };
+}
+
+/**
  * Orquesta la emisión de un comprobante individual (Factura, Boleta, Notas).
  * 
  * @route POST /api/comprobante/emitir
@@ -142,15 +174,12 @@ const emitirComprobante = async (req, res) => {
       const xmlBuffer = Buffer.from(xmlFirmado, "utf8");
       cdrBase64 = await sunatClient.sendBill(xmlBuffer, nombreArchivo, comprobante.Emisor);
     } catch (soapErr) {
-      // SUNAT rechazó directamente con SOAP fault
       console.error("[SUNAT SOAP Error]", JSON.stringify(soapErr.root || soapErr.body || soapErr.message, null, 2));
-      const faultDetail = soapErr.root?.Envelope?.Body?.Fault?.detail?.fault;
-      const codigoErr = faultDetail?.faultCode || faultDetail?.faultcode || "SOAP_ERR";
-      const mensajeErr = faultDetail?.faultString || faultDetail?.faultstring || soapErr.message || "Error en comunicación con SUNAT";
+      const { codigoErr, mensajeErr } = extractSoapError(soapErr);
 
       await comprobante.update({
         estado_sunat: "RR",
-        codigo_sunat: String(codigoErr),
+        codigo_sunat: codigoErr,
         mensaje_sunat: mensajeErr,
         nombre_xml: nombreArchivo,
         fecha_envio_sunat: new Date(),
@@ -159,7 +188,7 @@ const emitirComprobante = async (req, res) => {
 
       return res.status(422).json({
         message: `SUNAT rechazó: ${codigoErr} - ${mensajeErr}`,
-        codigo_sunat: String(codigoErr),
+        codigo_sunat: codigoErr,
         mensaje_sunat: mensajeErr,
       });
     }
@@ -262,13 +291,14 @@ const reenviarComprobante = async (req, res) => {
     try {
       cdrBase64 = await sunatClient.sendBill(xmlBuffer, comprobante.nombre_xml, comprobante.Emisor);
     } catch (soapErr) {
+      const { codigoErr, mensajeErr } = extractSoapError(soapErr);
       await comprobante.update({
         estado_sunat: "RR",
-        codigo_sunat: "SOAP_ERR",
-        mensaje_sunat: soapErr.message,
+        codigo_sunat: codigoErr,
+        mensaje_sunat: mensajeErr,
         intentos_envio: (comprobante.intentos_envio || 0) + 1,
       });
-      return res.status(422).json({ message: "SUNAT rechazó el comprobante", error: soapErr.message });
+      return res.status(422).json({ message: `SUNAT rechazó: ${codigoErr} - ${mensajeErr}`, codigo_sunat: codigoErr, mensaje_sunat: mensajeErr });
     }
 
     if (cdrBase64) storageHelper.saveCdr(comprobante.nombre_xml, cdrBase64);

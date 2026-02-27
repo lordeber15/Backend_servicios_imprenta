@@ -27,7 +27,6 @@ const LOCAL_WSDL = path.resolve(process.cwd(), "storage/wsdl/billService.wsdl");
  */
 async function createClient(endpointUrl, emisor) {
   const username = `${emisor.ruc}${emisor.usuario_sol}`;
-  const basicAuth = Buffer.from(`${username}:${emisor.clave_sol}`).toString("base64");
 
   // Crear cliente desde WSDL local
   const client = await soap.createClientAsync(LOCAL_WSDL);
@@ -36,7 +35,7 @@ async function createClient(endpointUrl, emisor) {
   const endpoint = endpointUrl.replace(/\?wsdl$/i, "");
   client.setEndpoint(endpoint);
 
-  // Seguridad WSSecurity (UsernameToken) en el header SOAP
+  // WSSecurity (UsernameToken) — requerido en todos los entornos de SUNAT
   const wsSecurity = new soap.WSSecurity(username, emisor.clave_sol, {
     passwordType: "PasswordText",
     hasTimeStamp: false,
@@ -44,8 +43,41 @@ async function createClient(endpointUrl, emisor) {
   });
   client.setSecurity(wsSecurity);
 
-  // Basic Auth en headers HTTP (requerido por SUNAT beta)
-  client.addHttpHeader("Authorization", `Basic ${basicAuth}`);
+  // Content-Type explícito para SOAP 1.1
+  client.addHttpHeader("Content-Type", "text/xml; charset=utf-8");
+
+  // HTTP Basic Auth solo es requerido por SUNAT beta.
+  // En producción, la autenticación es exclusivamente via WSSecurity.
+  // Enviar Authorization header a producción causa "Invalid JSON format"
+  // porque la gateway lo interpreta como petición REST/JSON.
+  const isBeta =
+    process.env.SUNAT_ENV === "beta" || endpointUrl.includes("beta");
+
+  if (isBeta) {
+    const basicAuth = Buffer.from(
+      `${username}:${emisor.clave_sol}`
+    ).toString("base64");
+    client.addHttpHeader("Authorization", `Basic ${basicAuth}`);
+  }
+
+  // Logging de diagnóstico (activar con SUNAT_DEBUG=true en .env)
+  if (process.env.SUNAT_DEBUG === "true") {
+    client.on("request", (xml, eid) => {
+      console.log(`[SUNAT SOAP Request][${eid}] Endpoint: ${endpoint}`);
+      console.log(`[SUNAT SOAP Request][${eid}] XML:\n${xml}`);
+    });
+
+    client.on("response", (body, response, eid) => {
+      console.log(
+        `[SUNAT SOAP Response][${eid}] Status: ${response?.statusCode || "N/A"}`
+      );
+      console.log(`[SUNAT SOAP Response][${eid}] Body:\n${body}`);
+    });
+
+    client.on("soapError", (error, eid) => {
+      console.error(`[SUNAT SOAP Error][${eid}]`, error.message);
+    });
+  }
 
   return client;
 }
