@@ -16,6 +16,30 @@ const cdrParser = require("../../../external_services/sunat/cdrParser");
 const pdfGenerator = require("../../../external_services/sunat/pdfGenerator");
 const storageHelper = require("../../../external_services/sunat/storageHelper");
 
+/**
+ * GET /guia
+ * Lista guías de remisión con filtro opcional por fecha.
+ */
+const listGuias = async (req, res) => {
+  try {
+    const { fecha } = req.query;
+    const where = {};
+    if (fecha) where.fecha_emision = fecha;
+
+    const guias = await GuiaRemision.findAll({
+      where,
+      include: [
+        { model: Emisor, attributes: ["ruc", "razon_social"] },
+        { model: Cliente, as: "Destinatario", attributes: ["razon_social", "nrodoc", "tipo_documento_id"] },
+      ],
+      order: [["id", "DESC"]],
+    });
+    return res.json(guias);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
 const createGuia = async (req, res) => {
   try {
     const guia = await GuiaRemision.create(req.body);
@@ -172,29 +196,20 @@ const consultarEstadoGuia = async (req, res) => {
 const descargarPdfGuia = async (req, res) => {
   try {
     const guia = await GuiaRemision.findByPk(req.params.id, {
-      include: [Emisor, { model: Cliente, as: "Destinatario" }],
+      include: [
+        Emisor,
+        { model: Cliente, as: "Destinatario" },
+        { model: DetalleGuia, include: [{ model: Unidad }] },
+      ],
     });
     if (!guia) return res.status(404).json({ message: "Guía no encontrada" });
     if (!guia.nombre_xml) return res.status(400).json({ message: "La guía no tiene XML generado aún" });
 
-    const pdfPath = storageHelper.getPdfPath(guia.nombre_xml);
+    const pdfBuffer = await pdfGenerator.generarPdfGuia(guia);
 
-    if (!storageHelper.existsPdf(guia.nombre_xml)) {
-      // Para guías el PDF se genera con una versión simplificada (sin importes)
-      await pdfGenerator.generarPdf(
-        {
-          ...guia.dataValues,
-          Emisor: guia.Emisor,
-          Cliente: guia.Destinatario,
-          Detalles: [],
-          TipoComprobante: { descripcion: guia.tipo_guia === "09" ? "GUÍA DE REMISIÓN REMITENTE" : "GUÍA DE REMISIÓN TRANSPORTISTA" },
-          op_gravadas: 0, op_exoneradas: 0, op_inafectas: 0, igv: 0, total: 0,
-        },
-        ""
-      );
-    }
-
-    return res.download(pdfPath, `${guia.nombre_xml}.pdf`);
+    res.set("Content-Type", "application/pdf");
+    res.set("Content-Disposition", `inline; filename="${guia.nombre_xml}.pdf"`);
+    return res.send(pdfBuffer);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -216,4 +231,4 @@ const descargarXmlGuia = async (req, res) => {
   }
 };
 
-module.exports = { createGuia, createDetalleGuia, emitirGuia, consultarEstadoGuia, descargarPdfGuia, descargarXmlGuia };
+module.exports = { listGuias, createGuia, createDetalleGuia, emitirGuia, consultarEstadoGuia, descargarPdfGuia, descargarXmlGuia };

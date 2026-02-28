@@ -453,4 +453,152 @@ function tipoDocLabel(id) {
   return map[id] || "Doc";
 }
 
-module.exports = { generarPdf };
+// ─── Template A5 — Guía de Remisión ──────────────────────────────────────────
+
+function buildGuiaA5Html(g) {
+  const emisor = g.Emisor || {};
+  const dest = g.Destinatario || {};
+  const detalles = g.DetalleGuia || [];
+  const logo = getLogoBase64(emisor);
+  const tipoLabel = g.tipo_guia === "31" ? "GUÍA DE REMISIÓN TRANSPORTISTA" : "GUÍA DE REMISIÓN REMITENTE";
+  const correlativoStr = String(g.correlativo).padStart(8, "0");
+  const serieCorrelativo = `${g.serie}-${correlativoStr}`;
+
+  const motivoMap = { "01": "Venta", "02": "Compra", "04": "Traslado entre est.", "08": "Importación", "09": "Exportación", "13": "Otros" };
+  const motivoLabel = motivoMap[g.motivo_traslado_id] || g.descripcion_motivo || g.motivo_traslado_id || "-";
+
+  const filas = detalles.map((d, i) => {
+    const unidad = d.unidad_id || (d.Unidad ? d.Unidad.id : "NIU");
+    return `<tr style="background:${i % 2 === 0 ? "#fff" : "#f0f9ff"}">
+      <td style="padding:3px 5px;text-align:center;font-size:9px">${d.item || i + 1}</td>
+      <td style="padding:3px 5px;text-align:center;font-size:9px">${parseFloat(d.cantidad).toFixed(2)}</td>
+      <td style="padding:3px 5px;text-align:center;font-size:9px">${escHtml(unidad)}</td>
+      <td style="padding:3px 5px;font-size:9px">${escHtml(d.descripcion || "-")}</td>
+    </tr>`;
+  }).join("");
+
+  const transporteHtml = g.modalidad_traslado === "01"
+    ? `<div><strong>Modalidad:</strong> Transporte Público</div>
+       <div><strong>Transportista:</strong> ${escHtml(g.transportista_razon_social || "")} &nbsp;|&nbsp; <strong>RUC:</strong> ${g.transportista_ruc || ""}</div>`
+    : `<div><strong>Modalidad:</strong> Transporte Privado</div>
+       <div><strong>Vehículo:</strong> ${escHtml(g.vehiculo_placa || "")} &nbsp;|&nbsp; <strong>Conductor:</strong> ${escHtml(g.conductor_nombres || "")} &nbsp;|&nbsp; <strong>Doc:</strong> ${g.conductor_nrodoc || ""}</div>
+       ${g.conductor_licencia ? `<div><strong>Licencia:</strong> ${g.conductor_licencia}</div>` : ""}`;
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #222; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #0c4a6e; color: white; padding: 3px 5px; font-size: 8px; text-transform: uppercase; }
+  .section { background: #f0f9ff; padding: 5px 7px; margin-bottom: 5px; border-radius: 3px; font-size: 9px; }
+  .section-title { font-size: 8px; font-weight: bold; color: #0c4a6e; text-transform: uppercase; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0369a1;padding-bottom:6px;margin-bottom:6px">
+    ${logo ? `<img src="${logo}" alt="Logo" style="height:40px">` : "<div></div>"}
+    <div style="text-align:center">
+      <div style="font-weight:bold;font-size:12px">${escHtml(emisor.razon_social || "")}</div>
+      <div style="font-size:9px">RUC: ${emisor.ruc || ""}</div>
+      ${emisor.direccion ? `<div style="font-size:8px">${escHtml(emisor.direccion)}</div>` : ""}
+      ${emisor.distrito ? `<div style="font-size:8px">${escHtml(emisor.distrito)} - ${escHtml(emisor.provincia)} - ${escHtml(emisor.departamento)}</div>` : ""}
+    </div>
+    <div style="border:2px solid #0369a1;padding:6px 8px;text-align:center;min-width:130px">
+      <div style="font-weight:bold;font-size:8px;text-transform:uppercase">${escHtml(tipoLabel)}</div>
+      <div style="font-weight:bold;font-size:12px;margin-top:2px">${serieCorrelativo}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div><strong>Destinatario:</strong> ${escHtml(dest.razon_social || "")}</div>
+    ${dest.nrodoc ? `<div><strong>${tipoDocLabel(dest.tipo_documento_id)}:</strong> ${dest.nrodoc}</div>` : ""}
+    ${dest.direccion ? `<div><strong>Dirección:</strong> ${escHtml(dest.direccion)}</div>` : ""}
+    <div><strong>Emisión:</strong> ${formatFechaCorta(g.fecha_emision)} &nbsp;|&nbsp; <strong>Traslado:</strong> ${formatFechaCorta(g.fecha_traslado)}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Datos del Traslado</div>
+    <div><strong>Motivo:</strong> ${escHtml(motivoLabel)}${g.motivo_traslado_id === "13" && g.descripcion_motivo ? ` — ${escHtml(g.descripcion_motivo)}` : ""}</div>
+    <div><strong>Peso Bruto:</strong> ${parseFloat(g.peso_bruto_total || 0).toFixed(3)} ${g.unidad_peso_id || "KGM"} &nbsp;|&nbsp; <strong>Bultos:</strong> ${g.numero_bultos || 0}</div>
+  </div>
+
+  <div style="display:flex;gap:5px;margin-bottom:5px">
+    <div class="section" style="flex:1">
+      <div class="section-title">Punto de Partida</div>
+      <div><strong>Ubigeo:</strong> ${g.ubigeo_partida || "-"}</div>
+      <div>${escHtml(g.direccion_partida || "-")}</div>
+    </div>
+    <div class="section" style="flex:1">
+      <div class="section-title">Punto de Llegada</div>
+      <div><strong>Ubigeo:</strong> ${g.ubigeo_llegada || "-"}</div>
+      <div>${escHtml(g.direccion_llegada || "-")}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Transporte</div>
+    ${transporteHtml}
+  </div>
+
+  <table style="margin-top:5px;margin-bottom:6px">
+    <thead>
+      <tr>
+        <th style="width:6%">#</th>
+        <th style="width:12%">Cant.</th>
+        <th style="width:10%">Unid.</th>
+        <th style="text-align:left">Descripción del Bien</th>
+      </tr>
+    </thead>
+    <tbody>${filas}</tbody>
+  </table>
+
+  <div style="margin-top:8px;border-top:1px solid #ccc;padding-top:5px;font-size:8px;color:#666">
+    ${g.hash_cpe ? `<div>Hash CPE: ${g.hash_cpe}</div>` : ""}
+    <div>Representación impresa de guía de remisión electrónica</div>
+    ${g.estado_sunat === "AC" ? `<div style="color:green;font-weight:bold;font-size:9px">ACEPTADO POR SUNAT</div>` : ""}
+  </div>
+</body>
+</html>`;
+}
+
+function formatFechaCorta(fecha) {
+  if (!fecha) return "";
+  const d = new Date(fecha);
+  return d.toLocaleDateString("es-PE");
+}
+
+/**
+ * Genera el PDF de una Guía de Remisión.
+ *
+ * @param {object} guia  Instancia de GuiaRemision con includes (Emisor, Destinatario, DetalleGuia)
+ * @param {string} format "a5" (default)
+ * @returns {Promise<Buffer>}
+ */
+async function generarPdfGuia(guia) {
+  const html = buildGuiaA5Html(guia);
+
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const pdfOptions = {
+      format: "A5",
+      printBackground: true,
+      margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
+    };
+
+    return Buffer.from(await page.pdf(pdfOptions));
+  } finally {
+    await browser.close();
+  }
+}
+
+module.exports = { generarPdf, generarPdfGuia };

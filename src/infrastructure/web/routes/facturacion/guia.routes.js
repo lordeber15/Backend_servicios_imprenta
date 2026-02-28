@@ -9,6 +9,7 @@
 const { Router } = require("express");
 const authenticate = require("../../middleware/auth.middleware");
 const {
+  listGuias,
   createGuia,
   createDetalleGuia,
   emitirGuia,
@@ -18,6 +19,26 @@ const {
 } = require("../../controllers/facturacion/guia.controller");
 
 const router = Router();
+
+/**
+ * @swagger
+ * /guia:
+ *   get:
+ *     summary: Listar guías de remisión (filtro opcional por fecha)
+ *     tags: [Guías]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: fecha
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Lista de guías
+ */
+router.get("/guia", authenticate, listGuias);
 
 /**
  * @swagger
