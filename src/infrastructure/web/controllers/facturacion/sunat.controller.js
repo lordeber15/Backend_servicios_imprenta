@@ -72,8 +72,35 @@ function extractSoapError(soapErr) {
 }
 
 /**
+ * GET /comprobante/lista
+ * Lista comprobantes con filtro opcional por tipo (07=NC, 08=ND, 01=Factura, 03=Boleta) y fecha.
+ */
+const listComprobantes = async (req, res) => {
+  try {
+    const { tipo, fecha } = req.query;
+    const where = {};
+    if (tipo) where.tipo_comprobante_id = tipo;
+    if (fecha) where.fecha_emision = fecha;
+
+    const comprobantes = await Comprobante.findAll({
+      where,
+      include: [
+        { model: Emisor, attributes: ["ruc", "razon_social"] },
+        { model: Cliente, attributes: ["razon_social", "nrodoc", "tipo_documento_id"] },
+        { model: TipoComprobante, attributes: ["descripcion"] },
+        { model: Comprobante, as: "comprobanteRef", attributes: ["serie", "correlativo", "tipo_comprobante_id"] },
+      ],
+      order: [["id", "DESC"]],
+    });
+    return res.json(comprobantes);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+/**
  * Orquesta la emisión de un comprobante individual (Factura, Boleta, Notas).
- * 
+ *
  * @route POST /api/comprobante/emitir
  * @param {Object} req.body.comprobante_id - ID del comprobante a emitir.
  */
@@ -119,6 +146,18 @@ const emitirComprobante = async (req, res) => {
         message: "El comprobante ya fue aceptado por SUNAT",
         estado_sunat: "AC",
       });
+    }
+
+    // Protección contra reenvío duplicado (SUNAT error 0140)
+    if (comprobante.fecha_envio_sunat && comprobante.estado_sunat !== "RR") {
+      const minutosDesdEnvio = (Date.now() - new Date(comprobante.fecha_envio_sunat).getTime()) / 60000;
+      if (minutosDesdEnvio < 15) {
+        return res.status(409).json({
+          message: `El comprobante ya fue enviado hace ${Math.ceil(minutosDesdEnvio)} minuto(s). Espere 15 minutos antes de reintentar.`,
+          estado_sunat: comprobante.estado_sunat,
+          fecha_envio_sunat: comprobante.fecha_envio_sunat,
+        });
+      }
     }
 
     const tiposPermitidos = ["01", "03", "07", "08"];
@@ -401,6 +440,7 @@ const descargarXml = async (req, res) => {
 };
 
 module.exports = {
+  listComprobantes,
   emitirComprobante,
   reenviarComprobante,
   consultarEstado,

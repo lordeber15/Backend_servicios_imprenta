@@ -7,7 +7,7 @@
  * @module services/sunat/pdfGenerator
  */
 
-const puppeteer = require("puppeteer");
+const { getBrowser } = require("../browserPool");
 const fs = require("fs");
 const path = require("path");
 
@@ -59,13 +59,10 @@ async function generarPdf(comprobante, qrBase64, format = "a4") {
     html = buildHtml(comprobante, qrBase64);
   }
 
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
+  const browser = await getBrowser();
+  const page = await browser.newPage();
 
   try {
-    const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
     let pdfOptions;
@@ -91,7 +88,7 @@ async function generarPdf(comprobante, qrBase64, format = "a4") {
 
     return Buffer.from(await page.pdf(pdfOptions));
   } finally {
-    await browser.close();
+    await page.close();
   }
 }
 
@@ -580,13 +577,10 @@ function formatFechaCorta(fecha) {
 async function generarPdfGuia(guia) {
   const html = buildGuiaA5Html(guia);
 
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
+  const browser = await getBrowser();
+  const page = await browser.newPage();
 
   try {
-    const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
     const pdfOptions = {
@@ -597,7 +591,7 @@ async function generarPdfGuia(guia) {
 
     return Buffer.from(await page.pdf(pdfOptions));
   } finally {
-    await browser.close();
+    await page.close();
   }
 }
 

@@ -40,24 +40,16 @@ const sequelize = new Sequelize(
   process.env.DB_USER,      // Usuario de PostgreSQL
   process.env.DB_PASSWORD,  // Contraseña
   {
-    host: process.env.DB_HOST || "localhost",           // Host del servidor
-    port: parseInt(process.env.DB_PORT || "5432"),      // Puerto de PostgreSQL
-    dialect: "postgres",                                 // Dialecto SQL
-    logging: false,                                      // Desactiva logs de queries
-    
-    /**
-     * CONFIGURACIÓN SSL PARA PRODUCCIÓN
-     * 
-     * Descomentar estas opciones si la BD en producción requiere SSL.
-     * Común en servicios como AWS RDS, Heroku Postgres, etc.
-     * 
-     * dialectOptions: {
-     *   ssl: {
-     *     require: true,              // Requiere conexión SSL
-     *     rejectUnauthorized: false,  // Acepta certificados autofirmados
-     *   },
-     * },
-     */
+    host: process.env.DB_HOST || "localhost",
+    port: parseInt(process.env.DB_PORT || "5432"),
+    dialect: "postgres",
+    logging: false,
+    pool: {
+      max: 10,
+      min: 2,
+      acquire: 30000,
+      idle: 10000,
+    },
   }
 );
 

@@ -15,9 +15,10 @@
 require("dotenv").config(); // Cargar variables de entorno al inicio
 
 const express = require("express");
+const helmet = require("helmet");
 const cors = require("cors");
 const morgan = require("morgan");
-const path = require("path"); // Importar módulo 'path'
+const path = require("path");
 const compression = require("compression");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("../../config/swagger"); // Renombrado de swaggerDocs a swaggerSpec
@@ -75,6 +76,7 @@ const app = express();
  * Comprime las respuestas HTTP usando Gzip para reducir el tamaño de los datos transferidos.
  */
 app.use(compression());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 /**
  * MIDDLEWARE: CORS (Cross-Origin Resource Sharing)
@@ -118,7 +120,10 @@ app.use(morgan("dev"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // SERVIR ARCHIVOS ESTÁTICOS (Imágenes de perfil, comprobantes, etc)
-app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "../../uploads"), {
+  maxAge: "1d",
+  etag: true,
+}));
 
 // ============================================
 // REGISTRO DE RUTAS

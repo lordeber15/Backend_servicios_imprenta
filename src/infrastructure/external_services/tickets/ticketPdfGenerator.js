@@ -1,4 +1,4 @@
-const puppeteer = require("puppeteer");
+const { getBrowser } = require("../browserPool");
 const fs = require("fs");
 const path = require("path");
 
@@ -223,13 +223,10 @@ async function generarTicketPdf(ticket, detalles, format, emisor) {
     ? buildA5Html(ticket, detalles, emisor)
     : build80mmHtml(ticket, detalles, emisor);
 
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
+  const browser = await getBrowser();
+  const page = await browser.newPage();
 
   try {
-    const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
     let pdfOptions;
@@ -249,7 +246,7 @@ async function generarTicketPdf(ticket, detalles, format, emisor) {
 
     return Buffer.from(await page.pdf(pdfOptions));
   } finally {
-    await browser.close();
+    await page.close();
   }
 }
 

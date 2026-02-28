@@ -19,6 +19,7 @@ require("dotenv").config();
 
 const app = require("./src/infrastructure/web/app.js");
 const sequelize = require("./src/infrastructure/database/database");
+const { closeBrowser } = require("./src/infrastructure/external_services/browserPool");
 const { Formato } = require("./src/infrastructure/database/models/formatos");
 require("./src/infrastructure/database/models/usuario_formatos"); // Registrar relaciones
 
@@ -86,6 +87,16 @@ async function main() {
     console.error("Error al iniciar el servidor:", error);
   }
 }
+
+// Cerrar Puppeteer al detener el servidor
+process.on("SIGINT", async () => {
+  await closeBrowser();
+  process.exit(0);
+});
+process.on("SIGTERM", async () => {
+  await closeBrowser();
+  process.exit(0);
+});
 
 // Ejecutar la función principal
 main();

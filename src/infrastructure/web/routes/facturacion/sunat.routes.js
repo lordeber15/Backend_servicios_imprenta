@@ -9,6 +9,7 @@
 const { Router } = require("express");
 const authenticate = require("../../middleware/auth.middleware");
 const {
+  listComprobantes,
   emitirComprobante,
   reenviarComprobante,
   consultarEstado,
@@ -17,6 +18,30 @@ const {
 } = require("../../controllers/facturacion/sunat.controller");
 
 const router = Router();
+
+/**
+ * @swagger
+ * /comprobante/lista:
+ *   get:
+ *     summary: Listar comprobantes con filtro por tipo y fecha
+ *     tags: [SUNAT]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tipo
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: fecha
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Lista de comprobantes
+ */
+router.get("/comprobante/lista", authenticate, listComprobantes);
 
 /**
  * @swagger
