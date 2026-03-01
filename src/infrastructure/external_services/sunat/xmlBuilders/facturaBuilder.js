@@ -213,12 +213,12 @@ function buildNota(comprobante) {
 
   ${impuestosXml}
 
-  <cac:RequestedMonetaryTotal>
+  <cac:${esNC ? "LegalMonetaryTotal" : "RequestedMonetaryTotal"}>
     <cbc:LineExtensionAmount currencyID="${moneda}">${lineExtension.toFixed(2)}</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount currencyID="${moneda}">${opGravadas.toFixed(2)}</cbc:TaxExclusiveAmount>
     <cbc:TaxInclusiveAmount currencyID="${moneda}">${total.toFixed(2)}</cbc:TaxInclusiveAmount>
     <cbc:PayableAmount currencyID="${moneda}">${total.toFixed(2)}</cbc:PayableAmount>
-  </cac:RequestedMonetaryTotal>
+  </cac:${esNC ? "LegalMonetaryTotal" : "RequestedMonetaryTotal"}>
 
   ${lineas}
 </${rootElement}>`;
