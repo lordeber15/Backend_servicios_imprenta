@@ -1,4 +1,85 @@
 const Cliente = require("../../../database/models/facturacion/cliente");
+const axios = require("axios");
+
+/**
+ * Busca un cliente por nro de documento.
+ * 1. Primero busca en la BD local.
+ * 2. Si no lo encuentra, consulta la API de DeColecta (RENIEC para DNI, SUNAT para RUC).
+ *
+ * @route GET /cliente/buscar/:nrodoc
+ */
+const buscarCliente = async (req, res) => {
+  const { nrodoc } = req.params;
+
+  if (!nrodoc || !/^\d+$/.test(nrodoc)) {
+    return res.status(400).json({ message: "Número de documento inválido" });
+  }
+
+  try {
+    // 1. Buscar en BD
+    const clienteDB = await Cliente.findOne({ where: { nrodoc } });
+    if (clienteDB) {
+      return res.json({
+        source: "db",
+        id: clienteDB.id,
+        tipo_documento_id: clienteDB.tipo_documento_id,
+        nrodoc: clienteDB.nrodoc,
+        razon_social: clienteDB.razon_social,
+        direccion: clienteDB.direccion || "",
+      });
+    }
+
+    // 2. No está en BD → consultar API externa
+    const apiKey = process.env.DECOLECTA_API_KEY;
+    if (!apiKey) {
+      return res.status(404).json({ message: "Cliente no encontrado y API no configurada" });
+    }
+
+    const headers = { Authorization: `Bearer ${apiKey}` };
+
+    if (nrodoc.length === 8) {
+      // DNI → RENIEC
+      const { data } = await axios.get(
+        `https://api.decolecta.com/v1/reniec/dni?numero=${nrodoc}`,
+        { headers }
+      );
+
+      const nombre = data.full_name ||
+        [data.first_name, data.first_last_name, data.second_last_name]
+          .filter(Boolean)
+          .join(" ");
+
+      return res.json({
+        source: "api",
+        tipo_documento_id: "1",
+        nrodoc,
+        razon_social: nombre || "",
+        direccion: data.direccion || "",
+      });
+    }
+
+    if (nrodoc.length === 11) {
+      // RUC → SUNAT
+      const { data } = await axios.get(
+        `https://api.decolecta.com/v1/sunat/ruc?numero=${nrodoc}`,
+        { headers }
+      );
+
+      return res.json({
+        source: "api",
+        tipo_documento_id: "6",
+        nrodoc,
+        razon_social: data.razon_social || "",
+        direccion: data.direccion || "",
+      });
+    }
+
+    return res.status(404).json({ message: "Documento no encontrado. Use 8 dígitos (DNI) o 11 dígitos (RUC)." });
+  } catch (error) {
+    console.error("Error en buscarCliente:", error.response?.data || error.message);
+    return res.status(404).json({ message: "No se encontró información para este documento" });
+  }
+};
 
 /**
  * Obtener listado de clientes
@@ -95,4 +176,4 @@ const updateCliente = async (req, res) => {
 };
 
 
-module.exports = { getCliente, createCliente, deleteCliente, updateCliente };
+module.exports = { getCliente, createCliente, deleteCliente, updateCliente, buscarCliente };

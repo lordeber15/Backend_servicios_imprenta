@@ -11,6 +11,7 @@ const {
   createCliente,
   deleteCliente,
   updateCliente,
+  buscarCliente,
 } = require("../../controllers/facturacion/cliente.controller");
 const router = Router();
 
@@ -65,6 +66,7 @@ const router = Router();
  *       201:
  *         description: Cliente creado exitosamente.
  */
+router.get("/cliente/buscar/:nrodoc", buscarCliente);
 router.get("/cliente", getCliente);
 router.post("/cliente", createCliente);
 
