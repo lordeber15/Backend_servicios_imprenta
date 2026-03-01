@@ -165,6 +165,13 @@ function buildNota(comprobante) {
   const listIdCatalog = esNC ? "0901" : "1001";
   const tipoNota = c.tipo_nota_id || "01";
 
+  const discrepancyXml = ref
+    ? `<cac:DiscrepancyResponse>
+    <cbc:ReferenceID>${ref.serie}-${String(ref.correlativo).padStart(8, "0")}</cbc:ReferenceID>
+    <cbc:ResponseCode>${tipoNota}</cbc:ResponseCode>
+    <cbc:Description>${esc(c.descripcion_nota || "Nota")}</cbc:Description>
+  </cac:DiscrepancyResponse>` : "";
+
   const refXml = ref
     ? `<cac:BillingReference>
     <cac:InvoiceDocumentReference>
@@ -198,6 +205,7 @@ function buildNota(comprobante) {
   ${c.descripcion_nota ? `<cbc:Note languageLocaleID="2006">${esc(c.descripcion_nota)}</cbc:Note>` : ""}
   <cbc:DocumentCurrencyCode>${moneda}</cbc:DocumentCurrencyCode>
 
+  ${discrepancyXml}
   ${refXml}
   ${buildFirmaBlock(emisor)}
   ${buildEmisorBlock(emisor)}
