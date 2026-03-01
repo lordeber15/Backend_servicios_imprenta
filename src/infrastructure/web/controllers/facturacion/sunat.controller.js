@@ -66,7 +66,7 @@ function extractSoapError(soapErr) {
   }
 
   return {
-    codigoErr: String(codigoErr),
+    codigoErr: String(codigoErr).substring(0, 10),
     mensajeErr: String(mensajeErr).substring(0, 500),
   };
 }
