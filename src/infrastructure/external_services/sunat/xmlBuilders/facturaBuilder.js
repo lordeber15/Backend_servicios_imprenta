@@ -198,8 +198,8 @@ function buildNota(comprobante) {
   ${c.descripcion_nota ? `<cbc:Note languageLocaleID="2006">${esc(c.descripcion_nota)}</cbc:Note>` : ""}
   <cbc:DocumentCurrencyCode>${moneda}</cbc:DocumentCurrencyCode>
 
-  ${buildFirmaBlock(emisor)}
   ${refXml}
+  ${buildFirmaBlock(emisor)}
   ${buildEmisorBlock(emisor)}
   ${buildClienteBlock(tipoDocCliente, nroDocCliente, razonCliente)}
 
