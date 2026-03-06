@@ -9,8 +9,24 @@ const { generarTicketPdf } = require("../../../external_services/tickets/ticketP
 // Obtener todos los tickets con sus detalles
 const getTickets = async (req, res) => {
   try {
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+
+    if (page && limit) {
+      const offset = (page - 1) * limit;
+      const { count, rows } = await Ticket.findAndCountAll({
+        include: [{ model: Detalle, as: "detalles" }],
+        order: [["id", "DESC"]],
+        limit,
+        offset,
+        distinct: true,
+      });
+      return res.json({ data: rows, total: count, page, limit });
+    }
+
     const tickets = await Ticket.findAll({
       include: [{ model: Detalle, as: "detalles" }],
+      order: [["id", "DESC"]],
     });
     res.json(tickets);
   } catch (error) {

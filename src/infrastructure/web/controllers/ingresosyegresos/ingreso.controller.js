@@ -2,8 +2,21 @@ const { Ingresos } = require("../../../database/models/Ingresosyegresos/ingresos
 
 const getIngreso = async (req, res) => {
   try {
-    const getIngreso = await Ingresos.findAll();
-    res.json(getIngreso);
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+
+    if (page && limit) {
+      const offset = (page - 1) * limit;
+      const { count, rows } = await Ingresos.findAndCountAll({
+        order: [["fecha", "DESC"]],
+        limit,
+        offset,
+      });
+      return res.json({ data: rows, total: count, page, limit });
+    }
+
+    const ingresos = await Ingresos.findAll({ order: [["fecha", "DESC"]] });
+    res.json(ingresos);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

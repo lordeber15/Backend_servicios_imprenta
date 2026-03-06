@@ -21,16 +21,7 @@ class LoginUser {
       throw new Error("Tu cuenta ha sido desactivada. Contacta al administrador.");
     }
 
-    // Hash comparison
-    let passwordValid = await bcrypt.compare(password, user.password);
-
-    // Legacy migration (as seen in the original controller)
-    if (!passwordValid && password === user.password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
-      await this.userRepository.save(user);
-      passwordValid = true;
-    }
+    const passwordValid = await bcrypt.compare(password, user.password);
 
     if (!passwordValid) {
       throw new Error("Usuario o contraseña incorrectos");

@@ -93,7 +93,20 @@ const buscarCliente = async (req, res) => {
  */
 const getCliente = async (req, res) => {
   try {
-    const clientes = await Cliente.findAll();
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+
+    if (page && limit) {
+      const offset = (page - 1) * limit;
+      const { count, rows } = await Cliente.findAndCountAll({
+        order: [["id", "DESC"]],
+        limit,
+        offset,
+      });
+      return res.json({ data: rows, total: count, page, limit });
+    }
+
+    const clientes = await Cliente.findAll({ order: [["id", "DESC"]] });
     res.json(clientes);
   } catch (error) {
     return res.status(500).json({ message: error.message });

@@ -9,14 +9,12 @@ const axios = require("axios");
 
 /**
  * Consulta datos de DNI en RENIEC
- * 
- * ⚠️ ADVERTENCIA: El token está hardcodeado. Se recomienda moverlo a variables de entorno (.env).
- * 
+ *
  * @route GET /api/reniec/:dni
  */
 const getReniec = async (req, res) => {
   const dni = req.params.dni;
-  const token = "apis-token-16299.1l9ndIMxkIIiHfeLTQiTF8cxGNvDoFkt";
+  const token = process.env.DECOLECTA_API_KEY;
 
   try {
     const response = await axios.get(

@@ -101,7 +101,8 @@ app.use(cors({
  * Parsea automáticamente el body de las peticiones con Content-Type: application/json
  * Convierte el JSON string en objeto JavaScript accesible en req.body
  */
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 /**
  * MIDDLEWARE: Morgan (HTTP Logger)
@@ -195,13 +196,14 @@ app.use("/qz", qzRoutes);
  * - Body: { message: "Descripción del error" }
  */
 app.use((err, _req, res, _next) => {
-  // Registrar error en consola para debugging
   console.error(err.stack);
-  
-  // Enviar respuesta JSON con el error
-  res.status(err.status || 500).json({
-    message: err.message || "Error interno del servidor",
-  });
+
+  const status = err.status || 500;
+  const message = status >= 500
+    ? "Error interno del servidor"
+    : err.message || "Error en la solicitud";
+
+  res.status(status).json({ message });
 });
 
 // Exportar la aplicación Express para usar en index.js
