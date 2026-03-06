@@ -2,26 +2,58 @@ const { getBrowser } = require("../browserPool");
 const fs = require("fs");
 const path = require("path");
 
-// Logo fallback (se carga una sola vez al iniciar)
+// Ruta base: Backend_servicios_imprenta/storage/
+const storagePath = path.resolve(__dirname, "../../../../storage");
+
+// Logo (se carga una sola vez al iniciar)
 let defaultLogoBase64 = "";
 try {
-  const logoPath = path.resolve(__dirname, "../../../../../ordenServicio/src/assets/ALEXANDER.webp");
+  const logoPath = path.join(storagePath, "ALEXANDER-CtWN4tN1.webp");
   if (fs.existsSync(logoPath)) {
     const buf = fs.readFileSync(logoPath);
     defaultLogoBase64 = `data:image/webp;base64,${buf.toString("base64")}`;
     console.log("✅ Logo cotización cargado correctamente");
+  } else {
+    console.log("⚠️ Logo no encontrado en:", logoPath);
   }
-} catch (_) { /* logo no disponible */
-  console.log("⚠️ Logo no encontrado en:", path.resolve(__dirname, "../../../../../ordenServicio/src/assets/ALEXANDER.webp"));
+} catch (_) {
+  console.log("⚠️ Error al cargar logo cotización");
+}
+
+// Membrete SVG (se carga y limpia una sola vez al iniciar)
+let membreteSvgBase64 = "";
+try {
+  const svgPath = path.join(storagePath, "membrete.svg");
+  if (fs.existsSync(svgPath)) {
+    let svgContent = fs.readFileSync(svgPath, "utf-8");
+    // Eliminar <symbol> (referencian PNGs externos que no existen)
+    svgContent = svgContent.replace(/<symbol[\s\S]*?<\/symbol>/g, "");
+    // Eliminar <clipPath> (ya no se necesitan sin los symbols)
+    svgContent = svgContent.replace(/<clipPath[\s\S]*?<\/clipPath>/g, "");
+    membreteSvgBase64 = `data:image/svg+xml;base64,${Buffer.from(svgContent).toString("base64")}`;
+    console.log("✅ Membrete cotización cargado correctamente");
+  } else {
+    console.log("⚠️ Membrete no encontrado en:", svgPath);
+  }
+} catch (_) {
+  console.log("⚠️ Error al cargar membrete SVG");
 }
 
 function getLogoBase64(emisor) {
   if (emisor?.logo_url) {
     try {
-      const logoPath = path.resolve(__dirname, "../..", emisor.logo_url.replace(/^\//, ""));
-      if (fs.existsSync(logoPath)) {
-        const ext = path.extname(logoPath).slice(1) || "png";
-        const buf = fs.readFileSync(logoPath);
+      // Buscar primero en storage/, luego ruta relativa al proyecto
+      const inStorage = path.join(storagePath, path.basename(emisor.logo_url));
+      if (fs.existsSync(inStorage)) {
+        const ext = path.extname(inStorage).slice(1) || "png";
+        const buf = fs.readFileSync(inStorage);
+        return `data:image/${ext};base64,${buf.toString("base64")}`;
+      }
+      // Fallback: ruta relativa desde external_services
+      const altPath = path.resolve(__dirname, "../..", emisor.logo_url.replace(/^\//, ""));
+      if (fs.existsSync(altPath)) {
+        const ext = path.extname(altPath).slice(1) || "png";
+        const buf = fs.readFileSync(altPath);
         return `data:image/${ext};base64,${buf.toString("base64")}`;
       }
     } catch (_) { /* fallback */ }
@@ -44,11 +76,8 @@ function formatFecha(fecha) {
 function buildA4Html(cotizacion, detalles, emisor) {
   const logo = getLogoBase64(emisor);
   const nombre = escHtml(emisor?.nombre_comercial || emisor?.razon_social || "IMPRENTA ALEXANDER");
-  const ruc = escHtml(emisor?.ruc || "20608582011");
-  const desc = escHtml(emisor?.descripcion || "");
-  const dir = escHtml(emisor?.direccion || "");
-  const tel = escHtml(emisor?.telefono || "");
   const numCot = String(cotizacion.id).padStart(5, "0");
+  const tel = escHtml(emisor?.telefono || "");
 
   const filas = detalles
     .map((d) => {
@@ -74,34 +103,32 @@ function buildA4Html(cotizacion, detalles, emisor) {
 <style>
   @page { margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #1f2937; position: relative; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #1f2937; }
 
-  .deco-top {
+  .membrete-bg {
     position: fixed; top: 0; left: 0;
-    width: 320px; height: 180px; z-index: 0;
+    width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
   }
-  .deco-bottom {
-    position: fixed; bottom: 0; left: 0;
-    width: 100%; height: 90px; z-index: 0;
-  }
+
   .cot-label {
-    position: fixed; top: 35px; left: 30px;
-    color: #fff; font-size: 24px; font-weight: bold;
+    position: fixed; top: 55px; left: 45px;
+    color: #fff; font-size: 26px; font-weight: bold;
     z-index: 2; line-height: 1.4;
   }
-  .cot-label span { font-size: 20px; }
+  .cot-label span { font-size: 22px; }
 
   .content {
     position: relative; z-index: 1;
-    padding: 30px 40px 100px 40px;
+    padding: 210px 50px 240px 50px;
   }
 
   .header-row {
     display: flex; justify-content: flex-end; align-items: flex-start;
-    margin-bottom: 24px; min-height: 100px;
+    margin-top: -70px; margin-bottom: 20px;
   }
   .logo-block { text-align: center; }
-  .logo-block img { height: 70px; margin-bottom: 4px; }
+  .logo-block img { height: 75px; margin-bottom: 4px; }
   .logo-block .company-name {
     font-size: 9px; font-weight: bold; color: #374151;
     text-transform: uppercase; letter-spacing: 0.5px;
@@ -153,11 +180,9 @@ function buildA4Html(cotizacion, detalles, emisor) {
     border-collapse: collapse; margin-left: auto;
     min-width: 260px;
   }
-  table.totals td {
-    padding: 5px 12px; font-size: 12px;
-  }
+  table.totals td { padding: 5px 12px; font-size: 12px; }
   .total-row td {
-    background: #14b8a6; color: #fff;
+    background: #0CC0DF; color: #fff;
     font-weight: bold; font-size: 14px;
     padding: 7px 12px;
   }
@@ -165,31 +190,13 @@ function buildA4Html(cotizacion, detalles, emisor) {
 </head>
 <body>
 
-  <!-- Forma decorativa superior teal -->
-  <svg class="deco-top" viewBox="0 0 320 180" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#2dd4bf"/>
-        <stop offset="100%" stop-color="#0d9488"/>
-      </linearGradient>
-    </defs>
-    <path d="M0,0 L320,0 L320,50 C250,90 150,180 0,140 Z" fill="url(#tg)"/>
-  </svg>
+  <!-- Membrete de fondo (ondas reales de la empresa) -->
+  ${membreteSvgBase64 ? `<img src="${membreteSvgBase64}" class="membrete-bg" alt="">` : ""}
 
+  <!-- Etiqueta COTIZACION sobre la onda cian -->
   <div class="cot-label">
     COTIZACION<br><span>N° ${numCot}</span>
   </div>
-
-  <!-- Forma decorativa inferior púrpura -->
-  <svg class="deco-bottom" viewBox="0 0 800 90" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#c026d3"/>
-        <stop offset="100%" stop-color="#a21caf"/>
-      </linearGradient>
-    </defs>
-    <path d="M0,90 L800,90 L800,10 C650,70 200,0 0,50 Z" fill="url(#pg)"/>
-  </svg>
 
   <div class="content">
     <!-- Logo arriba derecha -->
@@ -254,11 +261,8 @@ function buildA4Html(cotizacion, detalles, emisor) {
 function buildA5Html(cotizacion, detalles, emisor) {
   const logo = getLogoBase64(emisor);
   const nombre = escHtml(emisor?.nombre_comercial || emisor?.razon_social || "IMPRENTA ALEXANDER");
-  const ruc = escHtml(emisor?.ruc || "20608582011");
-  const desc = escHtml(emisor?.descripcion || "");
-  const dir = escHtml(emisor?.direccion || "");
-  const tel = escHtml(emisor?.telefono || "");
   const numCot = String(cotizacion.id).padStart(5, "0");
+  const tel = escHtml(emisor?.telefono || "");
 
   const filas = detalles
     .map((d) => {
@@ -284,34 +288,32 @@ function buildA5Html(cotizacion, detalles, emisor) {
 <style>
   @page { margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #1f2937; position: relative; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #1f2937; }
 
-  .deco-top {
+  .membrete-bg {
     position: fixed; top: 0; left: 0;
-    width: 220px; height: 120px; z-index: 0;
+    width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
   }
-  .deco-bottom {
-    position: fixed; bottom: 0; left: 0;
-    width: 100%; height: 60px; z-index: 0;
-  }
+
   .cot-label {
-    position: fixed; top: 22px; left: 20px;
-    color: #fff; font-size: 17px; font-weight: bold;
+    position: fixed; top: 35px; left: 30px;
+    color: #fff; font-size: 18px; font-weight: bold;
     z-index: 2; line-height: 1.3;
   }
-  .cot-label span { font-size: 14px; }
+  .cot-label span { font-size: 15px; }
 
   .content {
     position: relative; z-index: 1;
-    padding: 20px 25px 70px 25px;
+    padding: 145px 35px 170px 35px;
   }
 
   .header-row {
     display: flex; justify-content: flex-end; align-items: flex-start;
-    margin-bottom: 14px; min-height: 70px;
+    margin-top: -50px; margin-bottom: 12px;
   }
   .logo-block { text-align: center; }
-  .logo-block img { height: 48px; margin-bottom: 3px; }
+  .logo-block img { height: 50px; margin-bottom: 3px; }
   .logo-block .company-name {
     font-size: 7px; font-weight: bold; color: #374151;
     text-transform: uppercase; letter-spacing: 0.5px;
@@ -362,11 +364,9 @@ function buildA5Html(cotizacion, detalles, emisor) {
     border-collapse: collapse; margin-left: auto;
     min-width: 180px;
   }
-  table.totals td {
-    padding: 3px 8px; font-size: 10px;
-  }
+  table.totals td { padding: 3px 8px; font-size: 10px; }
   .total-row td {
-    background: #14b8a6; color: #fff;
+    background: #0CC0DF; color: #fff;
     font-weight: bold; font-size: 11px;
     padding: 5px 8px;
   }
@@ -374,31 +374,13 @@ function buildA5Html(cotizacion, detalles, emisor) {
 </head>
 <body>
 
-  <!-- Forma decorativa superior teal -->
-  <svg class="deco-top" viewBox="0 0 220 120" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#2dd4bf"/>
-        <stop offset="100%" stop-color="#0d9488"/>
-      </linearGradient>
-    </defs>
-    <path d="M0,0 L220,0 L220,35 C170,60 100,120 0,95 Z" fill="url(#tg)"/>
-  </svg>
+  <!-- Membrete de fondo (ondas reales de la empresa) -->
+  ${membreteSvgBase64 ? `<img src="${membreteSvgBase64}" class="membrete-bg" alt="">` : ""}
 
+  <!-- Etiqueta COTIZACION sobre la onda cian -->
   <div class="cot-label">
     COTIZACION<br><span>N° ${numCot}</span>
   </div>
-
-  <!-- Forma decorativa inferior púrpura -->
-  <svg class="deco-bottom" viewBox="0 0 600 60" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#c026d3"/>
-        <stop offset="100%" stop-color="#a21caf"/>
-      </linearGradient>
-    </defs>
-    <path d="M0,60 L600,60 L600,8 C480,45 140,0 0,35 Z" fill="url(#pg)"/>
-  </svg>
 
   <div class="content">
     <!-- Logo arriba derecha -->

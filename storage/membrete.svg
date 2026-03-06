@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Creator: CorelDRAW -->
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="210mm" height="297mm" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+viewBox="0 0 21000 29700"
+ xmlns:xlink="http://www.w3.org/1999/xlink"
+ xmlns:xodm="http://www.corel.com/coreldraw/odm/2003">
+ <defs>
+  <style type="text/css">
+   <![CDATA[
+    .fil2 {fill:#0CC0DF;fill-rule:nonzero}
+    .fil1 {fill:#5CE1E6;fill-rule:nonzero}
+    .fil3 {fill:#FF5757;fill-rule:nonzero}
+    .fil0 {fill:white;fill-rule:nonzero}
+   ]]>
+  </style>
+  <clipPath id="id0">
+   <path d="M4100.85 9869.58l0 12514.75 12514.75 0 0 -12514.75 -12514.75 0z"/>
+  </clipPath>
+  <clipPath id="id1">
+   <path d="M4088.86 9880.88l0 12514.74 12514.74 0 0 -12514.74 -12514.74 0z"/>
+  </clipPath>
+  <clipPath id="id2">
+   <path d="M4088.86 9880.88l0 12514.74 12514.74 0 0 -12514.74 -12514.74 0z"/>
+  </clipPath>
+ </defs>
+<symbol id="Fm17-17-0" viewBox="4100.85 9869.58 12514.75 12514.75">
+ <g style="clip-path:url(#id0)">
+  <image x="4100.85" y="9866.03" width="12518.3" height="12518.3" xlink:href="membrete_Images/membrete_ImgID1.png"/>
+ </g>
+</symbol>
+<symbol id="Fm48-48-0" viewBox="4088.86 9880.88 12514.74 12514.74">
+ <g style="clip-path:url(#id1)">
+  <image x="4088.86" y="9877.33" width="12518.29" height="12518.29" xlink:href="membrete_Images/membrete_ImgID2.png"/>
+ </g>
+</symbol>
+<symbol id="Fm0-62-0" viewBox="4088.86 9880.88 12514.74 12514.74">
+ <g style="clip-path:url(#id2)">
+  <image x="4088.86" y="9877.33" width="12518.29" height="12518.29" xlink:href="membrete_Images/membrete_ImgID3.png"/>
+ </g>
+</symbol>
+ <g id="Capa_x0020_1">
+  <metadata id="CorelCorpID_0Corel-Layer"/>
+  <polygon class="fil0" points="4.88,-10.77 21012.79,-10.77 21012.79,29701.93 4.88,29701.93 "/>
+  <path class="fil1" d="M20995.61 3914.08c0,0 -4850,-3965.35 -11748.41,-2597.94l-2344.84 -1326.93 14093.25 0 0 3924.87z"/>
+  <path class="fil2" d="M4.86 5604.11c3168.59,-1215.05 18550.53,-6913.45 20965.17,-3984.56l0 -1630.34 -20965.17 0 0 5614.9z"/>
+  <path class="fil1" d="M14.06 25349.73c0,0 4850.01,3965.34 11748.42,2597.94l2991.41 1692.82 -14739.83 0 0 -4290.76z"/>
+  <path class="fil3" d="M21012.81 23656.63c-3150.33,1208.39 -18556.45,6919.03 -20973.16,3987.63l0 1995.46 20973.16 0.75 0 -5983.84z"/>
+  <path class="fil1" d="M20983.61 3925.38c0,0 -4850,-3965.35 -11748.4,-2597.94l-2344.84 -1326.93 14093.24 0 0 3924.87z"/>
+  <path class="fil2" d="M-7.13 5615.41c3168.59,-1215.05 18550.52,-6913.45 20965.16,-3984.56l0 -1630.34 -20965.16 0 0 5614.9z"/>
+  <path class="fil1" d="M20983.61 3925.38c0,0 -4849.99,-3965.36 -11748.41,-2597.92l-2344.84 -1326.94 14093.25 0 0 3924.86z"/>
+  <path class="fil2" d="M-7.13 5615.41c3168.58,-1215.04 18550.53,-6913.46 20965.15,-3984.55l0 -1630.33 -20965.15 0 0 5614.88z"/>
+ </g>
+</svg>
