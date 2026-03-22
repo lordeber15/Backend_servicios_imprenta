@@ -35,10 +35,19 @@ const Almanaque = sequelize.define("almanaque", {
     allowNull: false,
   },
   tipo: {
-    type: DataTypes.ENUM('cotizacion', 'venta'),
+    // Usar STRING en lugar de ENUM para evitar que Sequelize cree su propio tipo
+    // El constraint ENUM ya existe en la BD como tipo_almanaque
+    type: DataTypes.STRING,
     allowNull: false,
     defaultValue: 'cotizacion',
+    validate: {
+      isIn: [['cotizacion', 'venta']]
+    }
   },
+}, {
+  // Configuración adicional para evitar sincronización automática
+  timestamps: true,
+  freezeTableName: true
 });
 
 module.exports = Almanaque;
