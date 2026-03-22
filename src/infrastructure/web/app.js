@@ -80,20 +80,43 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 /**
  * MIDDLEWARE: CORS (Cross-Origin Resource Sharing)
- * 
+ *
  * Permite que el frontend (en diferente origen/puerto) haga peticiones al backend.
- * 
- * Configuración:
- * - origin: Lista de orígenes permitidos (desde .env o localhost:5173 por defecto)
+ *
+ * Configuración completa para producción:
+ * - origin: Lista de orígenes permitidos (desde .env)
  * - credentials: true → Permite envío de cookies y headers de autenticación
- * 
+ * - methods: Métodos HTTP permitidos (incluye OPTIONS para preflight)
+ * - allowedHeaders: Headers que el cliente puede enviar
+ * - exposedHeaders: Headers que el cliente puede leer
+ * - maxAge: Cachea el resultado del preflight por 24 horas
+ *
  * Ejemplo .env:
- * ALLOWED_ORIGINS=http://localhost:5173,https://impalexander.store
+ * ALLOWED_ORIGINS=http://localhost:5173,https://impalexander.store,https://www.impalexander.store,https://api.impalexander.store
  */
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(origin => origin.trim()) || ["http://localhost:5173"];
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:5173"],
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como apps móviles o curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  CORS bloqueado para origen: ${origin}`);
+      callback(new Error('No permitido por CORS'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400, // 24 horas de cache para preflight
 }));
+
+// Manejar explícitamente OPTIONS para todas las rutas (preflight)
+app.options('*', cors());
 
 /**
  * MIDDLEWARE: JSON Parser
