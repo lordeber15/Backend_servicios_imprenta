@@ -28,6 +28,7 @@ const swaggerSpec = require("../../config/swagger"); // Renombrado de swaggerDoc
 // ============================================
 
 // Rutas principales
+const healthRoutes = require("./routes/health.routes");
 const serviciosRoutes = require("./routes/servicios.routes");
 const loginRoutes = require("./routes/login.routes");
 // Rutas de facturación electrónica
@@ -160,6 +161,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../../uploads"), {
 const apiRouter = express.Router();
 
 // Rutas principales
+app.use("/health", healthRoutes); // Health check y diagnóstico CORS
 app.use(serviciosRoutes);    // Órdenes de servicio/trabajos
 app.use(loginRoutes);        // Autenticación y usuarios
 // Rutas de facturación electrónica
