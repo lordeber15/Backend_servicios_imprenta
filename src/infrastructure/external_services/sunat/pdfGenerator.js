@@ -7,18 +7,13 @@
  * @module services/sunat/pdfGenerator
  */
 
-<<<<<<< HEAD
 const { getBrowser } = require("../browserPool");
-=======
-const puppeteer = require("puppeteer");
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
 const fs = require("fs");
 const path = require("path");
 
 // Logo fallback (se carga una sola vez al iniciar)
 let defaultLogoBase64 = "";
 try {
-<<<<<<< HEAD
   // __dirname está en: src/infrastructure/external_services/sunat/
   // Subir 4 niveles para llegar a la raíz del proyecto backend
   const projectRoot = path.resolve(__dirname, "../../../..");
@@ -33,19 +28,10 @@ try {
 } catch (error) {
   console.error("Error cargando logo fallback:", error);
 }
-=======
-  const logoPath = path.resolve(process.cwd(), "../ordenServicio/src/assets/ALEXANDER.webp");
-  if (fs.existsSync(logoPath)) {
-    const buf = fs.readFileSync(logoPath);
-    defaultLogoBase64 = `data:image/webp;base64,${buf.toString("base64")}`;
-  }
-} catch (_) { /* logo no disponible */ }
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
 
 function getLogoBase64(emisor) {
   if (emisor?.logo_url) {
     try {
-<<<<<<< HEAD
       // __dirname está en: src/infrastructure/external_services/sunat/
       // Subir 3 niveles para llegar a src/
       const projectRoot = path.resolve(__dirname, "../../..");
@@ -68,16 +54,6 @@ function getLogoBase64(emisor) {
     }
   }
   return defaultLogoBase64; // Retornar logo fallback en lugar de cadena vacía
-=======
-      const lp = path.resolve(process.cwd(), emisor.logo_url.replace(/^\//, ""));
-      if (fs.existsSync(lp)) {
-        const ext = path.extname(lp).slice(1) || "png";
-        return `data:image/${ext};base64,${fs.readFileSync(lp).toString("base64")}`;
-      }
-    } catch (_) { /* fallback */ }
-  }
-  return defaultLogoBase64;
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
 }
 
 /**
@@ -276,7 +252,6 @@ function buildTicketHtml(c, qrBase64) {
 
   const filas = detalles.map((d) => {
     const nombre = d.descripcion || (d.Producto ? d.Producto.nombre : "-");
-<<<<<<< HEAD
     const unidadId = d.unidad_id || (d.Producto && d.Producto.Unidad ? d.Producto.Unidad.id : "NIU");
     const unidadNombre = d.Producto?.Unidad?.nombre || d.Producto?.Unidad?.descripcion;
     const precioUnitario = d.cantidad > 0 ? (d.importe_total / d.cantidad) : 0;
@@ -293,15 +268,6 @@ function buildTicketHtml(c, qrBase64) {
           <span style="width:42%; word-break: break-word; text-align:left; padding-left: 2px; padding-right: 2px;">${escHtml(nombre)}</span>
           <span style="width:13%; text-align:right;">${parseFloat(precioUnitario).toFixed(2)}</span>
           <span style="width:17%; text-align:right;">${parseFloat(d.importe_total).toFixed(2)}</span>
-=======
-    return `
-      <div class="item">
-        <div class="item-desc">${escHtml(nombre)}</div>
-        <div class="item-row">
-          <span></span>
-          <span class="right">${parseFloat(d.cantidad).toFixed(2)}</span>
-          <span class="right">${simbolo} ${parseFloat(d.importe_total).toFixed(2)}</span>
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
         </div>
       </div>`;
   }).join("");
@@ -316,11 +282,7 @@ function buildTicketHtml(c, qrBase64) {
   .center { text-align: center; }
   .bold { font-weight: bold; }
   .sep { text-align: center; color: #888; margin: 2px 0; }
-<<<<<<< HEAD
   .item-row { display: flex; width: 100%; align-items: flex-start; }
-=======
-  .item-row { display: flex; justify-content: space-between; }
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
   .item-desc { word-break: break-word; }
   .right { text-align: right; }
   .total-row { display: flex; justify-content: space-between; }
@@ -334,7 +296,6 @@ function buildTicketHtml(c, qrBase64) {
   <div class="center">RUC: ${emisor.ruc || ""}</div>
   ${emisor.direccion ? `<div class="center" style="font-size:10px">${escHtml(emisor.direccion)}</div>` : ""}
   <div class="sep">-------------------------------------</div>
-<<<<<<< HEAD
   <div class="center bold">${escHtml(tipo).toUpperCase()} ELECTRÓNICA</div>
   <div class="center bold" style="font-size:13px">${serieCorrelativo}</div>
   <div>Fecha: ${formatFecha(c.fecha_emision)}</div>
@@ -351,20 +312,6 @@ function buildTicketHtml(c, qrBase64) {
     <span style="width:42%; text-align:left; padding-left: 2px;">DESCRIP</span>
     <span style="width:13%; text-align:right;">P.U.</span>
     <span style="width:17%; text-align:right;">IMPORTE</span>
-=======
-  <div class="center bold">${escHtml(tipo)}</div>
-  <div class="center bold" style="font-size:13px">${serieCorrelativo}</div>
-  <div>Fecha: ${formatFecha(c.fecha_emision)}</div>
-  <div class="sep">-------------------------------------</div>
-  <div>Cliente: ${escHtml(cliente.razon_social || "CLIENTE VARIOS")}</div>
-  ${cliente.nrodoc ? `<div>${tipoDocLabel(cliente.tipo_documento_id)}: ${cliente.nrodoc}</div>` : ""}
-  ${cliente.direccion ? `<div style="font-size:10px">Dir: ${escHtml(cliente.direccion)}</div>` : ""}
-  <div class="sep">-------------------------------------</div>
-  <div class="item-row bold">
-    <span style="width:50%">Descripcion</span>
-    <span style="width:15%;text-align:right">Cant</span>
-    <span style="width:35%;text-align:right">Total</span>
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
   </div>
   <div class="sep">-------------------------------------</div>
   ${filas}
@@ -441,10 +388,7 @@ function buildA5Html(c, qrBase64) {
     ${cliente.nrodoc ? `<div><strong>${tipoDocLabel(cliente.tipo_documento_id)}:</strong> ${cliente.nrodoc}</div>` : ""}
     ${cliente.direccion ? `<div><strong>Direccion:</strong> ${escHtml(cliente.direccion)}</div>` : ""}
     <div><strong>Emision:</strong> ${formatFecha(c.fecha_emision)} &nbsp;|&nbsp; <strong>Moneda:</strong> ${moneda} &nbsp;|&nbsp; <strong>Pago:</strong> ${c.forma_pago || "Contado"}</div>
-<<<<<<< HEAD
     ${c.comprobanteRef ? `<div><strong>Ref:</strong> ${c.comprobanteRef.serie}-${String(c.comprobanteRef.correlativo).padStart(8, '0')} &nbsp;|&nbsp; <strong>Motivo:</strong> ${escHtml(c.descripcion_nota || "")}</div>` : ""}
-=======
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
   </div>
 
   <table style="margin-bottom:6px">
