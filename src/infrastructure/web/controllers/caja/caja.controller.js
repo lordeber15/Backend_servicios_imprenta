@@ -25,33 +25,53 @@ async function calcularVentas(caja) {
   const timestampDesde = caja.createdAt;
   const fechaDesde = caja.fecha_apertura;
 
-  const [ventasTickets, ventasComprobantes, ventasAlmanaques] = await Promise.all([
-    // Para Tickets usamos el timestamp exacto (createdAt)
+  const [ticketsEfectivo, ticketsYape, compEfectivo, compYape, ventasAlmanaques] = await Promise.all([
     Ticket.sum("precioTotal", {
-      where: { createdAt: { [Op.gte]: timestampDesde } },
+      where: { createdAt: { [Op.gte]: timestampDesde }, metodo_pago: 'Efectivo' },
     }),
-    // Comprobantes no tiene timestamps, usamos la fecha de emisión
+    Ticket.sum("precioTotal", {
+      where: { createdAt: { [Op.gte]: timestampDesde }, metodo_pago: 'Yape' },
+    }),
     Comprobante.sum("total", {
       where: {
         fecha_emision: { [Op.gte]: fechaDesde },
         tipo_comprobante_id: { [Op.in]: ["01", "03"] },
         estado_sunat: { [Op.ne]: "AN" },
+        metodo_pago: 'Efectivo',
       },
     }),
-    // Almanaques también tienen timestamps
+    Comprobante.sum("total", {
+      where: {
+        fecha_emision: { [Op.gte]: fechaDesde },
+        tipo_comprobante_id: { [Op.in]: ["01", "03"] },
+        estado_sunat: { [Op.ne]: "AN" },
+        metodo_pago: 'Yape',
+      },
+    }),
+    // Almanaques: SOLO ventas confirmadas, NO cotizaciones
     require("../../../database/models/almanaque/almanaque").sum("precioTotal", {
-      where: { createdAt: { [Op.gte]: timestampDesde } },
+      where: {
+        createdAt: { [Op.gte]: timestampDesde },
+        tipo: 'venta'  // Solo sumar ventas, NO cotizaciones
+      },
     }),
   ]);
 
-  const tickets = parseFloat(ventasTickets || 0);
-  const comprobantes = parseFloat(ventasComprobantes || 0);
+  const tEfectivo = parseFloat(ticketsEfectivo || 0);
+  const tYape = parseFloat(ticketsYape || 0);
+  const cEfectivo = parseFloat(compEfectivo || 0);
+  const cYape = parseFloat(compYape || 0);
   const almanaques = parseFloat(ventasAlmanaques || 0);
 
+  const totalEfectivo = tEfectivo + cEfectivo + almanaques;
+  const totalYape = tYape + cYape;
+
   return {
-    ventas_tickets: tickets + almanaques, // Agrupamos almanaques con tickets o podemos separarlos
-    ventas_comprobantes: comprobantes,
-    total: tickets + comprobantes + almanaques,
+    ventas_tickets: tEfectivo + tYape + almanaques,
+    ventas_comprobantes: cEfectivo + cYape,
+    total_efectivo: totalEfectivo,
+    total_yape: totalYape,
+    total: totalEfectivo + totalYape,
   };
 }
 
@@ -114,6 +134,8 @@ const getCajaActual = async (_req, res) => {
       ventas_tickets: ventas.ventas_tickets,
       ventas_comprobantes: ventas.ventas_comprobantes,
       total_ventas_preview: ventas.total,
+      total_efectivo: ventas.total_efectivo,
+      total_yape: ventas.total_yape,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -145,11 +167,13 @@ const cerrarCaja = async (req, res) => {
     const totalVentas = ventas.total;
     // diferencia = (efectivo contado) - (efectivo esperado)
     // positivo = sobrante; negativo = faltante
-    const diferencia = montoCierre - (montoApertura + totalVentas);
+    const diferencia = montoCierre - (montoApertura + ventas.total_efectivo);
 
     caja.estado = "cerrada";
     caja.monto_cierre_fisico = montoCierre;
     caja.total_ventas = totalVentas;
+    caja.total_efectivo = ventas.total_efectivo;
+    caja.total_yape = ventas.total_yape;
     caja.diferencia = parseFloat(diferencia.toFixed(2));
     if (observacion) caja.observacion = observacion;
     await caja.save();
@@ -159,6 +183,8 @@ const cerrarCaja = async (req, res) => {
       ventas_tickets: ventas.ventas_tickets,
       ventas_comprobantes: ventas.ventas_comprobantes,
       total_ventas: totalVentas,
+      total_efectivo: ventas.total_efectivo,
+      total_yape: ventas.total_yape,
       diferencia: caja.diferencia,
     });
   } catch (error) {

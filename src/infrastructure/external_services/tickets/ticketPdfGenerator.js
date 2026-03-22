@@ -5,23 +5,44 @@ const path = require("path");
 // Logo fallback (se carga una sola vez al iniciar)
 let defaultLogoBase64 = "";
 try {
-  const logoPath = path.resolve(__dirname, "../../../../ordenServicio/src/assets/ALEXANDER.webp");
+  // __dirname está en: src/infrastructure/external_services/tickets/
+  // Subir 4 niveles para llegar a la raíz del proyecto backend
+  const projectRoot = path.resolve(__dirname, "../../../..");
+  const logoPath = path.join(projectRoot, "ordenServicio", "src", "assets", "ALEXANDER.webp");
+
   if (fs.existsSync(logoPath)) {
     const buf = fs.readFileSync(logoPath);
     defaultLogoBase64 = `data:image/webp;base64,${buf.toString("base64")}`;
+  } else {
+    console.warn(`Logo fallback no encontrado en: ${logoPath}`);
   }
-} catch (_) { /* logo no disponible */ }
+} catch (error) {
+  console.error("Error cargando logo fallback:", error);
+}
 
 function getLogoBase64(emisor) {
   if (emisor?.logo_url) {
     try {
-      const logoPath = path.resolve(__dirname, "../..", emisor.logo_url.replace(/^\//, ""));
+      // __dirname está en: src/infrastructure/external_services/tickets/
+      // Subir 3 niveles para llegar a src/
+      const projectRoot = path.resolve(__dirname, "../../..");
+
+      // emisor.logo_url viene como "/uploads/empresa/logo.png"
+      const relativePath = emisor.logo_url.replace(/^\//, "");
+
+      // Combinar: src/uploads/empresa/logo.png
+      const logoPath = path.join(projectRoot, relativePath);
+
       if (fs.existsSync(logoPath)) {
         const ext = path.extname(logoPath).slice(1) || "png";
         const buf = fs.readFileSync(logoPath);
         return `data:image/${ext};base64,${buf.toString("base64")}`;
+      } else {
+        console.warn(`Logo no encontrado en: ${logoPath}`);
       }
-    } catch (_) { /* fallback */ }
+    } catch (error) {
+      console.error("Error cargando logo del emisor:", error);
+    }
   }
   return defaultLogoBase64;
 }

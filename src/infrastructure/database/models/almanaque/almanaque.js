@@ -34,6 +34,11 @@ const Almanaque = sequelize.define("almanaque", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
+  tipo: {
+    type: DataTypes.ENUM('cotizacion', 'venta'),
+    allowNull: false,
+    defaultValue: 'cotizacion',
+  },
 });
 
 module.exports = Almanaque;

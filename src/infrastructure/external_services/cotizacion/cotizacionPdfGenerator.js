@@ -49,14 +49,23 @@ function getLogoBase64(emisor) {
         const buf = fs.readFileSync(inStorage);
         return `data:image/${ext};base64,${buf.toString("base64")}`;
       }
-      // Fallback: ruta relativa desde external_services
-      const altPath = path.resolve(__dirname, "../..", emisor.logo_url.replace(/^\//, ""));
+
+      // Fallback: ruta desde src/ (subir 3 niveles desde cotizacion/)
+      // __dirname está en: src/infrastructure/external_services/cotizacion/
+      const projectRoot = path.resolve(__dirname, "../../..");
+      const relativePath = emisor.logo_url.replace(/^\//, "");
+      const altPath = path.join(projectRoot, relativePath);
+
       if (fs.existsSync(altPath)) {
         const ext = path.extname(altPath).slice(1) || "png";
         const buf = fs.readFileSync(altPath);
         return `data:image/${ext};base64,${buf.toString("base64")}`;
+      } else {
+        console.warn(`Logo no encontrado en: ${altPath}`);
       }
-    } catch (_) { /* fallback */ }
+    } catch (error) {
+      console.error("Error cargando logo del emisor:", error);
+    }
   }
   return defaultLogoBase64;
 }

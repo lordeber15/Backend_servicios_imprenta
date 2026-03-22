@@ -44,6 +44,7 @@ const createTicket = async (req, res) => {
       direccion,
       fechaEmision,
       precioTotal,
+      metodo_pago,
       detalles,
     } = req.body;
 
@@ -55,6 +56,7 @@ const createTicket = async (req, res) => {
         direccion,
         fechaEmision,
         precioTotal,
+        metodo_pago,
         detalles, // 👈 Sequelize lo insertará en DetalleTicket automáticamente
       },
       {

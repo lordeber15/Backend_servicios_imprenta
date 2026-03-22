@@ -14,31 +14,46 @@ const path = require("path");
 // Logo fallback (se carga una sola vez al iniciar)
 let defaultLogoBase64 = "";
 try {
-  const logoPath = path.resolve(process.cwd(), "../ordenServicio/src/assets/ALEXANDER.webp");
+  // __dirname está en: src/infrastructure/external_services/sunat/
+  // Subir 4 niveles para llegar a la raíz del proyecto backend
+  const projectRoot = path.resolve(__dirname, "../../../..");
+  const logoPath = path.join(projectRoot, "ordenServicio", "src", "assets", "ALEXANDER.webp");
+
   if (fs.existsSync(logoPath)) {
     const buf = fs.readFileSync(logoPath);
     defaultLogoBase64 = `data:image/webp;base64,${buf.toString("base64")}`;
+  } else {
+    console.warn(`Logo fallback no encontrado en: ${logoPath}`);
   }
-} catch (_) { /* logo no disponible */ }
+} catch (error) {
+  console.error("Error cargando logo fallback:", error);
+}
 
 function getLogoBase64(emisor) {
   if (emisor?.logo_url) {
     try {
-      // Intentar resolver la ruta relativa desde el directorio del proyecto
-      // Si la URL empieza con /uploads, lo buscamos en src/uploads
-      const relativePath = emisor.logo_url.startsWith("/uploads")
-        ? `src${emisor.logo_url}`
-        : emisor.logo_url.replace(/^\//, "");
+      // __dirname está en: src/infrastructure/external_services/sunat/
+      // Subir 3 niveles para llegar a src/
+      const projectRoot = path.resolve(__dirname, "../../..");
 
-      const lp = path.resolve(process.cwd(), relativePath);
-      
-      if (fs.existsSync(lp)) {
-        const ext = path.extname(lp).slice(1) || "png";
-        return `data:image/${ext};base64,${fs.readFileSync(lp).toString("base64")}`;
+      // emisor.logo_url viene como "/uploads/empresa/logo.png"
+      const relativePath = emisor.logo_url.replace(/^\//, "");
+
+      // Combinar: src/uploads/empresa/logo.png
+      const logoPath = path.join(projectRoot, relativePath);
+
+      if (fs.existsSync(logoPath)) {
+        const ext = path.extname(logoPath).slice(1) || "png";
+        const buf = fs.readFileSync(logoPath);
+        return `data:image/${ext};base64,${buf.toString("base64")}`;
+      } else {
+        console.warn(`Logo no encontrado en: ${logoPath}`);
       }
-    } catch (_) { /* fallback silent */ }
+    } catch (error) {
+      console.error("Error cargando logo del emisor:", error);
+    }
   }
-  return ""; // Si no hay logo, no devolvemos nada
+  return defaultLogoBase64; // Retornar logo fallback en lugar de cadena vacía
 }
 
 /**

@@ -40,6 +40,14 @@ const AperturaCaja = sequelize.define("AperturaCaja", {
     type: DataTypes.STRING(250),
     allowNull: true,
   },
+  total_efectivo: {
+    type: DataTypes.DECIMAL(11, 2),
+    allowNull: true,
+  },
+  total_yape: {
+    type: DataTypes.DECIMAL(11, 2),
+    allowNull: true,
+  },
 });
 
 module.exports = AperturaCaja;

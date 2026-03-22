@@ -82,6 +82,10 @@ const Comprobante = sequelize.define(
     },
     op_gratuitas: DataTypes.DECIMAL(11, 2),
     icbper: DataTypes.DECIMAL(11, 2),
+    metodo_pago: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
   },
   {
     tableName: "Comprobante",

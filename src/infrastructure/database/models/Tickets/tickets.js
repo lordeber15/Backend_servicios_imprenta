@@ -30,6 +30,10 @@ const Ticket = sequelize.define("Ticket", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
+  metodo_pago: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
 });
 
 module.exports = Ticket;
