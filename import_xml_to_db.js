@@ -244,6 +244,10 @@ async function processXmlFile(filePath) {
     };
   });
 
+  // Determinar método de pago (Efectivo por defecto, ya que XML no especifica método)
+  // Si necesitas lógica más compleja, puedes analizar el XML o datos del cliente
+  const metodoPago = formaPago === 'Contado' ? 'Efectivo' : 'Efectivo';
+
   return {
     // Datos del archivo
     nombreXml: fileInfo.nombreXml,
@@ -255,6 +259,7 @@ async function processXmlFile(filePath) {
     fecha_emision: fechaEmision,
     moneda_id: moneda,
     forma_pago: formaPago,
+    metodo_pago: metodoPago, // Método de pago para suma en caja
 
     // Cliente
     cliente: {
@@ -324,7 +329,8 @@ async function importComprobante(data) {
     total: data.total,
     cliente_id: cliente.id,
     estado_sunat: 'AC', // Asumimos que está aceptado si ya tiene XML
-    nombre_xml: data.nombreXml
+    nombre_xml: data.nombreXml,
+    metodo_pago: data.metodo_pago || 'Efectivo' // Asignar método de pago para suma en caja
   });
 
   console.log(`   ✅ Comprobante creado: ${data.serie}-${String(data.correlativo).padStart(8, '0')} | Total: S/ ${data.total}`);
