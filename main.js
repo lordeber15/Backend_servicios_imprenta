@@ -23,7 +23,7 @@ let server; // Referencia al servidor HTTP para cerrar en shutdown
 
 async function main() {
   try {
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ alter: true });
     console.log("Conectado a la base de datos");
 
     // Seed: insertar formatos iniciales si la tabla esta vacia
