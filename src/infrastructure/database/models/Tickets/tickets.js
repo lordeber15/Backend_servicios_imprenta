@@ -34,6 +34,14 @@ const Ticket = sequelize.define("Ticket", {
     type: DataTypes.STRING(50),
     allowNull: true,
   },
+  monto_recibido: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  vuelto: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
 });
 
 module.exports = Ticket;

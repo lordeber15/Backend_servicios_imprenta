@@ -137,7 +137,10 @@ function build80mmHtml(ticket, detalles, emisor) {
   <div class="total-row"><span>IGV (18%):</span><span>S/ ${igv.toFixed(2)}</span></div>
   <div class="total-row big"><span>TOTAL:</span><span>S/ ${total.toFixed(2)}</span></div>
   <div class="sep">-------------------------------------</div>
-  <div class="footer">¡Gracias por su preferencia!</div>
+${ticket.metodo_pago === 'Efectivo' && ticket.monto_recibido !== undefined && ticket.monto_recibido !== null ? `  <div class="total-row"><span>Efectivo:</span><span>S/ ${parseFloat(ticket.monto_recibido).toFixed(2)}</span></div>
+  <div class="total-row"><span>Vuelto:</span><span>S/ ${parseFloat(ticket.vuelto || 0).toFixed(2)}</span></div>
+  <div class="sep">-------------------------------------</div>
+` : ''}  <div class="footer">¡Gracias por su preferencia!</div>
   <div class="footer">Conserve este comprobante</div>
 </body>
 </html>`;

@@ -45,6 +45,8 @@ const createTicket = async (req, res) => {
       fechaEmision,
       precioTotal,
       metodo_pago,
+      monto_recibido,
+      vuelto,
       detalles,
     } = req.body;
 
@@ -57,6 +59,8 @@ const createTicket = async (req, res) => {
         fechaEmision,
         precioTotal,
         metodo_pago,
+        monto_recibido,
+        vuelto,
         detalles, // 👈 Sequelize lo insertará en DetalleTicket automáticamente
       },
       {
@@ -103,6 +107,8 @@ const updateTicket = async (req, res) => {
       direccion,
       fechaEmision,
       precioTotal,
+      monto_recibido,
+      vuelto,
       detalles,
     } = req.body;
 
@@ -117,6 +123,8 @@ const updateTicket = async (req, res) => {
     ticket.direccion = direccion;
     ticket.fechaEmision = fechaEmision;
     ticket.precioTotal = precioTotal;
+    if (monto_recibido !== undefined) ticket.monto_recibido = monto_recibido;
+    if (vuelto !== undefined) ticket.vuelto = vuelto;
     await ticket.save();
 
     // Reemplazar los detalles
