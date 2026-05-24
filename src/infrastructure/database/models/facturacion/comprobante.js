@@ -62,14 +62,26 @@ const Comprobante = sequelize.define(
       },
     },
     // ── CAMPOS DE INTEGRACIÓN SUNAT ──────────────────────────────────────────
-    // PE=Pendiente, EN=En proceso, AC=Aceptado, RR=Rechazado, AN=Anulado
-    estado_sunat: { type: DataTypes.CHAR(2), defaultValue: "PE" },
-    codigo_sunat: DataTypes.STRING(10), // Código de respuesta del CDR
-    mensaje_sunat: DataTypes.STRING(500), // Descripción del error o aceptación
-    // Hash del comprobante (DigestValue) retornado por SUNAT tras la firma
-    hash_cpe: DataTypes.STRING(255),
-    // Nombre exacto del archivo: {RUC}-{tipo}-{SERIE}-{CORRELATIVO}
-    nombre_xml: DataTypes.STRING(60),
+    // Estados: GENERADO → FIRMADO → ENVIANDO → ACEPTADO | OBSERVADO | RECHAZADO | ERROR_RED | FUERA_PLAZO | SIN_CDR
+    estado_sunat: {
+      type: DataTypes.STRING(15),
+      defaultValue: "GENERADO",
+      validate: {
+        isIn: [["GENERADO","FIRMADO","ENVIANDO","ACEPTADO","OBSERVADO",
+                 "RECHAZADO","ERROR_RED","FUERA_PLAZO","SIN_CDR"]],
+      },
+    },
+    // Campos canónicos CDR
+    cdr_code:   { type: DataTypes.STRING(10),  allowNull: true }, // Código numérico del CDR
+    cdr_xml:    { type: DataTypes.TEXT,         allowNull: true }, // XML del CDR en base64
+    xml_path:   { type: DataTypes.TEXT,         allowNull: true }, // Ruta relativa del XML firmado
+    hash:       { type: DataTypes.STRING(255),  allowNull: true }, // DigestValue del XML firmado
+    enviado_at: { type: DataTypes.DATE,         allowNull: true }, // Timestamp exacto del envío
+    // Campos legacy (mantenidos por compatibilidad)
+    codigo_sunat:      DataTypes.STRING(10),
+    mensaje_sunat:     DataTypes.STRING(500),
+    hash_cpe:          DataTypes.STRING(255),
+    nombre_xml:        DataTypes.STRING(60),
     fecha_envio_sunat: DataTypes.DATE,
     intentos_envio: { type: DataTypes.INTEGER, defaultValue: 0 },
     // Para Notas de Crédito y Débito
