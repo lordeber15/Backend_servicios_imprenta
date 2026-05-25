@@ -36,7 +36,18 @@ function parseCdr(cdrBase64) {
     throw new Error("ZIP del CDR no contiene archivos");
   }
 
-  const xmlContent = entries[0].getData().toString("utf8");
+  // SUNAT devuelve el ZIP con una entrada "dummy/" (directorio vacío) como
+  // primera entrada y el XML real (R-*.xml) como segunda. Buscar por nombre.
+  const xmlEntry = entries.find(
+    (e) => !e.isDirectory && e.entryName.toLowerCase().endsWith(".xml")
+  );
+  if (!xmlEntry) {
+    throw new Error(
+      `ZIP del CDR no contiene archivo XML. Entradas: ${entries.map((e) => e.entryName).join(", ")}`
+    );
+  }
+
+  const xmlContent = xmlEntry.getData().toString("utf8");
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlContent, "text/xml");
 
