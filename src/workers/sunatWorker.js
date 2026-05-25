@@ -101,7 +101,21 @@ const worker = new Worker('sunat-envio', async (job) => {
     cdrBase64 = await sunatClient.sendBill(xmlBuffer, archivoXml, comprobante.Emisor);
   } catch (soapErr) {
     const { codigo, mensaje } = extraerErrorSoap(soapErr);
-    console.error(`[Worker] SOAP error comprobante ${comprobante_id}: ${codigo} - ${mensaje}`);
+
+    // ── Log detallado para diagnóstico ──────────────────────────────
+    console.error('═══════════════════════════════════════════════════════');
+    console.error(`[Worker] ERROR_RED — Comprobante ${comprobante_id} (intento ${job.attemptsMade + 1})`);
+    console.error(`  Archivo XML : ${archivoXml}`);
+    console.error(`  Emisor RUC  : ${comprobante.Emisor?.ruc}`);
+    console.error(`  Endpoint    : ${process.env.SUNAT_WS_FACTURAS}`);
+    console.error(`  Código      : ${codigo}`);
+    console.error(`  Mensaje     : ${mensaje}`);
+    if (soapErr.message)  console.error(`  err.message : ${soapErr.message}`);
+    if (soapErr.code)     console.error(`  err.code    : ${soapErr.code}`);
+    if (soapErr.body)     console.error(`  SOAP body   :\n${soapErr.body}`);
+    if (soapErr.root)     console.error(`  SOAP root   :`, JSON.stringify(soapErr.root, null, 2));
+    if (soapErr.stack)    console.error(`  Stack:\n${soapErr.stack}`);
+    console.error('═══════════════════════════════════════════════════════');
 
     await comprobante.update({
       estado_sunat:    'ERROR_RED',
@@ -111,12 +125,18 @@ const worker = new Worker('sunat-envio', async (job) => {
       intentos_envio:  (comprobante.intentos_envio || 0) + 1,
     });
 
-    // Relanzar para que BullMQ aplique backoff exponencial
     throw soapErr;
   }
 
   // 7. Sin CDR en la respuesta → reintentar
   if (!cdrBase64) {
+    console.error('═══════════════════════════════════════════════════════');
+    console.error(`[Worker] SIN_CDR — Comprobante ${comprobante_id}`);
+    console.error(`  SUNAT respondió OK pero applicationResponse es: ${JSON.stringify(cdrBase64)}`);
+    console.error(`  Archivo XML : ${archivoXml}`);
+    console.error(`  Emisor RUC  : ${comprobante.Emisor?.ruc}`);
+    console.error('═══════════════════════════════════════════════════════');
+
     await comprobante.update({
       estado_sunat:   'SIN_CDR',
       mensaje_sunat:  'SUNAT no retornó CDR en la respuesta',
@@ -133,7 +153,11 @@ const worker = new Worker('sunat-envio', async (job) => {
   try {
     cdr = cdrParser.parseCdr(cdrBase64);
   } catch (parseErr) {
-    console.error(`[Worker] Error al parsear CDR comprobante ${comprobante_id}:`, parseErr.message);
+    console.error('═══════════════════════════════════════════════════════');
+    console.error(`[Worker] SIN_CDR (parse) — Comprobante ${comprobante_id}`);
+    console.error(`  Error al parsear CDR: ${parseErr.message}`);
+    console.error(`  CDR base64 (primeros 200 chars): ${String(cdrBase64).substring(0, 200)}`);
+    console.error('═══════════════════════════════════════════════════════');
     await comprobante.update({
       estado_sunat:   'SIN_CDR',
       cdr_xml:        cdrBase64,
