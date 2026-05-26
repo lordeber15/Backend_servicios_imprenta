@@ -15,6 +15,7 @@ const {
   consultarEstado,
   descargarPdf,
   descargarXml,
+  recuperarEstados,
 } = require("../../controllers/facturacion/sunat.controller");
 
 const router = Router();
@@ -144,5 +145,8 @@ router.get("/comprobante/:id/pdf", descargarPdf);
  *         description: Archivo XML
  */
 router.get("/comprobante/:id/xml", descargarXml);
+
+// Utilidad de recuperación (sin auth para poder llamarla desde curl/Postman)
+router.post("/admin/recuperar-estados", recuperarEstados);
 
 module.exports = router;

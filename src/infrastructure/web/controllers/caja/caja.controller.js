@@ -270,6 +270,7 @@ const getVentasDia = async (req, res) => {
           fecha: c.fecha_emision,
           total: parseFloat(c.total || 0),
           estado: c.estado_sunat,
+          es_terminal: c.es_terminal || false,
           mensaje_sunat: c.mensaje_sunat || null,
         });
       }

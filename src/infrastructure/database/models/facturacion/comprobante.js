@@ -84,6 +84,7 @@ const Comprobante = sequelize.define(
     nombre_xml:        DataTypes.STRING(60),
     fecha_envio_sunat: DataTypes.DATE,
     intentos_envio: { type: DataTypes.INTEGER, defaultValue: 0 },
+    es_terminal: { type: DataTypes.BOOLEAN, defaultValue: false }, // true = SUNAT rechazó por datos, no reenviar sin corregir XML
     // Para Notas de Crédito y Débito
     tipo_nota_id: DataTypes.STRING(4),
     descripcion_nota: DataTypes.STRING(250),

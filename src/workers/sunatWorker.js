@@ -64,8 +64,13 @@ async function aplicarCdr(comprobante, cdr) {
   const estadoFinal  = resolverEstadoCdr(cdr);
   const mensajeFinal = cdr.description + (cdr.notes.length ? ' | ' + cdr.notes.join(' | ') : '');
 
+  // ACEPTADO y OBSERVADO son terminales: SUNAT ya tiene el comprobante válido.
+  // RECHAZADO (cdr_code 1xxx) puede reintentarse si el usuario corrige el XML.
+  const esTerminal = estadoFinal === 'ACEPTADO' || estadoFinal === 'OBSERVADO';
+
   await comprobante.update({
     estado_sunat:      estadoFinal,
+    es_terminal:       esTerminal,
     cdr_code:          cdr.responseCode,
     cdr_xml:           cdr.xmlContent,
     hash:              cdr.digestValue,
@@ -188,30 +193,22 @@ const worker = new Worker('sunat-envio', async (job) => {
       return; // terminal, sin throw
     }
 
-    // ── Errores terminales: no reintentar ─────────────────────────────
-    if (CODIGOS_TERMINAL.has(codigoNumerico)) {
-      await comprobante.update({
-        estado_sunat:   'RECHAZADO',
-        cdr_code:       codigo,
-        mensaje_sunat:  mensaje,
-        intentos_envio: (comprobante.intentos_envio || 0) + 1,
-      });
-      console.warn(`[Worker] Comprobante ${comprobante_id} → RECHAZADO terminal (${codigoNumerico})`);
-      return; // sin throw → BullMQ no reintenta
-    }
+    // ── Errores terminales: SUNAT rechazó por datos del XML ──────────
+    // CODIGOS_TERMINAL o cualquier Client.XXXX con código numérico de error.
+    // Reenviar sin corregir el XML producirá el mismo rechazo.
+    const esClientError = codigo.toLowerCase().includes('client.');
+    const esCodigoTerminal = CODIGOS_TERMINAL.has(codigoNumerico);
 
-    // ── Errores Client (4xx SUNAT): validación XML, datos incorrectos ──
-    // "soap-env:Client.XXXX" → son errores de nuestro XML, no de red.
-    // Reintentar no ayuda sin corregir el XML.
-    if (codigo.toLowerCase().includes('client.')) {
+    if (esCodigoTerminal || esClientError) {
       await comprobante.update({
         estado_sunat:   'RECHAZADO',
+        es_terminal:    true,
         cdr_code:       codigo,
         mensaje_sunat:  mensaje,
         intentos_envio: (comprobante.intentos_envio || 0) + 1,
       });
-      console.warn(`[Worker] Comprobante ${comprobante_id} → RECHAZADO (Client error: ${codigo})`);
-      return; // sin throw → no reintentar
+      console.warn(`[Worker] Comprobante ${comprobante_id} → RECHAZADO terminal (${codigo})`);
+      return; // sin throw → BullMQ no reintenta
     }
 
     // ── Error 0140: "Documento igual en proceso, esperar 15 min" ───────
