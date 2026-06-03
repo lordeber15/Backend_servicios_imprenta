@@ -97,6 +97,9 @@ const updateAlmanaque = async (req, res) => {
     if (!registro)
       return res.status(404).json({ message: "Almanaque no encontrado" });
 
+    if (registro.impreso)
+      return res.status(403).json({ message: "La cotización ya fue impresa y no puede modificarse" });
+
     // Actualizar los campos principales
     registro.cliente = cliente;
     registro.tipoDocumento = tipoDocumento;
@@ -154,6 +157,9 @@ const getCotizacionPdf = async (req, res) => {
 
     const emisor = await Emisor.findOne();
     const pdfBuffer = await generarCotizacionPdf(cotizacion, cotizacion.detalles, format, emisor);
+
+    cotizacion.impreso = true;
+    await cotizacion.save();
 
     res.set({
       "Content-Type": "application/pdf",

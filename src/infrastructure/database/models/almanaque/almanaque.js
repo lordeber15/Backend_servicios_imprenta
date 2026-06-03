@@ -44,6 +44,11 @@ const Almanaque = sequelize.define("almanaque", {
       isIn: [['cotizacion', 'venta']]
     }
   },
+  impreso: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 }, {
   // Configuración adicional para evitar sincronización automática
   timestamps: true,
