@@ -73,11 +73,9 @@ function parseCdr(cdrBase64) {
   // Hash del CPE (DigestValue del ApplicationResponse)
   const digestValue = getTagText("DigestValue") || "";
 
-  // responseCode "0" = aceptado sin observaciones
-  // responseCode "2000"-"3999" = aceptado con observaciones (warning)
-  // responseCode "1xxx" o SOAP fault = rechazado
-  const code = parseInt(responseCode, 10);
-  const accepted = responseCode === "0" || (code >= 2000 && code <= 3999);
+  // responseCode "0" = aceptado (con observaciones si hay <cbc:Note> 4xxx)
+  // responseCode "2000"-"3999" = RECHAZADO (el comprobante no quedó registrado)
+  const accepted = responseCode === "0";
 
   return {
     responseCode,
@@ -89,4 +87,18 @@ function parseCdr(cdrBase64) {
   };
 }
 
-module.exports = { parseCdr };
+/**
+ * Clasifica el CDR según la convención SUNAT:
+ *  - "0" sin notas  → ACEPTADO
+ *  - "0" con notas  → OBSERVADO (aceptado con observaciones 4xxx — sigue siendo válido)
+ *  - 2000-3999      → RECHAZADO (no registrado; reenviable tras corregir el XML)
+ *  - resto          → RECHAZADO
+ */
+function resolverEstadoCdr(cdr) {
+  if (cdr.responseCode === "0") {
+    return cdr.notes && cdr.notes.length ? "OBSERVADO" : "ACEPTADO";
+  }
+  return "RECHAZADO";
+}
+
+module.exports = { parseCdr, resolverEstadoCdr };

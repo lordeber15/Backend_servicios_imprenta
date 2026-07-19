@@ -11,23 +11,11 @@ const storageHelper = require('../infrastructure/external_services/sunat/storage
 
 require('../infrastructure/database/models/facturacion/asociation');
 
+const { CODIGOS_TERMINAL } = require('../infrastructure/external_services/sunat/sunatCodes');
+
 const PLAZO_DIAS = 3;
 
-// Códigos SUNAT que no tienen sentido reintentar (el XML está rechazado
-// definitivamente o ya fue registrado en SUNAT con datos que no vamos a cambiar).
-const CODIGOS_TERMINAL = new Set([
-  '1034', // Numeración ya registrada
-  '0111', // Comprobante dado de baja
-  '2108', // Tipo de cambio no válido
-  '3101', // Importe de tributo inválido
-]);
-
-function resolverEstadoCdr(cdr) {
-  const code = parseInt(cdr.responseCode, 10);
-  if (cdr.responseCode === '0') return 'ACEPTADO';
-  if (code >= 2000 && code <= 3999) return 'OBSERVADO';
-  return 'RECHAZADO';
-}
+const { resolverEstadoCdr } = cdrParser;
 
 function extraerErrorSoap(err) {
   const fault       = err.root?.Envelope?.Body?.Fault;
@@ -64,8 +52,9 @@ async function aplicarCdr(comprobante, cdr) {
   const estadoFinal  = resolverEstadoCdr(cdr);
   const mensajeFinal = cdr.description + (cdr.notes.length ? ' | ' + cdr.notes.join(' | ') : '');
 
-  // ACEPTADO y OBSERVADO son terminales: SUNAT ya tiene el comprobante válido.
-  // RECHAZADO (cdr_code 1xxx) puede reintentarse si el usuario corrige el XML.
+  // ACEPTADO y OBSERVADO (aceptado con observaciones) son terminales: SUNAT
+  // ya registró el comprobante. RECHAZADO (2000-3999) no quedó registrado y
+  // puede reenviarse tras corregir los datos — se regenera el XML al reenviar.
   const esTerminal = estadoFinal === 'ACEPTADO' || estadoFinal === 'OBSERVADO';
 
   await comprobante.update({
@@ -82,7 +71,7 @@ async function aplicarCdr(comprobante, cdr) {
     intentos_envio:    (comprobante.intentos_envio || 0) + 1,
   });
 
-  if (estadoFinal === 'ACEPTADO' && comprobante.Serie) {
+  if (esTerminal && comprobante.Serie) {
     await Serie.update(
       { correlativo: comprobante.correlativo + 1 },
       { where: { id: comprobante.serie_id } }
@@ -107,8 +96,8 @@ const worker = new Worker('sunat-envio', async (job) => {
     return;
   }
 
-  if (comprobante.estado_sunat === 'ACEPTADO') {
-    console.log(`[Worker] Comprobante ${comprobante_id} ya ACEPTADO. Omitiendo.`);
+  if (comprobante.estado_sunat === 'ACEPTADO' || comprobante.estado_sunat === 'OBSERVADO') {
+    console.log(`[Worker] Comprobante ${comprobante_id} ya ${comprobante.estado_sunat} en SUNAT. Omitiendo.`);
     return;
   }
 

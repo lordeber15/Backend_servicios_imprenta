@@ -24,10 +24,69 @@ const pdfGenerator   = require("../../../external_services/sunat/pdfGenerator");
 
 const { encolarEnvio } = require("../../../queues/sunatQueue");
 const cdrParser = require("../../../external_services/sunat/cdrParser");
+const { CODIGOS_TERMINAL } = require("../../../external_services/sunat/sunatCodes");
 const { Op } = require("sequelize");
 
-// Estados desde los que se puede reintentar el envío (si además es_terminal=false)
-const ESTADOS_REENVIABLES = ["RECHAZADO", "ERROR_RED", "SIN_CDR", "OBSERVADO", "FIRMADO", "GENERADO"];
+// Estados desde los que se puede reintentar el envío.
+// OBSERVADO ya no está: significa "aceptado con observaciones" (registrado en SUNAT).
+const ESTADOS_REENVIABLES = ["RECHAZADO", "ERROR_RED", "SIN_CDR", "FIRMADO", "GENERADO"];
+
+// Include completo necesario para reconstruir el XML de un comprobante.
+const INCLUDE_XML = [
+  { model: Emisor },
+  { model: Cliente, include: [{ model: TipoDocumento }] },
+  { model: Detalle, include: [{ model: Producto, include: [TipoAfectacion, Unidad] }] },
+  { model: TipoComprobante },
+  { model: Moneda },
+  { model: Serie },
+  { model: Cuota },
+  { model: Comprobante, as: "comprobanteRef" },
+];
+
+/**
+ * Genera el XML según el tipo de comprobante, lo firma y lo guarda en disco.
+ * Usado por emitir y por reenviar (para que el reenvío tome los datos y
+ * builders actuales en lugar del XML viejo en disco).
+ * @returns {Promise<string>} nombre del archivo XML firmado
+ */
+const generarYFirmarXml = async (comprobante) => {
+  const certPath     = process.env.SUNAT_CERT_PATH;
+  const certPassword = process.env.SUNAT_CERT_PASSWORD;
+  if (!certPath || !certPassword) {
+    throw new Error("Certificado digital no configurado (SUNAT_CERT_PATH / SUNAT_CERT_PASSWORD)");
+  }
+
+  const correlativoStr = String(comprobante.correlativo).padStart(8, "0");
+  const nombreArchivo  = `${comprobante.Emisor.ruc}-${comprobante.tipo_comprobante_id}-${comprobante.serie}-${correlativoStr}`;
+
+  let xmlSinFirmar;
+  if (comprobante.tipo_comprobante_id === "01") {
+    xmlSinFirmar = facturaBuilder.build(comprobante);
+  } else if (comprobante.tipo_comprobante_id === "03") {
+    xmlSinFirmar = boletaBuilder.build(comprobante);
+  } else {
+    xmlSinFirmar = facturaBuilder.buildNota(comprobante);
+  }
+
+  await comprobante.update({
+    estado_sunat: "GENERADO",
+    es_terminal:  false, // XML nuevo: el resultado anterior ya no aplica
+    nombre_xml:   nombreArchivo,
+    xml_path:     nombreArchivo,
+  });
+
+  let xmlFirmado;
+  try {
+    xmlFirmado = xmlSigner.signXml(xmlSinFirmar, certPath, certPassword);
+  } catch (signErr) {
+    throw new Error("Error al firmar el XML: " + signErr.message);
+  }
+
+  storageHelper.saveXml(nombreArchivo, xmlFirmado);
+  await comprobante.update({ estado_sunat: "FIRMADO" });
+
+  return nombreArchivo;
+};
 
 /**
  * GET /comprobante/lista
@@ -69,26 +128,17 @@ const emitirComprobante = async (req, res) => {
     }
 
     const comprobante = await Comprobante.findByPk(comprobante_id, {
-      include: [
-        { model: Emisor },
-        { model: Cliente, include: [{ model: TipoDocumento }] },
-        { model: Detalle, include: [{ model: Producto, include: [TipoAfectacion, Unidad] }] },
-        { model: TipoComprobante },
-        { model: Moneda },
-        { model: Serie },
-        { model: Cuota },
-        { model: Comprobante, as: "comprobanteRef" },
-      ],
+      include: INCLUDE_XML,
     });
 
     if (!comprobante) {
       return res.status(404).json({ message: "Comprobante no encontrado" });
     }
 
-    if (comprobante.estado_sunat === "ACEPTADO") {
+    if (comprobante.estado_sunat === "ACEPTADO" || comprobante.estado_sunat === "OBSERVADO") {
       return res.status(400).json({
         message: "El comprobante ya fue aceptado por SUNAT",
-        estado_sunat: "ACEPTADO",
+        estado_sunat: comprobante.estado_sunat,
       });
     }
 
@@ -110,39 +160,13 @@ const emitirComprobante = async (req, res) => {
       return res.status(400).json({ message: "El comprobante no tiene emisor asignado" });
     }
 
-    // Validar certificado antes de intentar firmar
-    const certPath     = process.env.SUNAT_CERT_PATH;
-    const certPassword = process.env.SUNAT_CERT_PASSWORD;
-    if (!certPath || !certPassword) {
-      return res.status(500).json({ message: "Certificado digital no configurado (SUNAT_CERT_PATH / SUNAT_CERT_PASSWORD)" });
-    }
-
-    // Construir nombre del archivo
-    const correlativoStr = String(comprobante.correlativo).padStart(8, "0");
-    const nombreArchivo  = `${comprobante.Emisor.ruc}-${comprobante.tipo_comprobante_id}-${comprobante.serie}-${correlativoStr}`;
-
-    // Generar XML según tipo → estado GENERADO
-    let xmlSinFirmar;
-    if (comprobante.tipo_comprobante_id === "01") {
-      xmlSinFirmar = facturaBuilder.build(comprobante);
-    } else if (comprobante.tipo_comprobante_id === "03") {
-      xmlSinFirmar = boletaBuilder.build(comprobante);
-    } else {
-      xmlSinFirmar = facturaBuilder.buildNota(comprobante);
-    }
-
-    await comprobante.update({ estado_sunat: "GENERADO", nombre_xml: nombreArchivo, xml_path: nombreArchivo });
-
-    // Firmar XML → estado FIRMADO
-    let xmlFirmado;
+    // Generar y firmar XML → estados GENERADO → FIRMADO
+    let nombreArchivo;
     try {
-      xmlFirmado = xmlSigner.signXml(xmlSinFirmar, certPath, certPassword);
-    } catch (signErr) {
-      return res.status(500).json({ message: "Error al firmar el XML: " + signErr.message });
+      nombreArchivo = await generarYFirmarXml(comprobante);
+    } catch (genErr) {
+      return res.status(500).json({ message: genErr.message });
     }
-
-    storageHelper.saveXml(nombreArchivo, xmlFirmado);
-    await comprobante.update({ estado_sunat: "FIRMADO" });
 
     // Encolar envío a SUNAT
     const job = await encolarEnvio(comprobante_id, nombreArchivo);
@@ -165,12 +189,14 @@ const emitirComprobante = async (req, res) => {
  * POST /comprobante/:id/reenviar
  *
  * Reencola un comprobante en estado reenviable.
- * Bloquea si es_terminal=true (rechazo de datos, no hay reenvío útil sin corregir XML).
+ * Si fue RECHAZADO (o el XML no está en disco), regenera y re-firma el XML
+ * desde la BD para que el reenvío tome los datos/builders corregidos.
+ * Solo bloquea los rechazos realmente irrecuperables (CODIGOS_TERMINAL).
  */
 const reenviarComprobante = async (req, res) => {
   try {
     const comprobante = await Comprobante.findByPk(req.params.id, {
-      include: [Emisor],
+      include: INCLUDE_XML,
     });
 
     if (!comprobante) {
@@ -189,9 +215,12 @@ const reenviarComprobante = async (req, res) => {
       return res.status(400).json({ message: "El comprobante está fuera del plazo permitido (>3 días)" });
     }
 
-    if (comprobante.es_terminal) {
+    // Irrecuperables: numeración ya registrada, comprobante de baja, etc.
+    // El resto de rechazos sí se puede reenviar porque el XML se regenera.
+    const codigoNumerico = String(comprobante.cdr_code || "").replace(/[^\d]/g, "");
+    if (comprobante.es_terminal && CODIGOS_TERMINAL.has(codigoNumerico)) {
       return res.status(400).json({
-        message: "El comprobante fue rechazado definitivamente por SUNAT. Corrija los datos del XML antes de reenviar.",
+        message: "El comprobante fue rechazado definitivamente por SUNAT y no puede reenviarse.",
         estado_sunat: comprobante.estado_sunat,
         mensaje_sunat: comprobante.mensaje_sunat,
       });
@@ -203,11 +232,20 @@ const reenviarComprobante = async (req, res) => {
       });
     }
 
-    const archivoXml = comprobante.xml_path || comprobante.nombre_xml;
-    if (!archivoXml || !storageHelper.existsXml(archivoXml)) {
-      return res.status(400).json({
-        message: "XML firmado no encontrado en disco. Use /comprobante/emitir para regenerarlo.",
-      });
+    // RECHAZADO → regenerar siempre (el XML anterior fue el rechazado).
+    // Otros estados → regenerar solo si el XML firmado no está en disco.
+    let archivoXml = comprobante.xml_path || comprobante.nombre_xml;
+    const debeRegenerar =
+      comprobante.estado_sunat === "RECHAZADO" ||
+      !archivoXml ||
+      !storageHelper.existsXml(archivoXml);
+
+    if (debeRegenerar) {
+      try {
+        archivoXml = await generarYFirmarXml(comprobante);
+      } catch (genErr) {
+        return res.status(500).json({ message: genErr.message });
+      }
     }
 
     const job = await encolarEnvio(comprobante.id, archivoXml);
@@ -235,6 +273,23 @@ const recuperarEstados = async (_req, res) => {
   let corregidos = 0;
 
   try {
+    // ── 0. OBSERVADO con cdr_code de rechazo (2000-3999) → RECHAZADO ──
+    // Clasificación histórica invertida: SUNAT rechaza con códigos 2000-3999
+    // (p.ej. 3168). Esos comprobantes nunca quedaron registrados en SUNAT y
+    // deben quedar reenviables (el reenvío regenera el XML).
+    const observadosInvertidos = await Comprobante.findAll({
+      where: { estado_sunat: "OBSERVADO" },
+    });
+
+    for (const c of observadosInvertidos) {
+      const code = parseInt(c.cdr_code, 10);
+      if (Number.isInteger(code) && code >= 2000 && code <= 3999) {
+        await c.update({ estado_sunat: "RECHAZADO", es_terminal: false });
+        log.push({ id: c.id, accion: `OBSERVADO (${c.cdr_code}) → RECHAZADO reenviable` });
+        corregidos++;
+      }
+    }
+
     // ── 1. SIN_CDR con CDR base64 real → re-parsear ──────────────────
     const sinCdrConDatos = await Comprobante.findAll({
       where: {
@@ -246,10 +301,7 @@ const recuperarEstados = async (_req, res) => {
     for (const c of sinCdrConDatos) {
       try {
         const cdr = cdrParser.parseCdr(c.cdr_xml);
-        const code = parseInt(cdr.responseCode, 10);
-        const estadoFinal = cdr.responseCode === "0" ? "ACEPTADO"
-          : (code >= 2000 && code <= 3999) ? "OBSERVADO"
-          : "RECHAZADO";
+        const estadoFinal = cdrParser.resolverEstadoCdr(cdr);
         const esTerminal = estadoFinal === "ACEPTADO" || estadoFinal === "OBSERVADO";
 
         await c.update({

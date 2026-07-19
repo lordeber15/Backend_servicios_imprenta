@@ -38,10 +38,10 @@ function build(comprobante) {
   const horaEmision = formatTime(c.fecha_emision);
   const moneda = c.moneda_id || "PEN";
 
-  // listID según tipo de comprobante y forma de pago
-  // 0101 = Factura Contado, 0102 = Factura Crédito
+  // listID = tipo de operación (catálogo 51 SUNAT): 0101 = Venta interna.
+  // La forma de pago contado/crédito se declara en cac:PaymentTerms, no aquí.
   const esCredito = c.forma_pago && c.forma_pago.toLowerCase().includes("crédit");
-  const listId = esCredito ? "0102" : "0101";
+  const listId = "0101";
 
   // Tipo documento del cliente: catalogo 06 SUNAT
   // DNI=1, RUC=6, CE=4, Pasaporte=7, 0=sin doc
