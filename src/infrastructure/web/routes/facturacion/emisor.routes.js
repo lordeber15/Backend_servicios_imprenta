@@ -8,6 +8,7 @@ const {
   deleteEmisor,
   updateEmisor,
 } = require("../../controllers/facturacion/emisor.controller");
+const { authorize } = require("../../middleware/authorize.middleware");
 const router = Router();
 
 // Configuración de Multer para logo de empresa
@@ -43,8 +44,10 @@ const upload = multer({
  *       200:
  *         description: Datos de la empresa configurada
  */
+// GET queda para cualquier usuario autenticado: el frontend lo necesita
+// para renderizar comprobantes. Las escrituras son datos fiscales → solo admin.
 router.get("/emisor", getEmisor);
-router.post("/emisor", createEmisor);
+router.post("/emisor", authorize("Administrador"), createEmisor);
 
 /**
  * @swagger
@@ -60,11 +63,11 @@ router.post("/emisor", createEmisor);
  *       200:
  *         description: Emisor eliminado
  */
-router.delete("/emisor/:id", deleteEmisor);
-router.put("/emisor/:id", updateEmisor);
+router.delete("/emisor/:id", authorize("Administrador"), deleteEmisor);
+router.put("/emisor/:id", authorize("Administrador"), updateEmisor);
 
 // Upload logo de empresa
-router.put("/emisor/:id/logo", upload.single("logo"), async (req, res) => {
+router.put("/emisor/:id/logo", authorize("Administrador"), upload.single("logo"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No se subió ninguna imagen" });

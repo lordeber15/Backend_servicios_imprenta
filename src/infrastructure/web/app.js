@@ -62,6 +62,9 @@ const guiaRoutes = require("./routes/facturacion/guia.routes");
 const qzRoutes = require("./routes/qz.routes"); // Rutas para QZ Tray
 const formatosRoutes = require("./routes/formatos.routes"); // Formatos por usuario
 
+// Autenticación global (con lista blanca y modo auditoría)
+const authGlobal = require("./middleware/authGlobal.middleware");
+
 // ============================================
 // INICIALIZACIÓN DE EXPRESS
 // ============================================
@@ -112,7 +115,9 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  // Content-Disposition se expone para que el frontend pueda leer el nombre
+  // real del archivo (formato SUNAT) al descargar XML/PDF por axios.
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'Content-Disposition'],
   maxAge: 86400, // 24 horas de cache para preflight
 }));
 
@@ -159,6 +164,27 @@ app.use("/uploads", express.static(path.join(__dirname, "../../uploads"), {
 // ============================================
 
 const apiRouter = express.Router();
+
+/**
+ * MIDDLEWARE: Autenticación global
+ *
+ * Exige token en toda la API salvo las rutas públicas declaradas en
+ * authGlobal.middleware.js (/auth/login, /health, /uploads, /api-docs).
+ *
+ * Se monta aquí a propósito: después de los estáticos y Swagger, y antes de
+ * registrar las rutas de negocio, de modo que las cubre todas de una vez.
+ *
+ * Con AUTH_ENFORCE=false arranca en modo auditoría: no bloquea, solo registra
+ * en el log lo que rechazaría. Sirve de interruptor de emergencia sin redeploy.
+ */
+app.use(authGlobal);
+console.log(
+  authGlobal.AUTH_ENFORCE
+    ? "[Auth] Autenticación global ACTIVA (AUTH_ENFORCE=true)"
+    : "[Auth] Autenticación global en MODO AUDITORÍA (AUTH_ENFORCE=false) — " +
+      "las rutas antes abiertas no se bloquean, solo se registran. " +
+      "Las que ya exigían token por sí mismas lo siguen exigiendo."
+);
 
 // Rutas principales
 app.use("/health", healthRoutes); // Health check y diagnóstico CORS
@@ -221,12 +247,18 @@ app.use("/qz", qzRoutes);
  * - Body: { message: "Descripción del error" }
  */
 app.use((err, _req, res, _next) => {
-  console.error(err.stack);
+  // statusCode lo aportan las clases de utils/errors.js; status se mantiene
+  // por compatibilidad con errores lanzados antes de esa convención.
+  const status = err.statusCode || err.status || 500;
 
-  const status = err.status || 500;
+  // Los 5xx no exponen el detalle interno; los 4xx sí, porque son
+  // información útil y controlada para el cliente.
   const message = status >= 500
     ? "Error interno del servidor"
     : err.message || "Error en la solicitud";
+
+  if (status >= 500) console.error(err.stack);
+  else console.warn(`[${status}] ${err.message}`);
 
   res.status(status).json({ message });
 });

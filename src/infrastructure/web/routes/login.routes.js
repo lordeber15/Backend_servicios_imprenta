@@ -14,6 +14,8 @@ const {
   updateLogin,
 } = require("../controllers/login.controller");
 const authenticate = require("../middleware/auth.middleware");
+const { authorize, authorizeSelfOrAdmin } = require("../middleware/authorize.middleware");
+const { authLimiter } = require("../middleware/rateLimit.middleware");
 const multer = require("multer");
 const path = require("path");
 const { Login } = require("../../database/models/login");
@@ -66,7 +68,7 @@ const router = Router();
  *   "cargo": "Administrador"
  * }
  */
-router.post("/auth/login", authLogin);
+router.post("/auth/login", authLimiter, authLogin);
 
 /**
  * RUTAS PROTEGIDAS: Gestión de usuarios
@@ -115,7 +117,7 @@ router.post("/auth/login", authLogin);
  *         description: Usuario creado
  */
 router.get("/login", authenticate, getLogin);
-router.post("/login", authenticate, createLogin);
+router.post("/login", authenticate, authorize("Administrador"), createLogin);
 
 /**
  * @swagger
@@ -155,8 +157,8 @@ router.post("/login", authenticate, createLogin);
  *       200:
  *         description: Usuario actualizado
  */
-router.delete("/login/:id", authenticate, deleteLogin);
-router.put("/login/:id", authenticate, updateLogin);
+router.delete("/login/:id", authenticate, authorize("Administrador"), deleteLogin);
+router.put("/login/:id", authenticate, authorize("Administrador"), updateLogin);
 
 /**
  * @swagger
@@ -182,7 +184,8 @@ router.put("/login/:id", authenticate, updateLogin);
  *                 type: string
  *                 format: binary
  */
-router.put("/login/:id/image", authenticate, upload.single("image"), async (req, res) => {
+// Propio o admin: un usuario puede cambiar su foto, pero no la de otro.
+router.put("/login/:id/image", authenticate, authorizeSelfOrAdmin("id"), upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No se subió ninguna imagen" });

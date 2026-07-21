@@ -8,6 +8,7 @@
 "use strict";
 const { Router } = require("express");
 const authenticate = require("../../middleware/auth.middleware");
+const { authorize } = require("../../middleware/authorize.middleware");
 const {
   listComprobantes,
   emitirComprobante,
@@ -146,7 +147,7 @@ router.get("/comprobante/:id/pdf", descargarPdf);
  */
 router.get("/comprobante/:id/xml", descargarXml);
 
-// Utilidad de recuperación (sin auth para poder llamarla desde curl/Postman)
-router.post("/admin/recuperar-estados", recuperarEstados);
+// Utilidad de recuperación: reescribe estados de comprobantes en masa → solo admin.
+router.post("/admin/recuperar-estados", authenticate, authorize("Administrador"), recuperarEstados);
 
 module.exports = router;

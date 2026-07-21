@@ -16,6 +16,12 @@ const getReniec = async (req, res) => {
   const dni = req.params.dni;
   const token = process.env.DECOLECTA_API_KEY;
 
+  // Validar antes de llamar al servicio externo: evita consumo indebido de la
+  // API key y peticiones malformadas hacia apis.net.pe.
+  if (!/^\d{8}$/.test(dni)) {
+    return res.status(400).json({ error: "DNI inválido: debe tener 8 dígitos" });
+  }
+
   try {
     const response = await axios.get(
       `https://api.apis.net.pe/v2/reniec/dni?numero=${dni}`,
