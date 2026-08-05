@@ -28,3 +28,26 @@ dist-ssr
 storage/xml/
 storage/cdr/
 src/uploads/
+
+# Secretos y certificados — NUNCA versionar (se colocan manualmente en cada entorno)
+storage/certs/
+*.pfx
+*.p12
+**/keys/*.pem
+**/keys/*.crt
+
+# Scripts de diagnóstico puntual y docs de incidencias (ruido, quitados del repo)
+check_*.js
+fix_*.js
+fix_*.sh
+fix_*.py
+test_cors.sh
+check_pitr_status.sh
+DEPLOY_CORS_FIX.md
+SOLUCION_CORS_RAPIDA.md
+SOLUCION_ERROR_ENUM.md
+GUIA_RAPIDA_IMPORTACION.md
+IMPORTAR_XML.md
+MIGRACION_VENTAS_CAJA.md
+import_xml_to_db.js
+verify_imported_data.js
