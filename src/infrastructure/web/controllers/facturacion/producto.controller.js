@@ -4,7 +4,7 @@ const Producto = require("../../../database/models/facturacion/producto");
  * Obtener todos los productos
  * @route GET /api/productos
  */
-const getProducto = async (req, res) => {
+const getProducto = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
@@ -22,7 +22,7 @@ const getProducto = async (req, res) => {
     const productos = await Producto.findAll({ order: [["id", "DESC"]] });
     res.json(productos);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -30,7 +30,7 @@ const getProducto = async (req, res) => {
  * Crear un nuevo producto
  * @route POST /api/productos
  */
-const createProducto = async (req, res) => {
+const createProducto = async (req, res, next) => {
   try {
     const productoData = req.body;
     const newProducto = await Producto.create({
@@ -38,7 +38,7 @@ const createProducto = async (req, res) => {
     });
     res.json(newProducto);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -46,7 +46,7 @@ const createProducto = async (req, res) => {
  * Eliminar un producto por ID
  * @route DELETE /api/productos/:id
  */
-const deleteProducto = async (req, res) => {
+const deleteProducto = async (req, res, next) => {
   try {
     const { id } = req.params;
     const producto = await Producto.findByPk(id);
@@ -58,7 +58,7 @@ const deleteProducto = async (req, res) => {
     await producto.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -66,7 +66,7 @@ const deleteProducto = async (req, res) => {
  * Actualizar un producto existente
  * @route PUT /api/productos/:id
  */
-const updateProducto = async (req, res) => {
+const updateProducto = async (req, res, next) => {
   try {
     const { id } = req.params;
     const productoData = req.body;
@@ -83,7 +83,7 @@ const updateProducto = async (req, res) => {
 
     res.json(productoToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

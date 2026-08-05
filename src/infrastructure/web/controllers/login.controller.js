@@ -4,6 +4,7 @@ const CreateUserUseCase = require("../../../application/use_cases/auth/CreateUse
 const DeleteUserUseCase = require("../../../application/use_cases/auth/DeleteUser");
 const UpdateUserUseCase = require("../../../application/use_cases/auth/UpdateUser");
 const { Login } = require("../../database/models/login");
+const { NotFoundError } = require("../../utils/errors");
 const path = require("path");
 
 const userRepository = new SequelizeUserRepository();
@@ -11,7 +12,7 @@ const userRepository = new SequelizeUserRepository();
 /**
  * Obtener todos los usuarios
  */
-const getLogin = async (_req, res) => {
+const getLogin = async (_req, res, next) => {
   try {
     const usersWithFormatos = await Login.findAll({
       where: { activo: true },
@@ -27,78 +28,83 @@ const getLogin = async (_req, res) => {
     }));
     res.json(sanitizedUsers);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 /**
  * Autenticar usuario (Login)
  */
-const authLogin = async (req, res) => {
+const authLogin = async (req, res, next) => {
   try {
     const useCase = new LoginUserUseCase(userRepository);
     const result = await useCase.execute(req.body);
     res.json(result);
   } catch (error) {
-    const status = error.message.includes("incorrectos") ? 401 : 400;
-    return res.status(status).json({ message: error.message });
+    // Mensajes controlados del caso de uso: seguros de mostrar al cliente.
+    // Cualquier otro error (BD, bcrypt) se delega al handler global (500 genérico).
+    const msg = error.message || "";
+    if (msg.includes("incorrectos")) return res.status(401).json({ message: msg });
+    if (msg.includes("desactivada")) return res.status(403).json({ message: msg });
+    if (msg.includes("requeridos"))  return res.status(400).json({ message: msg });
+    return next(error);
   }
 };
 
 /**
  * Crear nuevo usuario
  */
-const createLogin = async (req, res) => {
+const createLogin = async (req, res, next) => {
   try {
     const useCase = new CreateUserUseCase(userRepository);
     const newUser = await useCase.execute(req.body);
     res.json({ id: newUser.id, usuario: newUser.usuario, cargo: newUser.cargo });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 /**
  * Eliminar usuario
  */
-const deleteLogin = async (req, res) => {
+const deleteLogin = async (req, res, next) => {
   try {
     const useCase = new DeleteUserUseCase(userRepository);
     const result = await useCase.execute(req.params.id);
     res.json(result);
   } catch (error) {
-    const status = error.message.includes("encontrado") ? 404 : 500;
-    return res.status(status).json({ message: error.message });
+    if (error.message.includes("encontrado")) return next(new NotFoundError(error.message));
+    return next(error);
   }
 };
 
 /**
  * Actualizar usuario
  */
-const updateLogin = async (req, res) => {
+const updateLogin = async (req, res, next) => {
   try {
     const useCase = new UpdateUserUseCase(userRepository);
     const updatedUser = await useCase.execute(req.params.id, req.body);
-    res.json({ 
-      id: updatedUser.id, 
-      usuario: updatedUser.usuario, 
-      cargo: updatedUser.cargo, 
-      activo: updatedUser.activo 
+    res.json({
+      id: updatedUser.id,
+      usuario: updatedUser.usuario,
+      cargo: updatedUser.cargo,
+      activo: updatedUser.activo
     });
   } catch (error) {
-    const status = error.message.includes("encontrado") ? 404 : 400;
-    return res.status(status).json({ message: error.message });
+    if (error.message.includes("encontrado")) return next(new NotFoundError(error.message));
+    return next(error);
   }
 };
 
 /**
  * Subir foto de perfil
  */
-const uploadImage = async (req, res) => {
+const uploadImage = async (req, res, next) => {
   try {
     const { id } = req.params;
     const user = await userRepository.findById(id);
-    
+
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
@@ -110,12 +116,12 @@ const uploadImage = async (req, res) => {
     user.image_url = `/uploads/${req.file.filename}`;
     await userRepository.save(user);
 
-    res.json({ 
-      message: "Imagen actualizada", 
-      image_url: user.image_url 
+    res.json({
+      message: "Imagen actualizada",
+      image_url: user.image_url
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

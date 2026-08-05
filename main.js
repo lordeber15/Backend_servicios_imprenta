@@ -25,8 +25,18 @@ let server; // Referencia al servidor HTTP para cerrar en shutdown
 
 async function main() {
   try {
-    await sequelize.sync({ alter: true });
-    console.log("Conectado a la base de datos");
+    // En producción NO se altera el esquema automáticamente: sync() solo crea
+    // tablas que falten, nunca modifica/elimina columnas existentes (evita
+    // cambios destructivos sobre datos de facturación al reiniciar). Los cambios
+    // de esquema en prod se gestionan con los SQL de migrations/.
+    // En desarrollo se mantiene alter:true por comodidad.
+    const isProd = process.env.NODE_ENV === "production";
+    await sequelize.sync(isProd ? {} : { alter: true });
+    console.log(
+      isProd
+        ? "Conectado a la base de datos (sync seguro, sin alter)"
+        : "Conectado a la base de datos (sync alter:true, desarrollo)"
+    );
 
     // Seed: insertar formatos iniciales si la tabla esta vacia
     const formatosCount = await Formato.count();

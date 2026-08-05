@@ -1,15 +1,15 @@
 const Tipo_documento = require("../../../database/models/facturacion/tipodocumento");
 
-const getTipo_documento = async (req, res) => {
+const getTipo_documento = async (req, res, next) => {
   try {
     const tipo_documentos = await Tipo_documento.findAll();
     res.json(tipo_documentos);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createTipo_documento = async (req, res) => {
+const createTipo_documento = async (req, res, next) => {
   try {
     const tipo_documentoData = req.body;
     const newTipo_documento = await Tipo_documento.create({
@@ -17,11 +17,11 @@ const createTipo_documento = async (req, res) => {
     });
     res.json(newTipo_documento);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteTipo_documento = async (req, res) => {
+const deleteTipo_documento = async (req, res, next) => {
   try {
     const { id } = req.params;
     const tipo_documento = await Tipo_documento.findByPk(id);
@@ -33,11 +33,11 @@ const deleteTipo_documento = async (req, res) => {
     await tipo_documento.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateTipo_documento = async (req, res) => {
+const updateTipo_documento = async (req, res, next) => {
   try {
     const { id } = req.params;
     const tipo_documentoData = req.body;
@@ -54,7 +54,7 @@ const updateTipo_documento = async (req, res) => {
 
     res.json(tipo_documentoToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

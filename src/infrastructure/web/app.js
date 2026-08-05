@@ -102,7 +102,10 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(origin => ori
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Permitir requests sin origin (como apps móviles o curl)
+    // Permitir requests sin Origin (health checks, curl, server-to-server).
+    // No es un agujero: tras la Fase 1 toda ruta de negocio exige token JWT,
+    // así que CORS ya no es la barrera de acceso — solo controla qué orígenes
+    // de navegador pueden leer respuestas. Ver SECURITY_NOTES.md.
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -147,7 +150,11 @@ app.use(morgan("dev"));
 // ============================================
 // DOCUMENTACIÓN DE LA API (SWAGGER)
 // ============================================
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger solo en desarrollo: en producción expondría toda la superficie de la
+// API a cualquiera sin token. En prod simplemente no se monta.
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 // SERVIR ARCHIVOS ESTÁTICOS (Imágenes de perfil, comprobantes, etc)
 app.use("/uploads", express.static(path.join(__dirname, "../../uploads"), {

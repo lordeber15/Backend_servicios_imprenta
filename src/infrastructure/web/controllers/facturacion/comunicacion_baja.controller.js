@@ -23,7 +23,7 @@ const storageHelper = require("../../../external_services/sunat/storageHelper");
  * Solo para Facturas (01), NC (07) y ND (08) ya ACEPTADAS por SUNAT.
  * Las boletas (03) se anulan a través del Resumen Diario (condicion=3).
  */
-const crearComunicacionBaja = async (req, res) => {
+const crearComunicacionBaja = async (req, res, next) => {
   try {
     const { emisor_id, fecha_referencia, comprobantes: compIds } = req.body;
 
@@ -129,7 +129,7 @@ const crearComunicacionBaja = async (req, res) => {
     });
   } catch (err) {
     console.error("crearComunicacionBaja error:", err);
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
@@ -137,7 +137,7 @@ const crearComunicacionBaja = async (req, res) => {
  * GET /comunicacion-baja/:id/consultar-ticket
  * Consulta el resultado del ticket de la Comunicación de Baja.
  */
-const consultarTicketBaja = async (req, res) => {
+const consultarTicketBaja = async (req, res, next) => {
   try {
     const baja = await ComunicacionBaja.findByPk(req.params.id, {
       include: [{ model: Emisor }, { model: ComunicacionBajaDetalle }],
@@ -186,7 +186,7 @@ const consultarTicketBaja = async (req, res) => {
     await baja.update({ estado_ticket: "ER", codigo_sunat: status.statusCode });
     return res.json({ estado_ticket: "ER", statusCode: status.statusCode });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 

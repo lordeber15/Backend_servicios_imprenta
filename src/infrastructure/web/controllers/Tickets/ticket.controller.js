@@ -7,7 +7,7 @@ const { Servicios } = require("../../../database/models/servicios");
 const { generarTicketPdf } = require("../../../external_services/tickets/ticketPdfGenerator");
 
 // Obtener todos los tickets con sus detalles
-const getTickets = async (req, res) => {
+const getTickets = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
@@ -30,12 +30,12 @@ const getTickets = async (req, res) => {
     });
     res.json(tickets);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Crear ticket con detalles
-const createTicket = async (req, res) => {
+const createTicket = async (req, res, next) => {
   try {
     const {
       cliente,
@@ -92,12 +92,12 @@ const createTicket = async (req, res) => {
 
     res.json(ticket);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Actualizar ticket con detalles
-const updateTicket = async (req, res) => {
+const updateTicket = async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
@@ -140,12 +140,12 @@ const updateTicket = async (req, res) => {
     });
     res.json(ticketActualizado);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 // Eliminar ticket
-const deleteTicket = async (req, res) => {
+const deleteTicket = async (req, res, next) => {
   try {
     const { id } = req.params;
     const ticket = await Ticket.findByPk(id);
@@ -157,12 +157,12 @@ const deleteTicket = async (req, res) => {
     await ticket.destroy();
     res.json({ message: "Ticket eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 // Generar PDF del ticket
-const getTicketPdf = async (req, res) => {
+const getTicketPdf = async (req, res, next) => {
   try {
     const { id } = req.params;
     const format = req.query.format || "80mm";
@@ -199,7 +199,7 @@ const getTicketPdf = async (req, res) => {
     });
     res.send(pdfBuffer);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

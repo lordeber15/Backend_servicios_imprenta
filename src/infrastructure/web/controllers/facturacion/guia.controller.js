@@ -20,7 +20,7 @@ const storageHelper = require("../../../external_services/sunat/storageHelper");
  * GET /guia
  * Lista guías de remisión con filtro opcional por fecha.
  */
-const listGuias = async (req, res) => {
+const listGuias = async (req, res, next) => {
   try {
     const { fecha } = req.query;
     const where = {};
@@ -36,27 +36,27 @@ const listGuias = async (req, res) => {
     });
     return res.json(guias);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
-const createGuia = async (req, res) => {
+const createGuia = async (req, res, next) => {
   try {
     const guia = await GuiaRemision.create(req.body);
     return res.status(201).json(guia);
   } catch (err) {
     console.error("Error creating guia:", err);
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
-const createDetalleGuia = async (req, res) => {
+const createDetalleGuia = async (req, res, next) => {
   try {
     const detalle = await DetalleGuia.create(req.body);
     return res.status(201).json(detalle);
   } catch (err) {
     console.error("Error creating detalle guia:", err);
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
@@ -66,7 +66,7 @@ const createDetalleGuia = async (req, res) => {
  *
  * Emite una Guía de Remisión Remitente (09) o Transportista (31) a SUNAT.
  */
-const emitirGuia = async (req, res) => {
+const emitirGuia = async (req, res, next) => {
   try {
     const { guia_id } = req.body;
     if (!guia_id) return res.status(400).json({ message: "guia_id es requerido" });
@@ -106,7 +106,7 @@ const emitirGuia = async (req, res) => {
     try {
       xmlFirmado = xmlSigner.signXml(xmlSinFirmar, certPath, certPassword);
     } catch (signErr) {
-      return res.status(500).json({ message: "Error al firmar XML: " + signErr.message });
+      return next(signErr);
     }
 
     storageHelper.saveXml(nombreArchivo, xmlFirmado);
@@ -170,14 +170,14 @@ const emitirGuia = async (req, res) => {
     });
   } catch (err) {
     console.error("emitirGuia error:", err);
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
 /**
  * GET /guia/:id/estado
  */
-const consultarEstadoGuia = async (req, res) => {
+const consultarEstadoGuia = async (req, res, next) => {
   try {
     const guia = await GuiaRemision.findByPk(req.params.id, {
       attributes: ["id", "serie", "correlativo", "tipo_guia", "estado_sunat", "codigo_sunat", "mensaje_sunat", "hash_cpe", "nombre_xml", "fecha_envio_sunat"],
@@ -185,7 +185,7 @@ const consultarEstadoGuia = async (req, res) => {
     if (!guia) return res.status(404).json({ message: "Guía no encontrada" });
     return res.json(guia);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
@@ -193,7 +193,7 @@ const consultarEstadoGuia = async (req, res) => {
  * GET /guia/:id/pdf
  * Genera y descarga el PDF de la guía de remisión.
  */
-const descargarPdfGuia = async (req, res) => {
+const descargarPdfGuia = async (req, res, next) => {
   try {
     const guia = await GuiaRemision.findByPk(req.params.id, {
       include: [
@@ -211,14 +211,14 @@ const descargarPdfGuia = async (req, res) => {
     res.set("Content-Disposition", `inline; filename="${guia.nombre_xml}.pdf"`);
     return res.send(pdfBuffer);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
 /**
  * GET /guia/:id/xml
  */
-const descargarXmlGuia = async (req, res) => {
+const descargarXmlGuia = async (req, res, next) => {
   try {
     const guia = await GuiaRemision.findByPk(req.params.id, { attributes: ["id", "nombre_xml"] });
     if (!guia) return res.status(404).json({ message: "Guía no encontrada" });
@@ -227,7 +227,7 @@ const descargarXmlGuia = async (req, res) => {
     }
     return res.download(storageHelper.getXmlPath(guia.nombre_xml), `${guia.nombre_xml}.xml`);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 

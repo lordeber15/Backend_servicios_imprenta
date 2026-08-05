@@ -1,16 +1,16 @@
 const Detalle = require("../../../database/models/facturacion/detalles");
 const Producto = require("../../../database/models/facturacion/producto");
 
-const getDetalle = async (req, res) => {
+const getDetalle = async (req, res, next) => {
   try {
     const detalles = await Detalle.findAll();
     res.json(detalles);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createDetalle = async (req, res) => {
+const createDetalle = async (req, res, next) => {
   try {
     const detalleData = req.body;
     const newDetalle = await Detalle.create({
@@ -27,11 +27,11 @@ const createDetalle = async (req, res) => {
 
     res.json(newDetalle);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteDetalle = async (req, res) => {
+const deleteDetalle = async (req, res, next) => {
   try {
     const { id } = req.params;
     const detalle = await Detalle.findByPk(id);
@@ -43,11 +43,11 @@ const deleteDetalle = async (req, res) => {
     await detalle.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateDetalle = async (req, res) => {
+const updateDetalle = async (req, res, next) => {
   try {
     const { id } = req.params;
     const detalleData = req.body;
@@ -64,7 +64,7 @@ const updateDetalle = async (req, res) => {
 
     res.json(detalleToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

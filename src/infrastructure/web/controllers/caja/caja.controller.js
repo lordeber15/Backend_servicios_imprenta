@@ -82,7 +82,7 @@ async function calcularVentas(caja) {
  * @param {import('express').Request} req - Body: { monto_apertura, observacion }
  * @param {import('express').Response} res - JSON con la nueva caja creada o error.
  */
-const abrirCaja = async (req, res) => {
+const abrirCaja = async (req, res, next) => {
   try {
     const cajaAbierta = await AperturaCaja.findOne({ where: { estado: "abierta" } });
     if (cajaAbierta) {
@@ -108,7 +108,7 @@ const abrirCaja = async (req, res) => {
 
     res.json(caja);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -118,7 +118,7 @@ const abrirCaja = async (req, res) => {
  * @param {import('express').Request} _req 
  * @param {import('express').Response} res - JSON con datos de la caja y totales actuales.
  */
-const getCajaActual = async (_req, res) => {
+const getCajaActual = async (_req, res, next) => {
   try {
     const caja = await AperturaCaja.findOne({ where: { estado: "abierta" } });
 
@@ -138,7 +138,7 @@ const getCajaActual = async (_req, res) => {
       total_yape: ventas.total_yape,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -148,7 +148,7 @@ const getCajaActual = async (_req, res) => {
  * @param {import('express').Request} req - Params: { id }; Body: { monto_cierre_fisico, observacion }
  * @param {import('express').Response} res - JSON con el resumen de cierre y diferencia calculada.
  */
-const cerrarCaja = async (req, res) => {
+const cerrarCaja = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { monto_cierre_fisico, observacion } = req.body;
@@ -188,7 +188,7 @@ const cerrarCaja = async (req, res) => {
       diferencia: caja.diferencia,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -198,7 +198,7 @@ const cerrarCaja = async (req, res) => {
  * @param {import('express').Request} _req 
  * @param {import('express').Response} res - Array de registros de caja.
  */
-const getHistorialCaja = async (_req, res) => {
+const getHistorialCaja = async (_req, res, next) => {
   try {
     const historial = await AperturaCaja.findAll({
       order: [["fecha_apertura", "DESC"], ["createdAt", "DESC"]],
@@ -206,13 +206,13 @@ const getHistorialCaja = async (_req, res) => {
     });
     res.json(historial);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // ─── GET /ventas/dia ──────────────────────────────────────────────────────────
 
-const getVentasDia = async (req, res) => {
+const getVentasDia = async (req, res, next) => {
   try {
     const fecha = req.query.fecha || new Date().toISOString().split("T")[0];
     const tipo = req.query.tipo || "all"; // all | ticket | boleta | factura
@@ -289,7 +289,7 @@ const getVentasDia = async (req, res) => {
 
     res.json({ ventas: resultado, totales });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

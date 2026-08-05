@@ -91,7 +91,7 @@ const generarYFirmarXml = async (comprobante) => {
 /**
  * GET /comprobante/lista
  */
-const listComprobantes = async (req, res) => {
+const listComprobantes = async (req, res, next) => {
   try {
     const { tipo, fecha } = req.query;
     const where = {};
@@ -110,7 +110,7 @@ const listComprobantes = async (req, res) => {
     });
     return res.json(comprobantes);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
@@ -120,7 +120,7 @@ const listComprobantes = async (req, res) => {
  * Genera y firma el XML, luego lo encola para envío asíncrono a SUNAT.
  * Retorna 202 inmediatamente — el estado final llega vía polling a /estado.
  */
-const emitirComprobante = async (req, res) => {
+const emitirComprobante = async (req, res, next) => {
   try {
     const { comprobante_id } = req.body;
     if (!comprobante_id) {
@@ -165,7 +165,7 @@ const emitirComprobante = async (req, res) => {
     try {
       nombreArchivo = await generarYFirmarXml(comprobante);
     } catch (genErr) {
-      return res.status(500).json({ message: genErr.message });
+      return next(genErr);
     }
 
     // Encolar envío a SUNAT
@@ -181,7 +181,7 @@ const emitirComprobante = async (req, res) => {
     });
   } catch (err) {
     console.error("emitirComprobante error:", err);
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
@@ -193,7 +193,7 @@ const emitirComprobante = async (req, res) => {
  * desde la BD para que el reenvío tome los datos/builders corregidos.
  * Solo bloquea los rechazos realmente irrecuperables (CODIGOS_TERMINAL).
  */
-const reenviarComprobante = async (req, res) => {
+const reenviarComprobante = async (req, res, next) => {
   try {
     const comprobante = await Comprobante.findByPk(req.params.id, {
       include: INCLUDE_XML,
@@ -244,7 +244,7 @@ const reenviarComprobante = async (req, res) => {
       try {
         archivoXml = await generarYFirmarXml(comprobante);
       } catch (genErr) {
-        return res.status(500).json({ message: genErr.message });
+        return next(genErr);
       }
     }
 
@@ -258,7 +258,7 @@ const reenviarComprobante = async (req, res) => {
       estado_url:     `/comprobante/${comprobante.id}/estado`,
     });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
@@ -268,7 +268,7 @@ const reenviarComprobante = async (req, res) => {
  * Utilidad de recuperación única: corrige estados inconsistentes en registros
  * históricos (CDR no parseado, errores transitorios mal clasificados, etc.).
  */
-const recuperarEstados = async (_req, res) => {
+const recuperarEstados = async (_req, res, next) => {
   const log = [];
   let corregidos = 0;
 
@@ -365,7 +365,7 @@ const recuperarEstados = async (_req, res) => {
     });
   } catch (err) {
     console.error("recuperarEstados error:", err);
-    return res.status(500).json({ message: err.message, detalle: log });
+    return next(err);
   }
 };
 
@@ -373,7 +373,7 @@ const recuperarEstados = async (_req, res) => {
  * GET /comprobante/:id/estado
  * Retorna el estado actual del comprobante (usado para polling desde el frontend).
  */
-const consultarEstado = async (req, res) => {
+const consultarEstado = async (req, res, next) => {
   try {
     const comprobante = await Comprobante.findByPk(req.params.id, {
       attributes: [
@@ -388,14 +388,14 @@ const consultarEstado = async (req, res) => {
 
     return res.json(comprobante);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
 /**
  * GET /comprobante/:id/pdf
  */
-const descargarPdf = async (req, res) => {
+const descargarPdf = async (req, res, next) => {
   try {
     const format = req.query.format || "a5";
 
@@ -425,14 +425,14 @@ const descargarPdf = async (req, res) => {
     res.set("Content-Disposition", `inline; filename="${comprobante.nombre_xml}.pdf"`);
     return res.send(pdfBuffer);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
 /**
  * GET /comprobante/:id/xml
  */
-const descargarXml = async (req, res) => {
+const descargarXml = async (req, res, next) => {
   try {
     const comprobante = await Comprobante.findByPk(req.params.id, {
       attributes: ["id", "nombre_xml", "xml_path"],
@@ -447,7 +447,7 @@ const descargarXml = async (req, res) => {
 
     return res.download(storageHelper.getXmlPath(archivo), `${archivo}.xml`);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 

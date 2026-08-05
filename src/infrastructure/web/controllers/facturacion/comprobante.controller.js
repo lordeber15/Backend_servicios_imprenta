@@ -5,12 +5,12 @@ const Moneda = require("../../../database/models/facturacion/moneda"); // Assumi
  * Obtener listado de comprobantes
  * @route GET /api/comprobante
  */
-const getComprobante = async (req, res) => {
+const getComprobante = async (req, res, next) => {
   try {
     const comprobantes = await Comprobante.findAll();
     res.json(comprobantes);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -18,12 +18,12 @@ const getComprobante = async (req, res) => {
  * Obtener listado de series configuradas (Ej: F001, B001)
  * @route GET /api/serie
  */
-const getSerie = async (req, res) => {
+const getSerie = async (req, res, next) => {
   try {
     const series = await Serie.findAll();
     res.json(series);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -31,7 +31,7 @@ const getSerie = async (req, res) => {
  * Crear una nueva serie de facturación
  * @route POST /api/serie
  */
-const createSerie = async (req, res) => {
+const createSerie = async (req, res, next) => {
   try {
     const serieData = req.body;
     const newSerie = await Serie.create({
@@ -39,7 +39,7 @@ const createSerie = async (req, res) => {
     });
     res.json(newSerie);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -47,7 +47,7 @@ const createSerie = async (req, res) => {
  * Registrar un nuevo comprobante (Solo cabecera)
  * @route POST /api/comprobante
  */
-const createComprobante = async (req, res) => {
+const createComprobante = async (req, res, next) => {
   try {
     const comprobanteData = req.body;
     const newComprobante = await Comprobante.create({
@@ -55,11 +55,11 @@ const createComprobante = async (req, res) => {
     });
     res.json(newComprobante);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteComprobante = async (req, res) => {
+const deleteComprobante = async (req, res, next) => {
   try {
     const { id } = req.params;
     const comprobante = await Comprobante.findByPk(id);
@@ -71,11 +71,11 @@ const deleteComprobante = async (req, res) => {
     await comprobante.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateComprobante = async (req, res) => {
+const updateComprobante = async (req, res, next) => {
   try {
     const { id } = req.params;
     const comprobanteData = req.body;
@@ -92,7 +92,7 @@ const updateComprobante = async (req, res) => {
 
     res.json(comprobanteToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

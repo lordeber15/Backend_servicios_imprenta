@@ -1,15 +1,15 @@
 const Cuota = require("../../../database/models/facturacion/cuota");
 
-const getCuota = async (req, res) => {
+const getCuota = async (req, res, next) => {
   try {
     const cuotas = await Cuota.findAll();
     res.json(cuotas);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createCuota = async (req, res) => {
+const createCuota = async (req, res, next) => {
   try {
     const cuotaData = req.body;
     const newCuota = await Cuota.create({
@@ -17,11 +17,11 @@ const createCuota = async (req, res) => {
     });
     res.json(newCuota);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteCuota = async (req, res) => {
+const deleteCuota = async (req, res, next) => {
   try {
     const { id } = req.params;
     const cuota = await Cuota.findByPk(id);
@@ -33,11 +33,11 @@ const deleteCuota = async (req, res) => {
     await cuota.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateCuota = async (req, res) => {
+const updateCuota = async (req, res, next) => {
   try {
     const { id } = req.params;
     const cuotaData = req.body;
@@ -54,7 +54,7 @@ const updateCuota = async (req, res) => {
 
     res.json(cuotaToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

@@ -4,18 +4,18 @@ const Emisor = require("../../../database/models/facturacion/emisor");
 const { generarCotizacionPdf } = require("../../../external_services/cotizacion/cotizacionPdfGenerator");
 
 // Obtener todos los Almanaques con sus detalles
-const getAlmanaque = async (req, res) => {
+const getAlmanaque = async (req, res, next) => {
   try {
     const almanaques = await Almanaque.findAll({
       include: [{ model: Detalle, as: "detalles" }],
     });
     res.json(almanaques);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 // Obtener un dato de Almanaques con sus detalles
-const getAlmanaqueById = async (req, res) => {
+const getAlmanaqueById = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
@@ -36,12 +36,12 @@ const getAlmanaqueById = async (req, res) => {
     res.json(almanaque);
   } catch (error) {
     console.error("Error al obtener almanaque:", error);
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Crear Almanaque con detalles
-const createAlmanaque = async (req, res) => {
+const createAlmanaque = async (req, res, next) => {
   try {
     const {
       cliente,
@@ -74,12 +74,12 @@ const createAlmanaque = async (req, res) => {
   } catch (error) {
     console.log("📦 Datos recibidos:", req.body);
     console.error("❌ Error en createAlmanaque:", error);
-    res.status(500).json({ message: error.message, stack: error.stack });
+    next(error);
   }
 };
 
 // Actualizar Almanaque con detalles
-const updateAlmanaque = async (req, res) => {
+const updateAlmanaque = async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
@@ -123,12 +123,12 @@ const updateAlmanaque = async (req, res) => {
     });
     res.json(actualizado);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 // Eliminar Almanaque
-const deleteAlmanaque = async (req, res) => {
+const deleteAlmanaque = async (req, res, next) => {
   try {
     const { id } = req.params;
     const registro = await Almanaque.findByPk(id);
@@ -140,12 +140,12 @@ const deleteAlmanaque = async (req, res) => {
     await registro.destroy();
     res.json({ message: "Almanaque eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 // Generar PDF de cotización
-const getCotizacionPdf = async (req, res) => {
+const getCotizacionPdf = async (req, res, next) => {
   try {
     const { id } = req.params;
     const format = req.query.format || "a5";
@@ -167,7 +167,7 @@ const getCotizacionPdf = async (req, res) => {
     });
     res.send(pdfBuffer);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

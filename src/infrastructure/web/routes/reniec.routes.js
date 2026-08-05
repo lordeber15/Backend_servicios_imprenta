@@ -7,6 +7,7 @@
 
 const { Router } = require("express");
 const { getReniec } = require("../controllers/reniec.controller.js");
+const { reniecLimiter } = require("../middleware/rateLimit.middleware");
 const router = Router();
 
 /**
@@ -25,6 +26,6 @@ const router = Router();
  *       200:
  *         description: Datos de la persona obtenidos
  */
-router.get("/api/reniec/:dni", getReniec);
+router.get("/api/reniec/:dni", reniecLimiter, getReniec);
 
 module.exports = router;

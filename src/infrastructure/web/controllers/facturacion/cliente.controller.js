@@ -8,7 +8,7 @@ const axios = require("axios");
  *
  * @route GET /cliente/buscar/:nrodoc
  */
-const buscarCliente = async (req, res) => {
+const buscarCliente = async (req, res, next) => {
   const { nrodoc } = req.params;
 
   if (!nrodoc || !/^\d+$/.test(nrodoc)) {
@@ -91,7 +91,7 @@ const buscarCliente = async (req, res) => {
  * @param {import('express').Request} req 
  * @param {import('express').Response} res - Array de objetos de clientes.
  */
-const getCliente = async (req, res) => {
+const getCliente = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
@@ -109,7 +109,7 @@ const getCliente = async (req, res) => {
     const clientes = await Cliente.findAll({ order: [["id", "DESC"]] });
     res.json(clientes);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -119,7 +119,7 @@ const getCliente = async (req, res) => {
  * @param {import('express').Request} req - Body: { tipo_documento_id, nrodoc, razon_social, direccion }
  * @param {import('express').Response} res - El cliente creado.
  */
-const createCliente = async (req, res) => {
+const createCliente = async (req, res, next) => {
   try {
     const { tipo_documento_id, nrodoc, razon_social, direccion } = req.body;
     const newCliente = await Cliente.create({
@@ -130,7 +130,7 @@ const createCliente = async (req, res) => {
     });
     res.json(newCliente);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -140,7 +140,7 @@ const createCliente = async (req, res) => {
  * @param {import('express').Request} req - Params: { id }
  * @param {import('express').Response} res - Mensaje de confirmación.
  */
-const deleteCliente = async (req, res) => {
+const deleteCliente = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -154,7 +154,7 @@ const deleteCliente = async (req, res) => {
 
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -164,7 +164,7 @@ const deleteCliente = async (req, res) => {
  * @param {import('express').Request} req - Params: { id }; Body: { tipo_documento_id, nrodoc, razon_social, direccion }
  * @param {import('express').Response} res - El cliente actualizado.
  */
-const updateCliente = async (req, res) => {
+const updateCliente = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { tipo_documento_id, nrodoc, razon_social, direccion } = req.body;
@@ -184,7 +184,7 @@ const updateCliente = async (req, res) => {
 
     res.json(cliente);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

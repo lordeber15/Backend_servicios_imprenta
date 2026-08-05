@@ -1,6 +1,6 @@
 const { Egreso } = require("../../../database/models/Ingresosyegresos/egresos");
 
-const getEgresos = async (req, res) => {
+const getEgresos = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
@@ -18,11 +18,11 @@ const getEgresos = async (req, res) => {
     const egresos = await Egreso.findAll({ order: [["fecha", "DESC"]] });
     res.json(egresos);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createEgresos = async (req, res) => {
+const createEgresos = async (req, res, next) => {
   try {
     const { monto, descripcion, fecha, metodo } = req.body;
     const newEgresos = await Egreso.create({
@@ -33,10 +33,10 @@ const createEgresos = async (req, res) => {
     });
     res.json(newEgresos);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
-const deleteEgresos = async (req, res) => {
+const deleteEgresos = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -50,10 +50,10 @@ const deleteEgresos = async (req, res) => {
 
     res.json({ message: "elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
-const updateEgresos = async (req, res) => {
+const updateEgresos = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { monto, descripcion, fecha, metodo } = req.body;
@@ -73,7 +73,7 @@ const updateEgresos = async (req, res) => {
 
     res.json(egresoupdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

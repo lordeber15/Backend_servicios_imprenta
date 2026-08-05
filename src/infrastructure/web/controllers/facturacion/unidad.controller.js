@@ -4,12 +4,12 @@ const Unidad = require("../../../database/models/facturacion/unidad");
  * Obtener todas las unidades de medida
  * @route GET /api/unidad
  */
-const getUnidad = async (req, res) => {
+const getUnidad = async (req, res, next) => {
   try {
     const unidads = await Unidad.findAll();
     res.json(unidads);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -17,7 +17,7 @@ const getUnidad = async (req, res) => {
  * Crear una nueva unidad de medida
  * @route POST /api/unidad
  */
-const createUnidad = async (req, res) => {
+const createUnidad = async (req, res, next) => {
   try {
     const unidadData = req.body;
     const newUnidad = await Unidad.create({
@@ -25,11 +25,11 @@ const createUnidad = async (req, res) => {
     });
     res.json(newUnidad);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteUnidad = async (req, res) => {
+const deleteUnidad = async (req, res, next) => {
   try {
     const { id } = req.params;
     const unidad = await Unidad.findByPk(id);
@@ -41,11 +41,11 @@ const deleteUnidad = async (req, res) => {
     await unidad.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateUnidad = async (req, res) => {
+const updateUnidad = async (req, res, next) => {
   try {
     const { id } = req.params;
     const unidadData = req.body;
@@ -62,7 +62,7 @@ const updateUnidad = async (req, res) => {
 
     res.json(unidadToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

@@ -35,4 +35,20 @@ const authLimiter = rateLimit({
   message: { message: "Demasiados intentos fallidos. Espera 15 minutos." },
 });
 
-module.exports = { authLimiter };
+/**
+ * Límite para la consulta a RENIEC.
+ *
+ * El endpoint ya exige token (Fase 1), pero cada consulta gasta la API key de
+ * DECOLECTA de la empresa. Este límite acota el abuso si una cuenta se ve
+ * comprometida o un script itera DNIs. Por IP con ventana corta; los aciertos
+ * también cuentan (a diferencia del login) porque el coste está en cada llamada.
+ */
+const reniecLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiadas consultas RENIEC. Espera un momento." },
+});
+
+module.exports = { authLimiter, reniecLimiter };

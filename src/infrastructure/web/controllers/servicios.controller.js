@@ -6,18 +6,19 @@
  */
 
 const servicioService = require("../../../application/services/servicio.service");
+const { NotFoundError } = require("../../utils/errors");
 
 /**
  * Obtener todos los servicios (paginado y filtrado)
  * 
  * Ruta: GET /servicios?page=1&limit=10&nombre=juan&estado=Pendiente
  */
-const getServicios = async (req, res) => {
+const getServicios = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const { nombre, estado } = req.query;
-    
+
     // Handle "Todos" case from frontend just in case, though frontend should probably handle it
     const filters = {
         nombre,
@@ -27,7 +28,7 @@ const getServicios = async (req, res) => {
     const result = await servicioService.getServicios(page, limit, filters);
     res.json(result);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -36,12 +37,12 @@ const getServicios = async (req, res) => {
  * 
  * Ruta: POST /servicios
  */
-const createServicios = async (req, res) => {
+const createServicios = async (req, res, next) => {
   try {
     const newServicio = await servicioService.createServicio(req.body);
     res.json(newServicio);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -50,15 +51,13 @@ const createServicios = async (req, res) => {
  * 
  * Ruta: DELETE /servicios/:id
  */
-const deleteServicios = async (req, res) => {
+const deleteServicios = async (req, res, next) => {
   try {
     const result = await servicioService.deleteServicio(req.params.id);
     res.json(result);
   } catch (error) {
-    if (error.message === "Servicio no encontrado") {
-        return res.status(404).json({ message: error.message });
-    }
-    return res.status(500).json({ message: error.message });
+    if (error.message === "Servicio no encontrado") return next(new NotFoundError(error.message));
+    return next(error);
   }
 };
 
@@ -67,15 +66,13 @@ const deleteServicios = async (req, res) => {
  * 
  * Ruta: PUT /servicios/:id
  */
-const updateServicios = async (req, res) => {
+const updateServicios = async (req, res, next) => {
   try {
     const updatedServicio = await servicioService.updateServicio(req.params.id, req.body);
     res.json(updatedServicio);
   } catch (error) {
-    if (error.message === "Servicio no encontrado") {
-        return res.status(404).json({ message: error.message });
-    }
-    return res.status(500).json({ message: error.message });
+    if (error.message === "Servicio no encontrado") return next(new NotFoundError(error.message));
+    return next(error);
   }
 };
 
@@ -84,12 +81,12 @@ const updateServicios = async (req, res) => {
  *
  * Ruta: GET /servicios/stats
  */
-const getServiciosStats = async (req, res) => {
+const getServiciosStats = async (req, res, next) => {
   try {
     const stats = await servicioService.getStats();
     res.json(stats);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

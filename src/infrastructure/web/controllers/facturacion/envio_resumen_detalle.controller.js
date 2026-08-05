@@ -1,15 +1,15 @@
 const Envio_resumen_detalle = require("../../../database/models/facturacion/envioresumendetalle");
 
-const getEnvio_resumen_detalle = async (req, res) => {
+const getEnvio_resumen_detalle = async (req, res, next) => {
   try {
     const envio_resumen_detalles = await Envio_resumen_detalle.findAll();
     res.json(envio_resumen_detalles);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createEnvio_resumen_detalle = async (req, res) => {
+const createEnvio_resumen_detalle = async (req, res, next) => {
   try {
     const envio_resumen_detalleData = req.body;
     const newEnvio_resumen_detalle = await Envio_resumen_detalle.create({
@@ -17,11 +17,11 @@ const createEnvio_resumen_detalle = async (req, res) => {
     });
     res.json(newEnvio_resumen_detalle);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteEnvio_resumen_detalle = async (req, res) => {
+const deleteEnvio_resumen_detalle = async (req, res, next) => {
   try {
     const { id } = req.params;
     const envio_resumen_detalle = await Envio_resumen_detalle.findByPk(id);
@@ -33,11 +33,11 @@ const deleteEnvio_resumen_detalle = async (req, res) => {
     await envio_resumen_detalle.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateEnvio_resumen_detalle = async (req, res) => {
+const updateEnvio_resumen_detalle = async (req, res, next) => {
   try {
     const { id } = req.params;
     const envio_resumen_detalleData = req.body;
@@ -56,7 +56,7 @@ const updateEnvio_resumen_detalle = async (req, res) => {
 
     res.json(envio_resumen_detalleToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

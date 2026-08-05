@@ -22,7 +22,7 @@ const storageHelper = require("../../../external_services/sunat/storageHelper");
  * y las envía a SUNAT como Resumen Diario (RC).
  * Retorna el ticket para consultar el resultado (async).
  */
-const generarResumenDiario = async (req, res) => {
+const generarResumenDiario = async (req, res, next) => {
   try {
     const { emisor_id, fecha_referencia } = req.body;
 
@@ -126,7 +126,7 @@ const generarResumenDiario = async (req, res) => {
     });
   } catch (err) {
     console.error("generarResumenDiario error:", err);
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 
@@ -134,7 +134,7 @@ const generarResumenDiario = async (req, res) => {
  * GET /resumen-diario/:id/consultar-ticket
  * Consulta el estado del Resumen Diario en SUNAT usando el ticket almacenado.
  */
-const consultarTicketResumen = async (req, res) => {
+const consultarTicketResumen = async (req, res, next) => {
   try {
     const envio = await EnvioResumen.findByPk(req.params.id, {
       include: [
@@ -212,7 +212,7 @@ const consultarTicketResumen = async (req, res) => {
     });
   } catch (err) {
     console.error("consultarTicketResumen error:", err);
-    return res.status(500).json({ message: err.message });
+    return next(err);
   }
 };
 

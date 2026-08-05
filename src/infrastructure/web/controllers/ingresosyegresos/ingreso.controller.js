@@ -1,6 +1,6 @@
 const { Ingresos } = require("../../../database/models/Ingresosyegresos/ingresos");
 
-const getIngreso = async (req, res) => {
+const getIngreso = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
@@ -18,11 +18,11 @@ const getIngreso = async (req, res) => {
     const ingresos = await Ingresos.findAll({ order: [["fecha", "DESC"]] });
     res.json(ingresos);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createIngreso = async (req, res) => {
+const createIngreso = async (req, res, next) => {
   try {
     const { monto, descripcion, fecha, metodo } = req.body;
     const newIngreso = await Ingresos.create({
@@ -33,10 +33,10 @@ const createIngreso = async (req, res) => {
     });
     res.json(newIngreso);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
-const deleteIngreso = async (req, res) => {
+const deleteIngreso = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -50,10 +50,10 @@ const deleteIngreso = async (req, res) => {
 
     res.json({ message: "elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
-const updateIngreso = async (req, res) => {
+const updateIngreso = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { monto, descripcion, fecha, metodo } = req.body;
@@ -73,7 +73,7 @@ const updateIngreso = async (req, res) => {
 
     res.json(ingresoupdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

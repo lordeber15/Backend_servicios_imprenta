@@ -5,12 +5,12 @@ const Tipo_afectacion = require("../../../database/models/facturacion/tipoafecta
  * Obtener listado de monedas (PEN, USD)
  * @route GET /api/moneda
  */
-const getMoneda = async (req, res) => {
+const getMoneda = async (req, res, next) => {
   try {
     const monedas = await Moneda.findAll();
     res.json(monedas);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -18,12 +18,12 @@ const getMoneda = async (req, res) => {
  * Obtener listado de tipos de afectación del IGV (Catálogo 07 SUNAT)
  * @route GET /api/tipo_afectacion
  */
-const getTipo_afectacion = async (req, res) => {
+const getTipo_afectacion = async (req, res, next) => {
   try {
     const tipo_afectacions = await Tipo_afectacion.findAll();
     res.json(tipo_afectacions);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -31,7 +31,7 @@ const getTipo_afectacion = async (req, res) => {
  * Crear un nuevo tipo de afectación
  * @route POST /api/tipo_afectacion
  */
-const createTipo_afectacion = async (req, res) => {
+const createTipo_afectacion = async (req, res, next) => {
   try {
     const tipoAfectacionData = req.body;
     const newTipoAfectacion = await Tipo_afectacion.create({
@@ -39,7 +39,7 @@ const createTipo_afectacion = async (req, res) => {
     });
     res.json(newTipoAfectacion);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
@@ -47,7 +47,7 @@ const createTipo_afectacion = async (req, res) => {
  * Registrar una nueva moneda
  * @route POST /api/moneda
  */
-const createMoneda = async (req, res) => {
+const createMoneda = async (req, res, next) => {
   try {
     const monedaData = req.body;
     const newMoneda = await Moneda.create({
@@ -55,11 +55,11 @@ const createMoneda = async (req, res) => {
     });
     res.json(newMoneda);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteMoneda = async (req, res) => {
+const deleteMoneda = async (req, res, next) => {
   try {
     const { id } = req.params;
     const moneda = await Moneda.findByPk(id);
@@ -71,11 +71,11 @@ const deleteMoneda = async (req, res) => {
     await moneda.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateMoneda = async (req, res) => {
+const updateMoneda = async (req, res, next) => {
   try {
     const { id } = req.params;
     const monedaData = req.body;
@@ -92,7 +92,7 @@ const updateMoneda = async (req, res) => {
 
     res.json(monedaToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

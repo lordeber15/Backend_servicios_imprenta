@@ -1,15 +1,15 @@
 const Serie = require("../../../database/models/facturacion/serie");
 
-const getSerie = async (req, res) => {
+const getSerie = async (req, res, next) => {
   try {
     const series = await Serie.findAll();
     res.json(series);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createSerie = async (req, res) => {
+const createSerie = async (req, res, next) => {
   try {
     const serieData = req.body;
     const newSerie = await Serie.create({
@@ -17,11 +17,11 @@ const createSerie = async (req, res) => {
     });
     res.json(newSerie);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteSerie = async (req, res) => {
+const deleteSerie = async (req, res, next) => {
   try {
     const { id } = req.params;
     const serie = await Serie.findByPk(id);
@@ -33,11 +33,11 @@ const deleteSerie = async (req, res) => {
     await serie.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateSerie = async (req, res) => {
+const updateSerie = async (req, res, next) => {
   try {
     const { id } = req.params;
     const serieData = req.body;
@@ -54,7 +54,7 @@ const updateSerie = async (req, res) => {
 
     res.json(serieToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

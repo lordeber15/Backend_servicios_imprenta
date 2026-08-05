@@ -1,15 +1,15 @@
 const Tabla_parametrica = require("../../../database/models/facturacion/tablaparametrica");
 
-const getTabla_parametrica = async (req, res) => {
+const getTabla_parametrica = async (req, res, next) => {
   try {
     const tabla_parametricas = await Tabla_parametrica.findAll();
     res.json(tabla_parametricas);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createTabla_parametrica = async (req, res) => {
+const createTabla_parametrica = async (req, res, next) => {
   try {
     const tabla_parametricaData = req.body;
     const newTabla_parametrica = await Tabla_parametrica.create({
@@ -17,11 +17,11 @@ const createTabla_parametrica = async (req, res) => {
     });
     res.json(newTabla_parametrica);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteTabla_parametrica = async (req, res) => {
+const deleteTabla_parametrica = async (req, res, next) => {
   try {
     const { id } = req.params;
     const tabla_parametrica = await Tabla_parametrica.findByPk(id);
@@ -33,11 +33,11 @@ const deleteTabla_parametrica = async (req, res) => {
     await tabla_parametrica.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateTabla_parametrica = async (req, res) => {
+const updateTabla_parametrica = async (req, res, next) => {
   try {
     const { id } = req.params;
     const tabla_parametricaData = req.body;
@@ -54,7 +54,7 @@ const updateTabla_parametrica = async (req, res) => {
 
     res.json(tabla_parametricaToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 

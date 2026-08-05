@@ -3,17 +3,17 @@ const { UsuarioFormato } = require("../../database/models/usuario_formatos");
 const { Login } = require("../../database/models/login");
 
 // Listar todos los formatos del catálogo
-const getFormatos = async (_req, res) => {
+const getFormatos = async (_req, res, next) => {
   try {
     const formatos = await Formato.findAll({ order: [["id", "ASC"]] });
     res.json(formatos);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Obtener formatos asignados a un usuario (retorna array de keys)
-const getUsuarioFormatos = async (req, res) => {
+const getUsuarioFormatos = async (req, res, next) => {
   try {
     const { id } = req.params;
     const user = await Login.findByPk(id, {
@@ -24,12 +24,12 @@ const getUsuarioFormatos = async (req, res) => {
     const formatoKeys = user.formatos.map((f) => f.key);
     res.json(formatoKeys);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Actualizar formatos de un usuario (recibe array de keys, reemplaza existentes)
-const updateUsuarioFormatos = async (req, res) => {
+const updateUsuarioFormatos = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { formatos } = req.body; // Array de keys: ["ticket", "boleta"]
@@ -52,7 +52,7 @@ const updateUsuarioFormatos = async (req, res) => {
 
     res.json({ message: "Formatos actualizados", formatos });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

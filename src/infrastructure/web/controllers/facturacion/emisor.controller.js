@@ -1,15 +1,15 @@
 const Emisor = require("../../../database/models/facturacion/emisor");
 
-const getEmisor = async (req, res) => {
+const getEmisor = async (req, res, next) => {
   try {
     const emisors = await Emisor.findAll();
     res.json(emisors);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const createEmisor = async (req, res) => {
+const createEmisor = async (req, res, next) => {
   try {
     const emisorData = req.body;
     const newEmisor = await Emisor.create({
@@ -17,11 +17,11 @@ const createEmisor = async (req, res) => {
     });
     res.json(newEmisor);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const deleteEmisor = async (req, res) => {
+const deleteEmisor = async (req, res, next) => {
   try {
     const { id } = req.params;
     const emisor = await Emisor.findByPk(id);
@@ -33,11 +33,11 @@ const deleteEmisor = async (req, res) => {
     await emisor.destroy();
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-const updateEmisor = async (req, res) => {
+const updateEmisor = async (req, res, next) => {
   try {
     const { id } = req.params;
     const emisorData = req.body;
@@ -54,7 +54,7 @@ const updateEmisor = async (req, res) => {
 
     res.json(emisorToUpdate);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
