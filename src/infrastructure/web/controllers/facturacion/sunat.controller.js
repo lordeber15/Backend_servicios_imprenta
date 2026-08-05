@@ -15,9 +15,6 @@ const Cuota          = require("../../../database/models/facturacion/cuota");
 
 require("../../../database/models/facturacion/asociation");
 
-// Cargar asociaciones entre modelos (DEBE estar antes de cualquier include)
-require("../../../database/models/facturacion/asociation");
-
 const facturaBuilder = require("../../../external_services/sunat/xmlBuilders/facturaBuilder");
 const boletaBuilder  = require("../../../external_services/sunat/xmlBuilders/boletaBuilder");
 const xmlSigner      = require("../../../external_services/sunat/xmlSigner");
@@ -174,7 +171,6 @@ const emitirComprobante = async (req, res, next) => {
     // Encolar envío a SUNAT
     const job = await encolarEnvio(comprobante_id, nombreArchivo);
 
-<<<<<<< HEAD
     return res.status(202).json({
       message:       "Comprobante firmado y en cola de envío a SUNAT",
       comprobante_id,
@@ -182,96 +178,6 @@ const emitirComprobante = async (req, res, next) => {
       nombre_xml:    nombreArchivo,
       job_id:        job.id,
       estado_url:    `/comprobante/${comprobante_id}/estado`,
-=======
-    // 7. Enviar a SUNAT
-    let cdrBase64;
-    try {
-      const xmlBuffer = Buffer.from(xmlFirmado, "utf8");
-      cdrBase64 = await sunatClient.sendBill(xmlBuffer, nombreArchivo, comprobante.Emisor);
-    } catch (soapErr) {
-      // SUNAT rechazó directamente con SOAP fault
-      console.error("[SUNAT SOAP Error]", JSON.stringify(soapErr.root || soapErr.body || soapErr.message, null, 2));
-      const faultDetail = soapErr.root?.Envelope?.Body?.Fault?.detail?.fault;
-      const codigoErr = faultDetail?.faultCode || faultDetail?.faultcode || "SOAP_ERR";
-      const mensajeErr = faultDetail?.faultString || faultDetail?.faultstring || soapErr.message || "Error en comunicación con SUNAT";
-
-      await comprobante.update({
-        estado_sunat: "RR",
-        codigo_sunat: String(codigoErr),
-        mensaje_sunat: mensajeErr,
-        nombre_xml: nombreArchivo,
-        fecha_envio_sunat: new Date(),
-        intentos_envio: (comprobante.intentos_envio || 0) + 1,
-      });
-
-      return res.status(422).json({
-        message: `SUNAT rechazó: ${codigoErr} - ${mensajeErr}`,
-        codigo_sunat: String(codigoErr),
-        mensaje_sunat: mensajeErr,
-      });
-    }
-
-    // 8. Guardar CDR en disco
-    if (cdrBase64) {
-      storageHelper.saveCdr(nombreArchivo, cdrBase64);
-    }
-
-    // 9. Parsear CDR
-    let cdr = { responseCode: "0", description: "Aceptado", notes: [], digestValue: "", accepted: true };
-    if (cdrBase64) {
-      try {
-        cdr = cdrParser.parseCdr(cdrBase64);
-      } catch (parseErr) {
-        console.error("Error al parsear CDR:", parseErr.message);
-      }
-    }
-
-    // 10. Generar QR
-    let qrBase64 = "";
-    try {
-      qrBase64 = await qrGenerator.generarQr(comprobante, cdr.digestValue);
-    } catch (qrErr) {
-      console.error("Error al generar QR:", qrErr.message);
-    }
-
-    // 11. Actualizar estado en BD
-    const estadoSunat = cdr.accepted ? "AC" : "RR";
-    await comprobante.update({
-      estado_sunat: estadoSunat,
-      codigo_sunat: cdr.responseCode,
-      mensaje_sunat:
-        cdr.description + (cdr.notes.length ? " | " + cdr.notes.join(" | ") : ""),
-      hash_cpe: cdr.digestValue,
-      nombre_xml: nombreArchivo,
-      fecha_envio_sunat: new Date(),
-      intentos_envio: (comprobante.intentos_envio || 0) + 1,
-    });
-
-    // 12. Incrementar correlativo en la Serie (solo si fue aceptado)
-    if (cdr.accepted && comprobante.Serie) {
-      await Serie.update(
-        { correlativo: comprobante.correlativo + 1 },
-        { where: { id: comprobante.serie_id } }
-      );
-    }
-
-    // 13. Guardar QR en el comprobante para el PDF (recargar objeto)
-    comprobante.qr_data = qrBase64;
-    comprobante.nombre_xml = nombreArchivo;
-    comprobante.hash_cpe = cdr.digestValue;
-
-    return res.status(200).json({
-      success: cdr.accepted,
-      comprobante_id: comprobante.id,
-      nombre_xml: nombreArchivo,
-      codigo_sunat: cdr.responseCode,
-      mensaje_sunat: cdr.description,
-      observaciones: cdr.notes,
-      hash_cpe: cdr.digestValue,
-      estado_sunat: estadoSunat,
-      pdf_url: `/comprobante/${comprobante.id}/pdf`,
-      xml_url: `/comprobante/${comprobante.id}/xml`,
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
     });
   } catch (err) {
     console.error("emitirComprobante error:", err);
@@ -508,19 +414,11 @@ const descargarPdf = async (req, res, next) => {
       return res.status(400).json({ message: "El comprobante aún no fue emitido." });
     }
 
-<<<<<<< HEAD
-=======
-    // Generar QR si hay hash
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
     let qrBase64 = "";
     try {
       qrBase64 = await qrGenerator.generarQr(comprobante, comprobante.hash || comprobante.hash_cpe);
     } catch (_) { /* continúa sin QR */ }
 
-<<<<<<< HEAD
-=======
-    // Generar PDF on-demand según formato solicitado
->>>>>>> 1f372ad (feat: Implement robust SUNAT electronic invoicing with local WSDLs, basic authentication, refined XML signing, and payment installment support.)
     const pdfBuffer = await pdfGenerator.generarPdf(comprobante, qrBase64, format);
 
     res.set("Content-Type", "application/pdf");
