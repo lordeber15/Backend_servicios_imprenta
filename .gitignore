@@ -51,3 +51,8 @@ IMPORTAR_XML.md
 MIGRACION_VENTAS_CAJA.md
 import_xml_to_db.js
 verify_imported_data.js
+
+# Scripts puntuales de migración (los .sql legítimos de migrations/ SÍ se versionan)
+migrations/check-tables.js
+migrations/run-migration.js
+migrations/test-migration.js

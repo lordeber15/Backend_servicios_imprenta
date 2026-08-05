@@ -230,9 +230,6 @@ app.use(formatosRoutes);       // Formatos por usuario
 // Nuevas rutas con prefijo /api
 app.use("/qz", qzRoutes);
 
-// Nuevas rutas con prefijo /api
-app.use("/api/qz", qzRoutes);
-
 // Registrar todas las rutas bajo /api
 //app.use("/api", apiRouter);
 
