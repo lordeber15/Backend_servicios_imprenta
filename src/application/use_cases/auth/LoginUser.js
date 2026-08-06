@@ -17,14 +17,14 @@ class LoginUser {
       throw new Error("Usuario o contraseña incorrectos");
     }
 
-    if (!user.activo) {
-      throw new Error("Tu cuenta ha sido desactivada. Contacta al administrador.");
-    }
-
     const passwordValid = await bcrypt.compare(password, user.password);
 
     if (!passwordValid) {
       throw new Error("Usuario o contraseña incorrectos");
+    }
+
+    if (!user.activo) {
+      throw new Error("Tu cuenta ha sido desactivada. Contacta al administrador.");
     }
 
     // Obtener formatos asignados al usuario
