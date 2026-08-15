@@ -59,6 +59,7 @@ const sunatRoutes = require("./routes/facturacion/sunat.routes");
 const resumenDiarioRoutes = require("./routes/facturacion/resumen_diario.routes");
 const comunicacionBajaRoutes = require("./routes/facturacion/comunicacion_baja.routes");
 const guiaRoutes = require("./routes/facturacion/guia.routes");
+const reportesRoutes = require("./routes/reportes/reportes.routes"); // Reportes administrativos
 const qzRoutes = require("./routes/qz.routes"); // Rutas para QZ Tray
 const formatosRoutes = require("./routes/formatos.routes"); // Formatos por usuario
 
@@ -225,6 +226,7 @@ app.use(sunatRoutes);
 app.use(resumenDiarioRoutes);
 app.use(comunicacionBajaRoutes);
 app.use(guiaRoutes);
+app.use(reportesRoutes);       // Reportes administrativos (solo Administrador)
 app.use(formatosRoutes);       // Formatos por usuario
 
 // Nuevas rutas con prefijo /api
