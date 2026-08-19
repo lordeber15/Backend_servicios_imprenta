@@ -86,7 +86,7 @@ function buildA4Html(cotizacion, detalles, emisor) {
   const logo = getLogoBase64(emisor);
   const nombre = escHtml(emisor?.nombre_comercial || emisor?.razon_social || "IMPRENTA ALEXANDER");
   const numCot = String(cotizacion.id).padStart(5, "0");
-  const tel = escHtml(emisor?.telefono || "");
+  const telCliente = escHtml(cotizacion.telefono || "");
 
   const filas = detalles
     .map((d) => {
@@ -221,7 +221,7 @@ function buildA4Html(cotizacion, detalles, emisor) {
       <div class="client-title">DATOS DEL CLIENTE</div>
       <div class="client-field"><strong>Nombre:</strong> ${escHtml(cotizacion.cliente || "Sin nombre")}</div>
       ${cotizacion.direccion ? `<div class="client-field"><strong>Dirección:</strong> ${escHtml(cotizacion.direccion)}</div>` : ""}
-      ${tel ? `<div class="client-field"><strong>Tel:</strong> ${tel}</div>` : ""}
+      ${telCliente ? `<div class="client-field"><strong>Tel:</strong> ${telCliente}</div>` : ""}
       ${cotizacion.tipoDocumento && cotizacion.tipoDocumento !== "Sin Documento" && cotizacion.numeroDocumento ? `<div class="client-field"><strong>${escHtml(cotizacion.tipoDocumento)}:</strong> ${escHtml(cotizacion.numeroDocumento)}</div>` : ""}
     </div>
 
@@ -271,7 +271,7 @@ function buildA5Html(cotizacion, detalles, emisor) {
   const logo = getLogoBase64(emisor);
   const nombre = escHtml(emisor?.nombre_comercial || emisor?.razon_social || "IMPRENTA ALEXANDER");
   const numCot = String(cotizacion.id).padStart(5, "0");
-  const tel = escHtml(emisor?.telefono || "");
+  const telCliente = escHtml(cotizacion.telefono || "");
 
   const filas = detalles
     .map((d) => {
@@ -405,7 +405,7 @@ function buildA5Html(cotizacion, detalles, emisor) {
       <div class="client-title">DATOS DEL CLIENTE</div>
       <div class="client-field"><strong>Nombre:</strong> ${escHtml(cotizacion.cliente || "Sin nombre")}</div>
       ${cotizacion.direccion ? `<div class="client-field"><strong>Dirección:</strong> ${escHtml(cotizacion.direccion)}</div>` : ""}
-      ${tel ? `<div class="client-field"><strong>Tel:</strong> ${tel}</div>` : ""}
+      ${telCliente ? `<div class="client-field"><strong>Tel:</strong> ${telCliente}</div>` : ""}
       ${cotizacion.tipoDocumento && cotizacion.tipoDocumento !== "Sin Documento" && cotizacion.numeroDocumento ? `<div class="client-field"><strong>${escHtml(cotizacion.tipoDocumento)}:</strong> ${escHtml(cotizacion.numeroDocumento)}</div>` : ""}
     </div>
 

@@ -48,6 +48,7 @@ const createAlmanaque = async (req, res, next) => {
       tipoDocumento,
       numeroDocumento,
       direccion,
+      telefono,
       fechaEmision,
       aCuenta,
       precioTotal,
@@ -60,6 +61,7 @@ const createAlmanaque = async (req, res, next) => {
         tipoDocumento,
         numeroDocumento: numeroDocumento || null,
         direccion,
+        telefono: telefono || null,
         fechaEmision,
         aCuenta,
         precioTotal,
@@ -87,6 +89,7 @@ const updateAlmanaque = async (req, res, next) => {
       tipoDocumento,
       numeroDocumento,
       direccion,
+      telefono,
       fechaEmision,
       aCuenta,
       precioTotal,
@@ -100,14 +103,22 @@ const updateAlmanaque = async (req, res, next) => {
     if (registro.impreso)
       return res.status(403).json({ message: "La cotización ya fue impresa y no puede modificarse" });
 
-    // Actualizar los campos principales
-    registro.cliente = cliente;
-    registro.tipoDocumento = tipoDocumento;
-    registro.numeroDocumento = numeroDocumento;
-    registro.direccion = direccion;
-    registro.fechaEmision = fechaEmision;
-    registro.aCuenta = aCuenta;
-    registro.precioTotal = precioTotal;
+    // Actualizar solo los campos presentes en el body: las pantallas de
+    // cotización y de detalle envían subconjuntos distintos, y asignar
+    // `undefined` borraría datos que el formulario ni siquiera muestra.
+    const cambios = {
+      cliente,
+      tipoDocumento,
+      numeroDocumento,
+      direccion,
+      telefono,
+      fechaEmision,
+      aCuenta,
+      precioTotal,
+    };
+    for (const [campo, valor] of Object.entries(cambios)) {
+      if (valor !== undefined) registro[campo] = valor;
+    }
     await registro.save();
 
     // Reemplazar los detalles

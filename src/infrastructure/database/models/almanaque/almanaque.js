@@ -22,6 +22,9 @@ const Almanaque = sequelize.define("almanaque", {
   direccion: {
     type: DataTypes.STRING,
   },
+  telefono: {
+    type: DataTypes.STRING,
+  },
   fechaEmision: {
     type: DataTypes.DATE,
     allowNull: false,

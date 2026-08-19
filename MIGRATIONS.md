@@ -57,6 +57,27 @@ node migrate_almanaques.js
 
 ---
 
+### 3. **Campo telefono en almanaques**
+**Archivo:** `migrations/run-telefono-migration.js`
+
+Agrega la columna `telefono` a la tabla almanaques. El formulario de cotización
+ya capturaba el teléfono del cliente pero no existía columna donde guardarlo, así
+que el dato se perdía al guardar.
+
+```bash
+node migrations/run-telefono-migration.js
+```
+
+**Cambios:**
+- `almanaques.telefono` VARCHAR(255) NULL
+
+**Impacto:**
+- El teléfono del cliente se persiste y se imprime en el PDF de cotización (A4 y ticket)
+- Corrige el bloque "DATOS DEL CLIENTE" del PDF, que hasta ahora mostraba el
+  teléfono del emisor en lugar del teléfono del cliente
+
+---
+
 ## 🔄 Flujo Recomendado
 
 ### Desarrollo Local
