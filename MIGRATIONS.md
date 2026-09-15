@@ -78,6 +78,34 @@ node migrations/run-telefono-migration.js
 
 ---
 
+### 4. **Corrección FK DetalleAlmanaques → almanaque (bug crítico: cotizaciones no se guardaban)**
+**Archivo:** `migrations/run-fix-almanaque-fk-migration.js`
+
+El modelo Sequelize `Almanaque` usa `freezeTableName: true` y opera sobre la tabla
+`almanaque` (singular), pero la llave foránea de `DetalleAlmanaques` había quedado
+apuntando a la tabla vieja `almanaques` (plural), creada antes de fijar ese nombre.
+
+Al crear una cotización con detalle, Sequelize inserta encabezado y detalle en una
+misma transacción. Como el id nuevo existe en `almanaque` pero no en `almanaques`,
+la FK rechazaba el insert del detalle y Postgres revertía **toda la transacción**
+(encabezado incluido). Resultado: ninguna cotización con detalle quedaba guardada
+y el número (id) nunca avanzaba para el usuario, aunque la secuencia sí se consumía
+en cada intento fallido.
+
+```bash
+node migrations/run-fix-almanaque-fk-migration.js
+```
+
+**Cambios:**
+- Migra a `almanaque` cualquier registro huérfano que solo exista en la tabla vieja `almanaques` (si aplica)
+- Recrea la FK `DetalleAlmanaques.AlmanaqueId` para que referencie `almanaque(id)` en vez de `almanaques(id)`
+
+**Impacto:**
+- Las cotizaciones con detalle vuelven a guardarse correctamente y el número (id) incrementa con cada una nueva
+- No se pierde ninguna cotización histórica que hubiera quedado atrapada en la tabla vieja
+
+---
+
 ## 🔄 Flujo Recomendado
 
 ### Desarrollo Local
@@ -234,4 +262,4 @@ Si encuentras algún problema con las migraciones, revisa:
 
 ---
 
-**Última actualización:** 2026-03-22
+**Última actualización:** 2026-09-14
