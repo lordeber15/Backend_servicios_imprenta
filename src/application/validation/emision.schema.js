@@ -6,7 +6,7 @@
  */
 const { z } = require("zod");
 
-const METODOS_PAGO = ["Efectivo", "Yape", "Plin", "Tarjeta", "Transferencia"];
+const { METODOS_PAGO } = require("../constantes");
 const FECHA = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato de fecha YYYY-MM-DD");
 const ID = z.coerce.number().int().positive();
 

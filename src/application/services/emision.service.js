@@ -11,7 +11,8 @@
  *      avanza: dos emisiones simultáneas nunca obtienen el mismo número
  *      (el índice único comprobante_numeracion_unica lo garantiza además en BD).
  *   4. Recalcula montos en el servidor (calculoComprobante).
- *   5. Crea cabecera, detalles, cuota (crédito) y descuenta stock.
+ *   5. Crea cabecera, detalles, cuota (crédito) y descuenta stock; queda
+ *      vinculado a la caja abierta (sin caja abierta no se emite).
  * Tras el COMMIT firma el XML y lo encola para SUNAT. Si la firma falla, el
  * comprobante queda en GENERADO con su número y se reintenta con /reenviar.
  */
@@ -29,6 +30,7 @@ require("../../infrastructure/database/models/facturacion/asociation");
 const { calcularLinea, calcularTotales, IGV_PORCENTAJE } = require("./calculoComprobante");
 const { INCLUDE_XML, generarYFirmarXml } = require("./firmaComprobante");
 const { encolarEnvio } = require("../../infrastructure/queues/sunatQueue");
+const { exigirCajaAbierta } = require("./caja.service");
 const { hoyLocal } = require("../../infrastructure/utils/fecha");
 const { ValidationError, NotFoundError, ConflictError } = require("../../infrastructure/utils/errors");
 
@@ -124,6 +126,9 @@ async function emitir(d) {
   }
 
   const id = await sequelize.transaction(async (transaction) => {
+    // Toda venta o nota de crédito se registra en la caja abierta (409 si no hay).
+    const caja = await exigirCajaAbierta(transaction);
+
     const emisor = await Emisor.findByPk(d.emisor_id, { transaction });
     if (!emisor) throw new NotFoundError("Emisor no encontrado");
 
@@ -159,6 +164,7 @@ async function emitir(d) {
       cliente_id: clienteId,
       forma_pago: d.forma_pago,
       metodo_pago: d.metodo_pago,
+      caja_id: caja.id,
       estado_sunat: "GENERADO",
       tipo_nota_id: ref ? d.nota.tipo_nota_id : null,
       descripcion_nota: ref ? d.nota.descripcion_nota : null,

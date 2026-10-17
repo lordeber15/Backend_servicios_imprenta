@@ -260,6 +260,12 @@ app.use("/qz", qzRoutes);
 app.use((err, _req, res, _next) => {
   // statusCode lo aportan las clases de utils/errors.js; status se mantiene
   // por compatibilidad con errores lanzados antes de esa convención.
+  // Validaciones del modelo Sequelize (campo requerido, formato…): son errores
+  // del cliente, no del servidor.
+  if (err.name === "SequelizeValidationError") {
+    err.statusCode = 400;
+    err.message = (err.errors || []).map((e) => e.message).join("; ") || "Datos inválidos";
+  }
   const status = err.statusCode || err.status || 500;
 
   // Los 5xx no exponen el detalle interno; los 4xx sí, porque son

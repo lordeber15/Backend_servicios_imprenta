@@ -1,141 +1,67 @@
-const { Op } = require("sequelize");
+const { Op, UniqueConstraintError } = require("sequelize");
 const sequelize = require("../../../database/database");
 const { hoyLocal, horaLocal } = require("../../../utils/fecha");
 const AperturaCaja = require("../../../database/models/caja/aperturaCaja");
+const { calcularDesglose } = require("../../../../application/services/caja.service");
 const Ticket = require("../../../database/models/Tickets/tickets");
 const Comprobante = require("../../../database/models/facturacion/comprobante");
 const Cliente = require("../../../database/models/facturacion/cliente");
 require("../../../database/models/facturacion/asociation");
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Caja ─────────────────────────────────────────────────────────────────────
+// Los totales se calculan por caja_id en caja.service (ver ese archivo).
 
 /**
- * @typedef {Object} CajaVentas
- * @property {number} ventas_tickets - Suma de ventas de tickets y almanaques.
- * @property {number} ventas_comprobantes - Suma de ventas de comprobantes (Facturas/Boletas).
- * @property {number} total - Suma total de todas las ventas.
- */
-
-/**
- * Calcula el resumen de ventas (Tickets, Comprobantes, Almanaques) desde la apertura de una caja.
- * 
- * @param {Object} caja - Instancia del modelo AperturaCaja.
- * @returns {Promise<CajaVentas>} Resumen de ventas calculado.
- */
-async function calcularVentas(caja) {
-  const timestampDesde = caja.createdAt;
-  const fechaDesde = caja.fecha_apertura;
-
-  const [ticketsEfectivo, ticketsYape, compEfectivo, compYape, ventasAlmanaques] = await Promise.all([
-    Ticket.sum("precioTotal", {
-      where: { createdAt: { [Op.gte]: timestampDesde }, metodo_pago: 'Efectivo' },
-    }),
-    Ticket.sum("precioTotal", {
-      where: { createdAt: { [Op.gte]: timestampDesde }, metodo_pago: 'Yape' },
-    }),
-    Comprobante.sum("total", {
-      where: {
-        fecha_emision: { [Op.gte]: fechaDesde },
-        tipo_comprobante_id: { [Op.in]: ["01", "03"] },
-        estado_sunat: { [Op.ne]: "ANULADO" },
-        metodo_pago: 'Efectivo',
-      },
-    }),
-    Comprobante.sum("total", {
-      where: {
-        fecha_emision: { [Op.gte]: fechaDesde },
-        tipo_comprobante_id: { [Op.in]: ["01", "03"] },
-        estado_sunat: { [Op.ne]: "ANULADO" },
-        metodo_pago: 'Yape',
-      },
-    }),
-    // Almanaques: SOLO ventas confirmadas, NO cotizaciones
-    require("../../../database/models/almanaque/almanaque").sum("precioTotal", {
-      where: {
-        createdAt: { [Op.gte]: timestampDesde },
-        tipo: 'venta'  // Solo sumar ventas, NO cotizaciones
-      },
-    }),
-  ]);
-
-  const tEfectivo = parseFloat(ticketsEfectivo || 0);
-  const tYape = parseFloat(ticketsYape || 0);
-  const cEfectivo = parseFloat(compEfectivo || 0);
-  const cYape = parseFloat(compYape || 0);
-  const almanaques = parseFloat(ventasAlmanaques || 0);
-
-  const totalEfectivo = tEfectivo + cEfectivo + almanaques;
-  const totalYape = tYape + cYape;
-
-  return {
-    ventas_tickets: tEfectivo + tYape + almanaques,
-    ventas_comprobantes: cEfectivo + cYape,
-    total_efectivo: totalEfectivo,
-    total_yape: totalYape,
-    total: totalEfectivo + totalYape,
-  };
-}
-
-/**
- * Registra la apertura de una nueva caja.
- * Verifica que no haya una caja ya abierta.
- * 
- * @param {import('express').Request} req - Body: { monto_apertura, observacion }
- * @param {import('express').Response} res - JSON con la nueva caja creada o error.
+ * Abre la caja. Solo puede haber una abierta: la BD lo garantiza con el
+ * índice único caja_una_abierta (dos aperturas simultáneas → la segunda falla).
+ * Body: { monto_apertura, observacion }
  */
 const abrirCaja = async (req, res, next) => {
   try {
-    const cajaAbierta = await AperturaCaja.findOne({ where: { estado: "abierta" } });
-    if (cajaAbierta) {
-      return res.status(400).json({ message: "Ya hay una caja abierta. Ciérrela antes de abrir una nueva." });
+    const { monto_apertura, observacion } = req.body || {};
+    const monto = parseFloat(monto_apertura);
+    if (monto_apertura === undefined || monto_apertura === "" || isNaN(monto) || monto < 0) {
+      return res.status(400).json({ message: "El monto de apertura es requerido y no puede ser negativo" });
     }
-
-    const { monto_apertura, observacion } = req.body;
-    if (!monto_apertura || isNaN(parseFloat(monto_apertura))) {
-      return res.status(400).json({ message: "El monto de apertura es requerido" });
-    }
-
-    const hora = horaLocal();  // "HH:MM:SS" hora Perú
-    const fecha = hoyLocal();  // "YYYY-MM-DD" fecha Perú
 
     const caja = await AperturaCaja.create({
-      fecha_apertura: fecha,
-      hora_apertura: hora,
-      monto_apertura: parseFloat(monto_apertura),
+      fecha_apertura: hoyLocal(),
+      hora_apertura: horaLocal(),
+      monto_apertura: monto,
       estado: "abierta",
-      observacion: observacion || null,
+      observacion: observacion ? String(observacion).slice(0, 250) : null,
+      usuario_apertura_id: req.user?.id ?? null,
     });
-
     res.json(caja);
   } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      return res.status(409).json({ message: "Ya hay una caja abierta. Ciérrela antes de abrir una nueva." });
+    }
     next(error);
   }
 };
 
 /**
- * Obtiene el estado actual de la caja abierta y un resumen de ventas acumulado.
- * 
- * @param {import('express').Request} _req 
- * @param {import('express').Response} res - JSON con datos de la caja y totales actuales.
+ * Caja abierta y su desglose en vivo.
+ * Mantiene los campos que ya usa el frontend (ventas_tickets, total_efectivo…)
+ * y agrega `desglose` (por método, crédito y pendientes SUNAT).
  */
 const getCajaActual = async (_req, res, next) => {
   try {
     const caja = await AperturaCaja.findOne({ where: { estado: "abierta" } });
-
     if (!caja) {
       return res.json({ caja: null, ventas_tickets: 0, ventas_comprobantes: 0, total_ventas_preview: 0 });
     }
-
-    // Calcular ventas desde que se abrió la caja
-    const ventas = await calcularVentas(caja);
-
+    const d = await calcularDesglose(caja);
     res.json({
       caja,
-      ventas_tickets: ventas.ventas_tickets,
-      ventas_comprobantes: ventas.ventas_comprobantes,
-      total_ventas_preview: ventas.total,
-      total_efectivo: ventas.total_efectivo,
-      total_yape: ventas.total_yape,
+      ventas_tickets: d.ventas_tickets,
+      ventas_comprobantes: d.ventas_comprobantes,
+      total_ventas_preview: d.total_cobrado,
+      total_efectivo: d.total_efectivo,
+      total_yape: d.total_yape,
+      efectivo_esperado: d.efectivo_esperado,
+      desglose: d,
     });
   } catch (error) {
     next(error);
@@ -143,65 +69,67 @@ const getCajaActual = async (_req, res, next) => {
 };
 
 /**
- * Realiza el cierre de una caja, calculando la diferencia entre el efectivo físico y el esperado.
- * 
- * @param {import('express').Request} req - Params: { id }; Body: { monto_cierre_fisico, observacion }
- * @param {import('express').Response} res - JSON con el resumen de cierre y diferencia calculada.
+ * Cierra la caja: diferencia = efectivo contado − (apertura + efectivo neto).
+ * En una transacción con la caja bloqueada (FOR UPDATE): ninguna venta puede
+ * asignarse a ella mientras se cierra. El desglose queda congelado en JSONB.
+ * Params: { id }; Body: { monto_cierre_fisico, observacion }
  */
 const cerrarCaja = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { monto_cierre_fisico, observacion } = req.body;
-
-    if (monto_cierre_fisico === undefined || isNaN(parseFloat(monto_cierre_fisico))) {
-      return res.status(400).json({ message: "El monto de cierre es requerido" });
+    const { monto_cierre_fisico, observacion } = req.body || {};
+    const montoCierre = parseFloat(monto_cierre_fisico);
+    if (monto_cierre_fisico === undefined || monto_cierre_fisico === "" || isNaN(montoCierre) || montoCierre < 0) {
+      return res.status(400).json({ message: "El monto de cierre es requerido y no puede ser negativo" });
     }
 
-    const caja = await AperturaCaja.findByPk(id);
-    if (!caja) return res.status(404).json({ message: "Caja no encontrada" });
-    if (caja.estado === "cerrada") return res.status(400).json({ message: "La caja ya está cerrada" });
+    const resultado = await sequelize.transaction(async (transaction) => {
+      const caja = await AperturaCaja.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!caja) return { status: 404, body: { message: "Caja no encontrada" } };
+      if (caja.estado === "cerrada") return { status: 400, body: { message: "La caja ya está cerrada" } };
 
-    const ventas = await calcularVentas(caja);
-    const montoCierre = parseFloat(monto_cierre_fisico);
-    const montoApertura = parseFloat(caja.monto_apertura);
-    const totalVentas = ventas.total;
-    // diferencia = (efectivo contado) - (efectivo esperado)
-    // positivo = sobrante; negativo = faltante
-    const diferencia = montoCierre - (montoApertura + ventas.total_efectivo);
+      const d = await calcularDesglose(caja, transaction);
+      const diferencia = Math.round((montoCierre - d.efectivo_esperado) * 100) / 100;
 
-    caja.estado = "cerrada";
-    caja.monto_cierre_fisico = montoCierre;
-    caja.total_ventas = totalVentas;
-    caja.total_efectivo = ventas.total_efectivo;
-    caja.total_yape = ventas.total_yape;
-    caja.diferencia = parseFloat(diferencia.toFixed(2));
-    if (observacion) caja.observacion = observacion;
-    await caja.save();
+      await caja.update({
+        estado: "cerrada",
+        monto_cierre_fisico: montoCierre,
+        total_ventas: d.total_cobrado,
+        total_efectivo: d.total_efectivo,
+        total_yape: d.total_yape,
+        diferencia,
+        observacion: observacion ? String(observacion).slice(0, 250) : caja.observacion,
+        usuario_cierre_id: req.user?.id ?? null,
+        cerrada_at: new Date(),
+        desglose: d,
+      }, { transaction });
 
-    res.json({
-      caja,
-      ventas_tickets: ventas.ventas_tickets,
-      ventas_comprobantes: ventas.ventas_comprobantes,
-      total_ventas: totalVentas,
-      total_efectivo: ventas.total_efectivo,
-      total_yape: ventas.total_yape,
-      diferencia: caja.diferencia,
+      return {
+        status: 200,
+        body: {
+          caja,
+          ventas_tickets: d.ventas_tickets,
+          ventas_comprobantes: d.ventas_comprobantes,
+          total_ventas: d.total_cobrado,
+          total_efectivo: d.total_efectivo,
+          total_yape: d.total_yape,
+          efectivo_esperado: d.efectivo_esperado,
+          diferencia,
+          desglose: d,
+        },
+      };
     });
+    res.status(resultado.status).json(resultado.body);
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * Obtiene el historial de las últimas 30 aperturas/cierres de caja.
- * 
- * @param {import('express').Request} _req 
- * @param {import('express').Response} res - Array de registros de caja.
- */
+/** Últimas 30 aperturas/cierres (incluye el desglose congelado de cada cierre). */
 const getHistorialCaja = async (_req, res, next) => {
   try {
     const historial = await AperturaCaja.findAll({
-      order: [["fecha_apertura", "DESC"], ["createdAt", "DESC"]],
+      order: [["id", "DESC"]],
       limit: 30,
     });
     res.json(historial);

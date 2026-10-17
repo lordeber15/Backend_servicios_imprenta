@@ -6,6 +6,7 @@
  */
 
 const { Router } = require("express");
+const { authorize } = require("../../middleware/authorize.middleware");
 const { abrirCaja, getCajaActual, cerrarCaja, getHistorialCaja, getVentasDia } = require("../../controllers/caja/caja.controller");
 
 const router = Router();
@@ -40,7 +41,7 @@ const router = Router();
  *       400:
  *         description: Ya existe una caja abierta o el monto es inválido.
  */
-router.post("/caja/apertura", abrirCaja);
+router.post("/caja/apertura", authorize("Administrador"), abrirCaja);
 
 /**
  * @swagger
@@ -105,7 +106,7 @@ router.get("/caja/actual", getCajaActual);
  *       404:
  *         description: Caja no encontrada.
  */
-router.put("/caja/:id/cierre", cerrarCaja);
+router.put("/caja/:id/cierre", authorize("Administrador"), cerrarCaja);
 
 /**
  * @swagger
