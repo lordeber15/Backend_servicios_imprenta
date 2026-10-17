@@ -42,3 +42,6 @@ backup_automatico.sh
 backups
 restore_backup.sh
 *.DS_Store
+
+# Pruebas (se montan al ejecutarlas, no van en la imagen)
+tests
