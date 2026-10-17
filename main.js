@@ -17,7 +17,7 @@ const { closeBrowser } = require("./src/infrastructure/external_services/browser
 const { Formato } = require("./src/infrastructure/database/models/formatos");
 require("./src/infrastructure/database/models/usuario_formatos");
 
-const sunatWorker = require("./src/workers/sunatWorker");
+// El worker SUNAT corre en su propio proceso: ver worker.js
 
 const port = process.env.PORT || 3000;
 
@@ -56,7 +56,6 @@ async function main() {
 
     server = app.listen(port, () => {
       console.log("Escuchando en el puerto:", port);
-      console.log("Worker SUNAT activo (concurrency: 3)");
     });
   } catch (error) {
     console.error("Error al iniciar el servidor:", error);
@@ -76,8 +75,6 @@ async function shutdown(signal) {
     console.log("Conexion a BD cerrada");
     await closeBrowser();
     console.log("Puppeteer cerrado");
-    await sunatWorker.close();
-    console.log("Worker SUNAT cerrado");
   } catch (err) {
     console.error("Error durante shutdown:", err);
   }

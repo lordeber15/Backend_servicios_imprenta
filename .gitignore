@@ -57,3 +57,5 @@ verify_imported_data.js
 migrations/check-tables.js
 migrations/run-migration.js
 migrations/test-migration.js
+# Backups locales (contienen datos y certificados)
+backups/

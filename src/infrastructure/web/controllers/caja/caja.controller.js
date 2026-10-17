@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const sequelize = require("../../../database/database");
+const { hoyLocal, horaLocal } = require("../../../utils/fecha");
 const AperturaCaja = require("../../../database/models/caja/aperturaCaja");
 const Ticket = require("../../../database/models/Tickets/tickets");
 const Comprobante = require("../../../database/models/facturacion/comprobante");
@@ -94,9 +95,8 @@ const abrirCaja = async (req, res, next) => {
       return res.status(400).json({ message: "El monto de apertura es requerido" });
     }
 
-    const ahora = new Date();
-    const hora = ahora.toTimeString().split(" ")[0]; // "HH:MM:SS"
-    const fecha = ahora.toISOString().split("T")[0];  // "YYYY-MM-DD"
+    const hora = horaLocal();  // "HH:MM:SS" hora Perú
+    const fecha = hoyLocal();  // "YYYY-MM-DD" fecha Perú
 
     const caja = await AperturaCaja.create({
       fecha_apertura: fecha,
@@ -214,7 +214,7 @@ const getHistorialCaja = async (_req, res, next) => {
 
 const getVentasDia = async (req, res, next) => {
   try {
-    const fecha = req.query.fecha || new Date().toISOString().split("T")[0];
+    const fecha = req.query.fecha || hoyLocal();
     const tipo = req.query.tipo || "all"; // all | ticket | boleta | factura
 
     const resultado = [];

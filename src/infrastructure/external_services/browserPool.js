@@ -27,6 +27,28 @@ async function getBrowser() {
   return browserInstance;
 }
 
+/**
+ * Abre una página aislada para renderizar HTML propio a PDF.
+ *
+ * El HTML incluye datos que escriben los usuarios (cliente, descripción…).
+ * Aunque se escapan, se cierra la puerta por si alguno se filtra:
+ * - JavaScript desactivado: un <script> inyectado no se ejecuta.
+ * - Red bloqueada: solo data: y about: (logos y QR van embebidos en base64),
+ *   así un <img src="http://..."> no puede usarse para SSRF hacia la red interna.
+ */
+async function newSafePage() {
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+  await page.setJavaScriptEnabled(false);
+  await page.setRequestInterception(true);
+  page.on("request", (req) => {
+    const url = req.url();
+    if (url.startsWith("data:") || url.startsWith("about:")) req.continue();
+    else req.abort("blockedbyclient");
+  });
+  return page;
+}
+
 async function closeBrowser() {
   if (browserInstance) {
     await browserInstance.close();
@@ -34,4 +56,4 @@ async function closeBrowser() {
   }
 }
 
-module.exports = { getBrowser, closeBrowser };
+module.exports = { getBrowser, newSafePage, closeBrowser };

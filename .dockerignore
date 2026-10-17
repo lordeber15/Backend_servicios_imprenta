@@ -37,5 +37,7 @@ verify_imported_data.js
 
 # ── Backups y varios ────────────────────────────────────────
 create_backup.sh
+backup_automatico.sh
+backups
 restore_backup.sh
 *.DS_Store

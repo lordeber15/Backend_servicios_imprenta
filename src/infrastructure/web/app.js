@@ -146,7 +146,9 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
  * Ejemplo de log:
  * GET /servicios 200 45.123 ms - 1234
  */
-app.use(morgan("dev"));
+// En producción formato "combined" (IP, fecha, user-agent) para auditoría;
+// nunca se registran bodies ni cabeceras Authorization.
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // ============================================
 // DOCUMENTACIÓN DE LA API (SWAGGER)

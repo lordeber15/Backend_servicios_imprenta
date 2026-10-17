@@ -11,6 +11,7 @@ const xmlSigner = require("../../../external_services/sunat/xmlSigner");
 const sunatClient = require("../../../external_services/sunat/sunatClient");
 const cdrParser = require("../../../external_services/sunat/cdrParser");
 const storageHelper = require("../../../external_services/sunat/storageHelper");
+const { hoyLocal } = require("../../../utils/fecha");
 
 /**
  * POST /comunicacion-baja
@@ -60,9 +61,9 @@ const crearComunicacionBaja = async (req, res, next) => {
     }
 
     // Correlativo del RA del día
-    const raCount = await ComunicacionBaja.count({ where: { emisor_id, fecha_emision: new Date().toISOString().split("T")[0] } });
+    const raCount = await ComunicacionBaja.count({ where: { emisor_id, fecha_emision: hoyLocal() } });
     const correlativo = raCount + 1;
-    const fechaStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
+    const fechaStr = hoyLocal().replace(/-/g, "");
     const nombreArchivo = `${emisor.ruc}-RA-${fechaStr}-${correlativo}`;
 
     // Construir y firmar XML
@@ -99,7 +100,7 @@ const crearComunicacionBaja = async (req, res, next) => {
     const baja = await ComunicacionBaja.create({
       emisor_id,
       correlativo,
-      fecha_emision: new Date().toISOString().split("T")[0],
+      fecha_emision: hoyLocal(),
       fecha_referencia,
       nombre_xml: nombreArchivo,
       ticket,

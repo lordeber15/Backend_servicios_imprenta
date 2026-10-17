@@ -7,7 +7,7 @@
  * @module services/sunat/pdfGenerator
  */
 
-const { getBrowser } = require("../browserPool");
+const { newSafePage } = require("../browserPool");
 const fs = require("fs");
 const path = require("path");
 
@@ -74,8 +74,7 @@ async function generarPdf(comprobante, qrBase64, format = "a4") {
     html = buildHtml(comprobante, qrBase64);
   }
 
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  const page = await newSafePage();
 
   try {
     await page.setContent(html, { waitUntil: "networkidle0" });
@@ -125,7 +124,7 @@ function buildHtml(c, qrBase64) {
       return `<tr>
         <td style="text-align:center">${d.item}</td>
         <td style="text-align:center">${parseFloat(d.cantidad).toFixed(2)}</td>
-        <td style="text-align:center">${unidad}</td>
+        <td style="text-align:center">${escHtml(unidad)}</td>
         <td>${escHtml(nombre)}</td>
         <td style="text-align:right">${parseFloat(d.valor_unitario).toFixed(2)}</td>
         <td style="text-align:right">${parseFloat(d.valor_total).toFixed(2)}</td>
@@ -189,9 +188,9 @@ function buildHtml(c, qrBase64) {
 
   <div class="cliente-section">
     <p><strong>Cliente:</strong> ${escHtml(cliente.razon_social || "")}</p>
-    <p><strong>Doc:</strong> ${tipoDocLabel(cliente.tipo_documento_id)}: ${cliente.nrodoc || ""}</p>
+    <p><strong>Doc:</strong> ${tipoDocLabel(cliente.tipo_documento_id)}: ${escHtml(cliente.nrodoc || "")}</p>
     ${cliente.direccion ? `<p><strong>Dirección:</strong> ${escHtml(cliente.direccion)}</p>` : ""}
-    <p><strong>Fecha emisión:</strong> ${formatFecha(c.fecha_emision)} &nbsp;|&nbsp; <strong>Moneda:</strong> ${moneda} &nbsp;|&nbsp; <strong>Forma de pago:</strong> ${c.forma_pago || ""}</p>
+    <p><strong>Fecha emisión:</strong> ${formatFecha(c.fecha_emision)} &nbsp;|&nbsp; <strong>Moneda:</strong> ${moneda} &nbsp;|&nbsp; <strong>Forma de pago:</strong> ${escHtml(c.forma_pago || "")}</p>
     ${c.comprobanteRef ? `<p><strong>Doc. Referencia:</strong> ${c.comprobanteRef.serie}-${String(c.comprobanteRef.correlativo).padStart(8, '0')}</p>` : ""}
     ${c.descripcion_nota ? `<p><strong>Motivo:</strong> ${escHtml(c.descripcion_nota)}</p>` : ""}
   </div>
@@ -301,7 +300,7 @@ function buildTicketHtml(c, qrBase64) {
   <div>Fecha: ${formatFecha(c.fecha_emision)}</div>
   <div class="sep">-------------------------------------</div>
   <div>RAZON SOCIAL: ${escHtml(cliente.razon_social || "CLIENTE VARIOS")}</div>
-  ${cliente.nrodoc ? `<div>${tipoDocLabel(cliente.tipo_documento_id)}: ${cliente.nrodoc}</div>` : ""}
+  ${cliente.nrodoc ? `<div>${tipoDocLabel(cliente.tipo_documento_id)}: ${escHtml(cliente.nrodoc)}</div>` : ""}
   ${cliente.direccion ? `<div style="font-size:10px">Dir: ${escHtml(cliente.direccion)}</div>` : ""}
   ${c.comprobanteRef ? `<div style="font-size:10px">Ref: ${c.comprobanteRef.serie}-${String(c.comprobanteRef.correlativo).padStart(8, '0')}</div>` : ""}
   ${c.descripcion_nota ? `<div style="font-size:10px">Motivo: ${escHtml(c.descripcion_nota)}</div>` : ""}
@@ -321,7 +320,7 @@ function buildTicketHtml(c, qrBase64) {
   <div class="total-row"><span>IGV (18%):</span><span>${simbolo} ${parseFloat(c.igv || 0).toFixed(2)}</span></div>
   <div class="total-row big"><span>TOTAL:</span><span>${simbolo} ${parseFloat(c.total || 0).toFixed(2)}</span></div>
   <div class="sep">-------------------------------------</div>
-  ${c.forma_pago ? `<div>Forma de Pago: ${c.forma_pago}</div>` : ""}
+  ${c.forma_pago ? `<div>Forma de Pago: ${escHtml(c.forma_pago)}</div>` : ""}
   ${qrBase64 ? `<div class="center" style="margin-top:4px"><img src="${qrBase64}" alt="QR" style="width:70px;height:70px"></div>` : ""}
   ${c.hash_cpe ? `<div class="footer">Hash: ${c.hash_cpe}</div>` : ""}
   <div class="footer">Representacion impresa del</div>
@@ -385,9 +384,9 @@ function buildA5Html(c, qrBase64) {
 
   <div style="background:#f0f9ff;padding:5px 7px;margin-bottom:6px;border-radius:3px;font-size:9px">
     <div><strong>Cliente:</strong> ${escHtml(cliente.razon_social || "CLIENTE VARIOS")}</div>
-    ${cliente.nrodoc ? `<div><strong>${tipoDocLabel(cliente.tipo_documento_id)}:</strong> ${cliente.nrodoc}</div>` : ""}
+    ${cliente.nrodoc ? `<div><strong>${tipoDocLabel(cliente.tipo_documento_id)}:</strong> ${escHtml(cliente.nrodoc)}</div>` : ""}
     ${cliente.direccion ? `<div><strong>Direccion:</strong> ${escHtml(cliente.direccion)}</div>` : ""}
-    <div><strong>Emision:</strong> ${formatFecha(c.fecha_emision)} &nbsp;|&nbsp; <strong>Moneda:</strong> ${moneda} &nbsp;|&nbsp; <strong>Pago:</strong> ${c.forma_pago || "Contado"}</div>
+    <div><strong>Emision:</strong> ${formatFecha(c.fecha_emision)} &nbsp;|&nbsp; <strong>Moneda:</strong> ${moneda} &nbsp;|&nbsp; <strong>Pago:</strong> ${escHtml(c.forma_pago || "Contado")}</div>
     ${c.comprobanteRef ? `<div><strong>Ref:</strong> ${c.comprobanteRef.serie}-${String(c.comprobanteRef.correlativo).padStart(8, '0')} &nbsp;|&nbsp; <strong>Motivo:</strong> ${escHtml(c.descripcion_nota || "")}</div>` : ""}
   </div>
 
@@ -592,8 +591,7 @@ function formatFechaCorta(fecha) {
 async function generarPdfGuia(guia) {
   const html = buildGuiaA5Html(guia);
 
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  const page = await newSafePage();
 
   try {
     await page.setContent(html, { waitUntil: "networkidle0" });

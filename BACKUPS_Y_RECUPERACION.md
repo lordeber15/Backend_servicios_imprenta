@@ -1,3 +1,43 @@
+# Backups y recuperación
+
+## ✅ Backup automático recomendado: `backup_automatico.sh`
+
+Script no interactivo para cron. Genera **un solo archivo cifrado** con:
+base de datos (`pg_dump -Fc`), `storage/xml`, `storage/cdr` (SUNAT exige conservarlos),
+`storage/certs`, `storage/keys` y `src/uploads`.
+
+Se cifra con [age](https://age-encryption.org) usando una **clave pública**: el servidor
+puede crear backups pero **no puede descifrarlos**. Si alguien obtiene el servidor o un
+backup, no puede leer los datos ni el certificado SUNAT.
+
+### Configuración (una sola vez)
+1. En una máquina de confianza (NO el servidor): `age-keygen -o imprenta-backup.key`.
+   Guarda ese archivo en el gestor de contraseñas y en un USB. **Si se pierde, los backups no se pueden recuperar.**
+2. Copia la línea `public key: age1...` a `BACKUP_AGE_RECIPIENT` en el `.env` del servidor.
+3. Instala `age` en el servidor (`apt install age`).
+4. Opcional: `BACKUP_REMOTO=usuario@host:/backups/imprenta` para la copia fuera del servidor (rsync por SSH con llave).
+5. Cron diario:
+   ```
+   30 2 * * * cd /ruta/Backend_servicios_imprenta && ./backup_automatico.sh >> backups/backup.log 2>&1
+   ```
+
+### Restaurar
+```bash
+mkdir /tmp/restaurar
+age -d -i imprenta-backup.key imprenta_AAAAMMDD_HHMMSS.tar.age | tar -x -C /tmp/restaurar
+docker exec -i postgres_db pg_restore -U <usuario> -d <base> --clean --if-exists < /tmp/restaurar/db.dump
+cp -a /tmp/restaurar/storage/. ./storage/   # XML, CDR, certificado y llaves
+cp -a /tmp/restaurar/src/uploads/. ./src/uploads/
+```
+
+### Prueba de restauración (hacer cada mes)
+Restaurar el último backup en una base vacía y comprobar que `pg_restore --list` muestra
+las tablas y que el número de XML y CDR coincide con producción.
+
+---
+
+## Scripts manuales anteriores
+
 # 💾 Guía de Backups y Recuperación - PostgreSQL
 
 ## 📋 Índice

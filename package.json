@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node main.js",
     "dev": "nodemon main.js",
+    "worker": "node worker.js",
     "seed": "node seed.js"
   },
   "keywords": [],
