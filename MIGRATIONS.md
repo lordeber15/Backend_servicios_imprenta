@@ -1,265 +1,90 @@
-# 📋 Guía de Migraciones - Sistema Imprenta
+# Migraciones de esquema
 
-Este documento describe todas las migraciones disponibles y cómo ejecutarlas.
+El esquema de la base **solo cambia mediante migraciones versionadas** (Umzug).
+`sequelize.sync()` ya no se usa en ningún entorno. La API y el worker **no arrancan**
+si hay migraciones sin aplicar; así se evita el error 500 que produce un modelo
+desfasado de su tabla.
 
----
+- Migraciones: `src/infrastructure/database/migrations/NNNN-descripcion.js`
+- Registro de aplicadas: tabla `SequelizeMeta`
+- Migrador: `src/infrastructure/database/migrator.js`
 
-## 🚀 Comando Rápido (Recomendado)
+## Uso diario (Docker)
 
-Para verificar y aplicar todas las migraciones automáticamente:
-
-```bash
-node check_and_migrate.js
-```
-
-Este script:
-- ✅ Verifica si cada migración ya está aplicada
-- ✅ Solo ejecuta las migraciones que faltan
-- ✅ Es seguro ejecutarlo múltiples veces
-- ✅ Muestra un resumen completo al finalizar
-
----
-
-## 📦 Migraciones Disponibles
-
-### 1. **metodo_pago en Tickets y Comprobante**
-**Archivo:** `migrate_payment.js`
-
-Agrega la columna `metodo_pago` a las tablas Tickets y Comprobante para registrar el método de pago utilizado (Efectivo, Yape, etc.)
+`docker compose up -d` ejecuta primero el servicio `migrate`. Este aplica lo pendiente
+(con un `pg_dump` previo en `storage/backups-migracion/`, se guardan los últimos 10) y
+termina. Solo si termina bien arrancan `backend` y `sunat_worker`.
 
 ```bash
-node migrate_payment.js
+# Desde Desarrollo/
+docker compose run --rm migrate node src/infrastructure/database/migrator.js status
+docker compose run --rm migrate node src/infrastructure/database/migrator.js up
+docker compose run --rm migrate node src/infrastructure/database/migrator.js down   # revierte la última
+docker compose run --rm migrate node src/infrastructure/database/migrator.js diff   # compara esquema real vs baseline
 ```
 
-**Cambios:**
-- `Tickets.metodo_pago` VARCHAR(50) DEFAULT 'Efectivo'
-- `Comprobante.metodo_pago` VARCHAR(50) DEFAULT 'Efectivo'
+## Crear una migración
 
----
+1. Crear `src/infrastructure/database/migrations/0002-descripcion.js` (número siguiente, 4 dígitos):
+   ```js
+   async function up({ context: { queryInterface, Sequelize, sequelize } }) {
+     await sequelize.transaction(async (transaction) => {
+       await queryInterface.addColumn("Comprobante", "ticket_id",
+         { type: Sequelize.INTEGER, allowNull: true }, { transaction });
+     });
+   }
+   async function down({ context: { queryInterface, sequelize } }) {
+     await sequelize.transaction(async (transaction) => {
+       await queryInterface.removeColumn("Comprobante", "ticket_id", { transaction });
+     });
+   }
+   module.exports = { up, down };
+   ```
+2. Actualizar el modelo Sequelize correspondiente para que coincida.
+3. Reconstruir la imagen (`docker compose build backend`) y probar `up`, `down` y otra vez `up`.
+4. **Nunca** editar una migración ya aplicada en producción: crear una nueva.
 
-### 2. **Campo tipo en almanaques**
-**Archivo:** `migrate_almanaques.js`
+## Baseline (0000)
 
-Agrega el campo `tipo` a la tabla almanaques para diferenciar entre cotizaciones y ventas confirmadas.
+`0000-baseline.sql` es el esquema completo que esperan los modelos. Se generó con
+`scripts/generar-baseline.js` (base temporal + `sync()` + `pg_dump --schema-only`).
+`0000-baseline.schema.json` lista tablas y columnas para comparar.
+
+- **BD nueva:** `migrate` ejecuta el baseline y crea todo.
+- **BD existente** (producción): la migración 0000 se niega a ejecutarse sobre tablas
+  existentes. Se marca como aplicada con `baseline`, que **solo** lo hace si el
+  esquema real es compatible:
 
 ```bash
-node migrate_almanaques.js
+docker compose run --rm migrate node src/infrastructure/database/migrator.js diff
+docker compose run --rm migrate node src/infrastructure/database/migrator.js baseline
 ```
 
-**Cambios:**
-- Crea tipo ENUM `tipo_almanaque ('cotizacion', 'venta')`
-- `almanaques.tipo` tipo_almanaque DEFAULT 'cotizacion'
-- Marca registros existentes como 'cotizacion'
+Si `diff` muestra columnas o tablas faltantes, no se puede marcar: hay que corregir
+esas diferencias primero. Las "sobrantes" (por ejemplo, la tabla vieja `almanaques`)
+solo se informan y no bloquean.
 
-**Impacto:**
-- Las cotizaciones (tipo='cotizacion') NO se suman a los ingresos diarios
-- Las ventas (tipo='venta') SÍ se suman a los ingresos diarios
+## Privilegios: rol de aplicación vs. rol de migraciones
 
----
-
-### 3. **Campo telefono en almanaques**
-**Archivo:** `migrations/run-telefono-migration.js`
-
-Agrega la columna `telefono` a la tabla almanaques. El formulario de cotización
-ya capturaba el teléfono del cliente pero no existía columna donde guardarlo, así
-que el dato se perdía al guardar.
+La app no debe conectarse con un superusuario. `scripts/roles-bd.sql` crea un rol de
+aplicación que solo lee y escribe datos (sin CREATE, ALTER, DROP, TRUNCATE ni COPY
+a archivo):
 
 ```bash
-node migrations/run-telefono-migration.js
+docker exec -i postgres_db psql -U <dueño> -d <base> \
+  -v app_user=imprenta_app -v app_password='<aleatoria>' -v owner=<dueño> -f - < scripts/roles-bd.sql
 ```
 
-**Cambios:**
-- `almanaques.telefono` VARCHAR(255) NULL
-
-**Impacto:**
-- El teléfono del cliente se persiste y se imprime en el PDF de cotización (A4 y ticket)
-- Corrige el bloque "DATOS DEL CLIENTE" del PDF, que hasta ahora mostraba el
-  teléfono del emisor en lugar del teléfono del cliente
-
----
-
-### 4. **Corrección FK DetalleAlmanaques → almanaque (bug crítico: cotizaciones no se guardaban)**
-**Archivo:** `migrations/run-fix-almanaque-fk-migration.js`
-
-El modelo Sequelize `Almanaque` usa `freezeTableName: true` y opera sobre la tabla
-`almanaque` (singular), pero la llave foránea de `DetalleAlmanaques` había quedado
-apuntando a la tabla vieja `almanaques` (plural), creada antes de fijar ese nombre.
-
-Al crear una cotización con detalle, Sequelize inserta encabezado y detalle en una
-misma transacción. Como el id nuevo existe en `almanaque` pero no en `almanaques`,
-la FK rechazaba el insert del detalle y Postgres revertía **toda la transacción**
-(encabezado incluido). Resultado: ninguna cotización con detalle quedaba guardada
-y el número (id) nunca avanzaba para el usuario, aunque la secuencia sí se consumía
-en cada intento fallido.
-
-```bash
-node migrations/run-fix-almanaque-fk-migration.js
-```
-
-**Cambios:**
-- Migra a `almanaque` cualquier registro huérfano que solo exista en la tabla vieja `almanaques` (si aplica)
-- Recrea la FK `DetalleAlmanaques.AlmanaqueId` para que referencie `almanaque(id)` en vez de `almanaques(id)`
-
-**Impacto:**
-- Las cotizaciones con detalle vuelven a guardarse correctamente y el número (id) incrementa con cada una nueva
-- No se pierde ninguna cotización histórica que hubiera quedado atrapada en la tabla vieja
-
----
-
-## 🔄 Flujo Recomendado
-
-### Desarrollo Local
-```bash
-# 1. Verificar y aplicar migraciones
-node check_and_migrate.js
-
-# 2. Reiniciar servidor
-npm run dev
-```
-
-### Producción
-```bash
-# 1. Conectar al servidor
-ssh usuario@servidor
-
-# 2. Ir al directorio del proyecto
-cd /ruta/proyecto/Backend_servicios_imprenta
-
-# 3. Hacer backup de la base de datos (IMPORTANTE)
-pg_dump -U servicios -d servicios > backup_$(date +%Y%m%d_%H%M%S).sql
-
-# 4. Verificar y aplicar migraciones
-node check_and_migrate.js
-
-# 5. Reiniciar servidor
-pm2 restart backend
-# o
-systemctl restart backend
-```
-
----
-
-## 🔍 Verificación Manual
-
-### Verificar si las migraciones están aplicadas:
-
-```sql
--- Verificar columna metodo_pago en Tickets
-SELECT column_name, data_type, column_default
-FROM information_schema.columns
-WHERE table_name = 'Tickets' AND column_name = 'metodo_pago';
-
--- Verificar columna metodo_pago en Comprobante
-SELECT column_name, data_type, column_default
-FROM information_schema.columns
-WHERE table_name = 'Comprobante' AND column_name = 'metodo_pago';
-
--- Verificar tipo ENUM
-SELECT typname FROM pg_type WHERE typname = 'tipo_almanaque';
-
--- Verificar columna tipo en almanaques
-SELECT column_name, data_type, column_default
-FROM information_schema.columns
-WHERE table_name = 'almanaques' AND column_name = 'tipo';
-
--- Ver estado de almanaques
-SELECT tipo, COUNT(*) as total FROM almanaques GROUP BY tipo;
-```
-
----
-
-## ⚠️ Rollback (Revertir Migraciones)
-
-### Revertir metodo_pago:
-```sql
-ALTER TABLE "Tickets" DROP COLUMN metodo_pago;
-ALTER TABLE "Comprobante" DROP COLUMN metodo_pago;
-```
-
-### Revertir tipo en almanaques:
-```sql
-ALTER TABLE almanaques DROP COLUMN tipo;
-DROP TYPE tipo_almanaque;
-```
-
----
-
-## 📊 Salida Esperada
-
-Al ejecutar `check_and_migrate.js`:
+En el `.env` del backend:
 
 ```
-✅ Conectado a la base de datos
-
-📋 1. Verificando columna metodo_pago en Tickets...
-✓  Ya existe. Omitiendo...
-📋 2. Verificando columna metodo_pago en Comprobante...
-✓  Ya existe. Omitiendo...
-📋 3. Verificando tipo ENUM tipo_almanaque...
-✓  Ya existe. Omitiendo...
-📋 4. Verificando columna tipo en almanaques...
-✓  Ya existe. Omitiendo...
-
-============================================================
-📊 RESUMEN DE MIGRACIONES
-============================================================
-✅ Migraciones aplicadas: 0
-⏭️  Migraciones omitidas: 4
-
-============================================================
-🔍 VERIFICACIÓN FINAL
-============================================================
-
-📊 Estado de almanaques:
-┌─────────┬──────────────┬───────┐
-│ (index) │ tipo         │ total │
-├─────────┼──────────────┼───────┤
-│ 0       │ 'cotizacion' │ '1'   │
-└─────────┴──────────────┴───────┘
-
-✅ Tickets.metodo_pago: OK
-✅ Comprobante.metodo_pago: OK
-✅ almanaques.tipo: OK
-
-============================================================
-🎉 TODAS LAS MIGRACIONES ESTÁN APLICADAS
-============================================================
+DB_USER=imprenta_app          DB_PASSWORD=<aleatoria>
+DB_MIGRATOR_USER=<dueño>      DB_MIGRATOR_PASSWORD=<la del dueño>
 ```
 
----
+El servicio `migrate` usa `DB_MIGRATOR_*`; la API y el worker usan `DB_USER`.
 
-## 🆘 Solución de Problemas
+## Historial
 
-### Error: "relation does not exist"
-**Causa:** La tabla no existe en la base de datos
-**Solución:** Verificar que estás conectado a la base de datos correcta
-
-### Error: "duplicate column name"
-**Causa:** La migración ya fue aplicada
-**Solución:** Normal, el script omitirá esta migración automáticamente
-
-### Error: "permission denied"
-**Causa:** El usuario de PostgreSQL no tiene permisos
-**Solución:** Ejecutar con un usuario que tenga permisos de ALTER TABLE
-
----
-
-## 📝 Notas
-
-- ✅ Todas las migraciones son **idempotentes** (se pueden ejecutar múltiples veces sin causar errores)
-- ✅ El script `check_and_migrate.js` es **seguro para producción**
-- ✅ Siempre hace **backup antes de ejecutar migraciones en producción**
-- ✅ Las migraciones son **compatibles con PostgreSQL 12+**
-
----
-
-## 📞 Soporte
-
-Si encuentras algún problema con las migraciones, revisa:
-1. Los logs del servidor (`pm2 logs backend`)
-2. Los logs de PostgreSQL
-3. El archivo `.env` para verificar las credenciales de BD
-
----
-
-**Última actualización:** 2026-09-14
+Los scripts y SQL sueltos anteriores están en `migrations/legacy/` solo como
+referencia. Su efecto ya está en el baseline: **no ejecutarlos**.

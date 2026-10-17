@@ -11,6 +11,7 @@
 # /app/storage (storage/certs, storage/keys). NO se hornean en la imagen.
 storage/certs
 storage/keys
+storage/backups-migracion
 **/printer/keys
 *.pfx
 *.p12

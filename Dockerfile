@@ -7,7 +7,10 @@ RUN apk add --no-cache \
       freetype \
       harfbuzz \
       ca-certificates \
-      ttf-freefont
+      ttf-freefont \
+      postgresql17-client
+# postgresql17-client: pg_dump para el backup automático previo a cada
+# migración (misma versión mayor que el servidor Postgres 17).
 
 # Decirle a Puppeteer que NO descargue su propio Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true

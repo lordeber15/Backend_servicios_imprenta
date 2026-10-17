@@ -5,19 +5,21 @@
  * PDF pesado o un error de Puppeteer, el envío a SUNAT sigue funcionando, y
  * viceversa. Consume la cola "sunat-envio" de BullMQ.
  *
- * No sincroniza el esquema: eso es responsabilidad de main.js / migraciones.
+ * No modifica el esquema: eso lo hacen las migraciones (servicio `migrate`).
  */
 
 require("dotenv").config();
 
 const sequelize = require("./src/infrastructure/database/database");
+const { verificarMigraciones } = require("./src/infrastructure/database/migrator");
 
 async function main() {
   try {
     await sequelize.authenticate();
-    console.log("[Worker] Conectado a la base de datos");
+    await verificarMigraciones(sequelize);
+    console.log("[Worker] Conectado a la base de datos (esquema al día)");
   } catch (error) {
-    console.error("[Worker] No se pudo conectar a la base de datos:", error.message);
+    console.error("[Worker] No se puede arrancar:", error.message);
     process.exit(1);
   }
 
