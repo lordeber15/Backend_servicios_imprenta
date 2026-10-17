@@ -31,6 +31,7 @@ src/uploads/
 
 # Secretos y certificados — NUNCA versionar (se colocan manualmente en cada entorno)
 storage/certs/
+storage/keys/
 *.pfx
 *.p12
 **/keys/*.pem

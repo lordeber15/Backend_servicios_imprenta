@@ -1,0 +1,8 @@
+#!/bin/sh
+# Bloquea commits que contengan secretos (certificados, llaves, contraseñas).
+# Activar una vez por clon:  git config core.hooksPath .githooks
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks no está instalado (brew install gitleaks). Commit bloqueado." >&2
+  exit 1
+fi
+exec gitleaks git --pre-commit --staged --redact --no-banner -v

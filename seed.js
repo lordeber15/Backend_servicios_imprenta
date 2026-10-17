@@ -27,7 +27,13 @@ async function seed() {
     console.log("Conectado a la base de datos\n");
 
     // ─── 1. USUARIOS ────────────────────────────────────────────────────────
-    const hashedPassword = await bcrypt.hash("123456", 10);
+    // La contraseña inicial del admin llega por entorno: nunca un valor por
+    // defecto versionado en el repo.
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+    if (!adminPassword || adminPassword.length < 10) {
+      throw new Error("Defina SEED_ADMIN_PASSWORD (mínimo 10 caracteres) para crear el usuario administrador");
+    }
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
     const [userEber, createdEber] = await Login.findOrCreate({
       where: { usuario: "eber" },
       defaults: { usuario: "eber", password: hashedPassword, cargo: "Administrador" },

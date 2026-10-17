@@ -5,10 +5,10 @@ const crypto = require('crypto');
 
 const router = express.Router();
 
-// Rutas a las llaves generadas por OpenSSL
-// Se asume que este archivo estará en src/infrastructure/web/routes/qz.routes.js
-// y las llaves en src/infrastructure/external_services/printer/keys/
-const KEYS_DIR = path.resolve(process.cwd(), 'src/infrastructure/external_services/printer/keys');
+// Llaves QZ generadas por OpenSSL. Viven en storage/keys/ (volumen montado,
+// igual que el certificado SUNAT) y NO se hornean en la imagen Docker: quien
+// obtenga la imagen no obtiene la llave privada. Ruta configurable con QZ_KEYS_DIR.
+const KEYS_DIR = path.resolve(process.cwd(), process.env.QZ_KEYS_DIR || 'storage/keys');
 const PRIVATE_KEY_PATH = path.join(KEYS_DIR, 'qz-private-key.pem');
 const PUBLIC_CERT_PATH = path.join(KEYS_DIR, 'qz-public-cert.crt');
 
