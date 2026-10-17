@@ -225,7 +225,7 @@ function buildHtml(c, qrBase64) {
       <p>Representación impresa de comprobante electrónico.</p>
       <p>Para consultar el estado del comprobante ingrese a: <strong>https://ww1.sunat.gob.pe/ol-it-wsconsvalidcpe/</strong></p>
       ${c.hash_cpe ? `<p>Hash CPE: ${c.hash_cpe}</p>` : ""}
-      ${c.estado_sunat === "AC" ? `<p style="color:green;font-weight:bold;">ACEPTADO POR SUNAT</p>` : ""}
+      ${["ACEPTADO", "OBSERVADO"].includes(c.estado_sunat) ? `<p style="color:green;font-weight:bold;">ACEPTADO POR SUNAT</p>` : ""}
     </div>
     <div class="qr-section">
       ${qrBase64 ? `<img src="${qrBase64}" alt="QR SUNAT">` : ""}
@@ -325,7 +325,7 @@ function buildTicketHtml(c, qrBase64) {
   ${c.hash_cpe ? `<div class="footer">Hash: ${c.hash_cpe}</div>` : ""}
   <div class="footer">Representacion impresa del</div>
   <div class="footer">comprobante electronico</div>
-  ${c.estado_sunat === "AC" ? `<div class="footer bold">ACEPTADO POR SUNAT</div>` : ""}
+  ${["ACEPTADO", "OBSERVADO"].includes(c.estado_sunat) ? `<div class="footer bold">ACEPTADO POR SUNAT</div>` : ""}
 </body>
 </html>`;
 }
@@ -409,7 +409,7 @@ function buildA5Html(c, qrBase64) {
       ${qrBase64 ? `<img src="${qrBase64}" alt="QR" style="width:70px;height:70px">` : ""}
       ${c.hash_cpe ? `<div style="font-size:7px;color:#666;margin-top:2px">Hash: ${c.hash_cpe}</div>` : ""}
       <div style="font-size:7px;color:#666">Representacion impresa de comprobante electronico</div>
-      ${c.estado_sunat === "AC" ? `<div style="font-size:8px;color:green;font-weight:bold">ACEPTADO POR SUNAT</div>` : ""}
+      ${["ACEPTADO", "OBSERVADO"].includes(c.estado_sunat) ? `<div style="font-size:8px;color:green;font-weight:bold">ACEPTADO POR SUNAT</div>` : ""}
     </div>
     <table style="min-width:180px;width:auto">
       <tr><td style="padding:2px 6px;font-size:9px">Op. Gravadas:</td><td style="padding:2px 6px;text-align:right;font-size:9px">${simbolo} ${parseFloat(c.op_gravadas || 0).toFixed(2)}</td></tr>

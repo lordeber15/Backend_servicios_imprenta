@@ -3,7 +3,8 @@
  *
  * Corre como proceso (y contenedor) separado de la API: si la API cae por un
  * PDF pesado o un error de Puppeteer, el envío a SUNAT sigue funcionando, y
- * viceversa. Consume la cola "sunat-envio" de BullMQ.
+ * viceversa. Consume las colas "sunat-envio" (comprobantes) y "sunat-guia"
+ * (consulta de tickets de guías) de BullMQ.
  *
  * No modifica el esquema: eso lo hacen las migraciones (servicio `migrate`).
  */
@@ -23,15 +24,16 @@ async function main() {
     process.exit(1);
   }
 
-  // El Worker de BullMQ empieza a consumir al instanciarse (al hacer require).
+  // Los Worker de BullMQ empiezan a consumir al instanciarse (al hacer require).
   const sunatWorker = require("./src/workers/sunatWorker");
-  console.log("[Worker] Worker SUNAT activo (concurrency: 3)");
+  const guiaWorker = require("./src/workers/guiaWorker");
+  console.log("[Worker] Workers activos: sunat-envio (concurrency 3), sunat-guia (concurrency 2)");
 
   async function shutdown(signal) {
     console.log(`\n[Worker] ${signal} recibido. Cerrando...`);
     try {
       // close() espera a que terminen los jobs en curso antes de salir.
-      await sunatWorker.close();
+      await Promise.all([sunatWorker.close(), guiaWorker.close()]);
       await sequelize.close();
     } catch (err) {
       console.error("[Worker] Error durante shutdown:", err);

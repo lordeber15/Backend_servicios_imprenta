@@ -6,18 +6,12 @@ const Cliente        = require("../../../database/models/facturacion/cliente");
 const TipoDocumento  = require("../../../database/models/facturacion/tipodocumento");
 const Detalle        = require("../../../database/models/facturacion/detalles");
 const Producto       = require("../../../database/models/facturacion/producto");
-const TipoAfectacion = require("../../../database/models/facturacion/tipoafectacion");
 const Unidad         = require("../../../database/models/facturacion/unidad");
 const TipoComprobante = require("../../../database/models/facturacion/tipocomprobante");
 const Moneda         = require("../../../database/models/facturacion/moneda");
-const Serie          = require("../../../database/models/facturacion/serie");
-const Cuota          = require("../../../database/models/facturacion/cuota");
 
 require("../../../database/models/facturacion/asociation");
 
-const facturaBuilder = require("../../../external_services/sunat/xmlBuilders/facturaBuilder");
-const boletaBuilder  = require("../../../external_services/sunat/xmlBuilders/boletaBuilder");
-const xmlSigner      = require("../../../external_services/sunat/xmlSigner");
 const storageHelper  = require("../../../external_services/sunat/storageHelper");
 const qrGenerator    = require("../../../external_services/sunat/qrGenerator");
 const pdfGenerator   = require("../../../external_services/sunat/pdfGenerator");
@@ -31,62 +25,7 @@ const { Op } = require("sequelize");
 // OBSERVADO ya no está: significa "aceptado con observaciones" (registrado en SUNAT).
 const ESTADOS_REENVIABLES = ["RECHAZADO", "ERROR_RED", "SIN_CDR", "FIRMADO", "GENERADO"];
 
-// Include completo necesario para reconstruir el XML de un comprobante.
-const INCLUDE_XML = [
-  { model: Emisor },
-  { model: Cliente, include: [{ model: TipoDocumento }] },
-  { model: Detalle, include: [{ model: Producto, include: [TipoAfectacion, Unidad] }] },
-  { model: TipoComprobante },
-  { model: Moneda },
-  { model: Serie },
-  { model: Cuota },
-  { model: Comprobante, as: "comprobanteRef" },
-];
-
-/**
- * Genera el XML según el tipo de comprobante, lo firma y lo guarda en disco.
- * Usado por emitir y por reenviar (para que el reenvío tome los datos y
- * builders actuales en lugar del XML viejo en disco).
- * @returns {Promise<string>} nombre del archivo XML firmado
- */
-const generarYFirmarXml = async (comprobante) => {
-  const certPath     = process.env.SUNAT_CERT_PATH;
-  const certPassword = process.env.SUNAT_CERT_PASSWORD;
-  if (!certPath || !certPassword) {
-    throw new Error("Certificado digital no configurado (SUNAT_CERT_PATH / SUNAT_CERT_PASSWORD)");
-  }
-
-  const correlativoStr = String(comprobante.correlativo).padStart(8, "0");
-  const nombreArchivo  = `${comprobante.Emisor.ruc}-${comprobante.tipo_comprobante_id}-${comprobante.serie}-${correlativoStr}`;
-
-  let xmlSinFirmar;
-  if (comprobante.tipo_comprobante_id === "01") {
-    xmlSinFirmar = facturaBuilder.build(comprobante);
-  } else if (comprobante.tipo_comprobante_id === "03") {
-    xmlSinFirmar = boletaBuilder.build(comprobante);
-  } else {
-    xmlSinFirmar = facturaBuilder.buildNota(comprobante);
-  }
-
-  await comprobante.update({
-    estado_sunat: "GENERADO",
-    es_terminal:  false, // XML nuevo: el resultado anterior ya no aplica
-    nombre_xml:   nombreArchivo,
-    xml_path:     nombreArchivo,
-  });
-
-  let xmlFirmado;
-  try {
-    xmlFirmado = xmlSigner.signXml(xmlSinFirmar, certPath, certPassword);
-  } catch (signErr) {
-    throw new Error("Error al firmar el XML: " + signErr.message);
-  }
-
-  storageHelper.saveXml(nombreArchivo, xmlFirmado);
-  await comprobante.update({ estado_sunat: "FIRMADO" });
-
-  return nombreArchivo;
-};
+const { INCLUDE_XML, generarYFirmarXml } = require("../../../../application/services/firmaComprobante");
 
 /**
  * GET /comprobante/lista
@@ -451,6 +390,27 @@ const descargarXml = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /comprobante/:id/cdr
+ * Descarga el CDR (ZIP de SUNAT) guardado en disco.
+ */
+const descargarCdr = async (req, res, next) => {
+  try {
+    const comprobante = await Comprobante.findByPk(req.params.id, {
+      attributes: ["id", "nombre_xml", "xml_path"],
+    });
+    if (!comprobante) return res.status(404).json({ message: "Comprobante no encontrado" });
+
+    const archivo = comprobante.xml_path || comprobante.nombre_xml;
+    if (!archivo || !storageHelper.existsCdr(archivo)) {
+      return res.status(404).json({ message: "CDR no disponible para este comprobante" });
+    }
+    return res.download(storageHelper.getCdrPath(archivo), `R-${archivo}.zip`);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   listComprobantes,
   emitirComprobante,
@@ -458,5 +418,6 @@ module.exports = {
   consultarEstado,
   descargarPdf,
   descargarXml,
+  descargarCdr,
   recuperarEstados,
 };

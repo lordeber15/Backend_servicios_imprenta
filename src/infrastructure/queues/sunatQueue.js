@@ -45,4 +45,30 @@ async function encolarEnvio(comprobante_id, nombre_xml, opts = {}) {
   );
 }
 
-module.exports = { sunatQueue, encolarEnvio };
+// ── Guías de remisión: consulta del ticket REST hasta obtener el CDR ────────
+// La API de guías es asíncrona: el envío devuelve un ticket y el resultado
+// (aceptada/rechazada + CDR) se obtiene consultándolo. Mientras SUNAT
+// responde "98" (en proceso) el job falla y BullMQ reintenta con backoff.
+const guiaQueue = new Queue('sunat-guia', {
+  connection: redis,
+  defaultJobOptions: {
+    attempts: 10,
+    backoff: { type: 'exponential', delay: 15_000 }, // 15s, 30s, 1m, 2m… (~4 h en total)
+    removeOnComplete: { count: 500 },
+    removeOnFail:     { count: 200 },
+  },
+});
+
+/** Encola (sin duplicar) la consulta del ticket de una guía. */
+async function encolarConsultaGuia(guia_id, opts = {}) {
+  const jobId = `guia-${guia_id}`;
+  const existing = await guiaQueue.getJob(jobId);
+  if (existing) {
+    const state = await existing.getState();
+    if (['waiting', 'active', 'delayed'].includes(state)) return existing;
+    await existing.remove();
+  }
+  return guiaQueue.add('consultar-ticket-guia', { guia_id }, { jobId, delay: 5_000, ...opts });
+}
+
+module.exports = { sunatQueue, encolarEnvio, guiaQueue, encolarConsultaGuia };

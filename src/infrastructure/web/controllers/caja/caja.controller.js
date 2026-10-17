@@ -37,7 +37,7 @@ async function calcularVentas(caja) {
       where: {
         fecha_emision: { [Op.gte]: fechaDesde },
         tipo_comprobante_id: { [Op.in]: ["01", "03"] },
-        estado_sunat: { [Op.ne]: "AN" },
+        estado_sunat: { [Op.ne]: "ANULADO" },
         metodo_pago: 'Efectivo',
       },
     }),
@@ -45,7 +45,7 @@ async function calcularVentas(caja) {
       where: {
         fecha_emision: { [Op.gte]: fechaDesde },
         tipo_comprobante_id: { [Op.in]: ["01", "03"] },
-        estado_sunat: { [Op.ne]: "AN" },
+        estado_sunat: { [Op.ne]: "ANULADO" },
         metodo_pago: 'Yape',
       },
     }),

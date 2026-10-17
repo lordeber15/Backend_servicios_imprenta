@@ -13,6 +13,14 @@ const xmlSigner = require("../../../external_services/sunat/xmlSigner");
 const sunatClient = require("../../../external_services/sunat/sunatClient");
 const cdrParser = require("../../../external_services/sunat/cdrParser");
 const storageHelper = require("../../../external_services/sunat/storageHelper");
+const sequelize = require("../../../database/database");
+const { hoyLocal } = require("../../../utils/fecha");
+
+// NOTA: en este sistema las boletas se envían individualmente (sendBill vía la
+// cola sunat-envio), así que no quedan boletas "pendientes de resumen": la
+// selección de abajo hoy no encuentra registros. Se mantiene el endpoint con
+// numeración, CDR y estados corregidos para cuando se use (p. ej. anulación de
+// boletas con condición 3).
 
 /**
  * POST /resumen-diario
@@ -54,11 +62,24 @@ const generarResumenDiario = async (req, res, next) => {
       });
     }
 
-    // Calcular correlativo del RC del día (puede haber múltiples por día)
-    const rcCount = await EnvioResumen.count({
-      where: { emisor_id, tipo: "RC", fecha_referencia },
+    // Correlativo del RC: bloqueo consultivo por emisor+fecha para que dos
+    // envíos simultáneos no tomen el mismo número (índice único de respaldo).
+    const correlativo = await sequelize.transaction(async (transaction) => {
+      await sequelize.query("SELECT pg_advisory_xact_lock(hashtext(:clave))", {
+        replacements: { clave: `RC:${emisor_id}:${fecha_referencia}` },
+        transaction,
+      });
+      const max = await EnvioResumen.max("correlativo", {
+        where: { emisor_id, tipo: "RC", fecha_referencia },
+        transaction,
+      });
+      const siguiente = (max || 0) + 1;
+      // Se reserva el número creando el registro antes de firmar/enviar.
+      await EnvioResumen.create({
+        emisor_id, fecha_referencia, correlativo: siguiente, tipo: "RC", estado_ticket: "GE", resumen: 1,
+      }, { transaction });
+      return siguiente;
     });
-    const correlativo = rcCount + 1;
 
     // Construir y firmar XML del Resumen Diario
     const xmlSinFirmar = resumenDiarioBuilder.build({
@@ -66,6 +87,7 @@ const generarResumenDiario = async (req, res, next) => {
       boletas,
       fecha_referencia,
       correlativo,
+      fecha_emision: hoyLocal(),
     });
 
     const certPath = process.env.SUNAT_CERT_PATH;
@@ -93,17 +115,13 @@ const generarResumenDiario = async (req, res, next) => {
       });
     }
 
-    // Registrar el envío en EnvioResumen
-    const envio = await EnvioResumen.create({
-      emisor_id,
+    // Completar el registro reservado con el resultado del envío
+    const envio = await EnvioResumen.findOne({ where: { emisor_id, tipo: "RC", fecha_referencia, correlativo } });
+    await envio.update({
       fecha_envio: new Date(),
-      fecha_referencia,
-      correlativo,
       nombrexml: nombreArchivo,
       ticket,
-      tipo: "RC",
       estado_ticket: "PE",
-      resumen: 1,
       xml_firmado: xmlFirmado,
     });
 
@@ -114,7 +132,7 @@ const generarResumenDiario = async (req, res, next) => {
         comprobante_id: boleta.id,
         condicion: 1, // 1=adición
       });
-      await boleta.update({ estado_sunat: "EN" });
+      await boleta.update({ estado_sunat: "ENVIANDO" });
     }
 
     return res.status(201).json({
@@ -166,20 +184,23 @@ const consultarTicketResumen = async (req, res, next) => {
       });
     }
 
-    if (status.statusCode === "0" && status.content) {
-      // Procesado correctamente
+    if (status.content) {
+      // El CDR (ZIP) se conserva en disco, sea aceptación o rechazo.
+      storageHelper.saveCdr(envio.nombrexml, status.content);
       let cdr;
       try {
         cdr = cdrParser.parseCdr(status.content);
-      } catch (_) {
-        cdr = { responseCode: "0", description: "Aceptado", digestValue: "", accepted: true, notes: [] };
+      } catch (parseErr) {
+        // Nunca se asume aceptado si el CDR no se puede leer.
+        await envio.update({ estado_ticket: "ER", mensaje_sunat: `CDR ilegible: ${parseErr.message}`.substring(0, 500) });
+        return res.json({ estado_ticket: "ER", message: "CDR guardado pero ilegible; vuelva a consultar" });
       }
 
       // Actualizar todas las boletas incluidas
       for (const det of envio.EnvioResumenDetalles) {
         await Comprobante.update(
           {
-            estado_sunat: cdr.accepted ? "AC" : "RR",
+            estado_sunat: cdr.accepted ? "ACEPTADO" : "RECHAZADO",
             codigo_sunat: cdr.responseCode,
             mensaje_sunat: cdr.description,
             hash_cpe: cdr.digestValue,

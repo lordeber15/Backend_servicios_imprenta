@@ -1,3 +1,4 @@
+const { hoyLocal } = require("../../../utils/fecha");
 /**
  * GENERADOR DE XML: RESUMEN DIARIO DE BOLETAS
  * 
@@ -19,11 +20,13 @@
  * @param {object[]} params.boletas       Array de Comprobantes tipo 03 con Cliente y Moneda
  * @param {string} params.fecha_referencia  Fecha YYYY-MM-DD de las boletas
  * @param {number} params.correlativo     Correlativo del RC del día (ej: 1)
+ * @param {string} [params.fecha_emision] YYYY-MM-DD; por defecto hoy en hora Perú
  * @returns {string}  XML del RC sin firma
  */
-function build({ emisor, boletas, fecha_referencia, correlativo }) {
+function build({ emisor, boletas, fecha_referencia, correlativo, fecha_emision }) {
   const fechaReferencia = formatDate(fecha_referencia);
-  const fechaEmision = formatDate(new Date()); // hoy
+  // Fecha de emisión en hora Perú (no UTC): debe coincidir con la del nombre del archivo.
+  const fechaEmision = fecha_emision || hoyLocal();
   const rcId = `RC-${fechaReferencia.replace(/-/g, "")}-${correlativo}`;
 
   const lineas = boletas.map((b, i) => buildLinea(b, i + 1)).join("\n");

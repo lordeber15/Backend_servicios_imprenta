@@ -66,7 +66,9 @@ const GuiaRemision = sequelize.define(
     },
 
     // Estado SUNAT
+    // PE=pendiente, EN=enviada (esperando CDR por ticket), AC=aceptada, RR=rechazada
     estado_sunat: { type: DataTypes.CHAR(2), defaultValue: "PE" },
+    ticket: DataTypes.STRING(60), // ticket de la API REST de SUNAT para consultar el CDR
     codigo_sunat: DataTypes.STRING(10),
     mensaje_sunat: DataTypes.STRING(500),
     hash_cpe: DataTypes.STRING(255),

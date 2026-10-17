@@ -63,12 +63,13 @@ const Comprobante = sequelize.define(
     },
     // ── CAMPOS DE INTEGRACIÓN SUNAT ──────────────────────────────────────────
     // Estados: GENERADO → FIRMADO → ENVIANDO → ACEPTADO | OBSERVADO | RECHAZADO | ERROR_RED | FUERA_PLAZO | SIN_CDR
+    // Anulación (Comunicación de Baja): ACEPTADO/OBSERVADO → EN_BAJA → ANULADO
     estado_sunat: {
       type: DataTypes.STRING(15),
       defaultValue: "GENERADO",
       validate: {
         isIn: [["GENERADO","FIRMADO","ENVIANDO","ACEPTADO","OBSERVADO",
-                 "RECHAZADO","ERROR_RED","FUERA_PLAZO","SIN_CDR"]],
+                 "RECHAZADO","ERROR_RED","FUERA_PLAZO","SIN_CDR","EN_BAJA","ANULADO"]],
       },
     },
     // Campos canónicos CDR

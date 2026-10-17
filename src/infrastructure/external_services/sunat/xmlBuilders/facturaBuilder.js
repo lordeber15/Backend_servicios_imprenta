@@ -377,7 +377,7 @@ function buildLinea(d, numero, moneda) {
 
   return `<cac:InvoiceLine>
     <cbc:ID>${numero}</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="${unidad.id || "NIU"}">${cantidad.toFixed(6)}</cbc:InvoicedQuantity>
+    <cbc:InvoicedQuantity unitCode="${unidad.id || d.unidad_id || "NIU"}">${cantidad.toFixed(6)}</cbc:InvoicedQuantity>
     <cbc:LineExtensionAmount currencyID="${moneda}">${valorTotal.toFixed(2)}</cbc:LineExtensionAmount>
     <cac:PricingReference>
       <cac:AlternativeConditionPrice>
@@ -431,7 +431,7 @@ function buildLineaNota(d, numero, moneda, esNC) {
 
   return `<${lineTag}>
     <cbc:ID>${numero}</cbc:ID>
-    <cbc:CreditedQuantity unitCode="${unidad.id || "NIU"}">${cantidad.toFixed(6)}</cbc:CreditedQuantity>
+    <cbc:CreditedQuantity unitCode="${unidad.id || d.unidad_id || "NIU"}">${cantidad.toFixed(6)}</cbc:CreditedQuantity>
     <cbc:LineExtensionAmount currencyID="${moneda}">${valorTotal.toFixed(2)}</cbc:LineExtensionAmount>
     <cac:PricingReference>
       <cac:AlternativeConditionPrice>

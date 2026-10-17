@@ -1,3 +1,4 @@
+const { hoyLocal } = require("../../../utils/fecha");
 /**
  * GENERADOR DE XML: COMUNICACIÓN DE BAJA
  * 
@@ -18,11 +19,13 @@
  * @param {object[]} params.comprobantes    Array de { tipo_comprobante_id, serie, correlativo, motivo_baja }
  * @param {string}   params.fecha_referencia  Fecha YYYY-MM-DD del RC (fecha de las facturas)
  * @param {number}   params.correlativo     Correlativo del RA del día
+ * @param {string}   [params.fecha_emision] YYYY-MM-DD; por defecto hoy en hora Perú
  * @returns {string}  XML del RA sin firma
  */
-function build({ emisor, comprobantes, fecha_referencia, correlativo }) {
+function build({ emisor, comprobantes, fecha_referencia, correlativo, fecha_emision }) {
   const fechaReferencia = formatDate(fecha_referencia);
-  const fechaEmision = formatDate(new Date()); // hoy
+  // Fecha de emisión en hora Perú (no UTC): debe coincidir con la del nombre del archivo.
+  const fechaEmision = fecha_emision || hoyLocal();
   const raId = `RA-${fechaEmision.replace(/-/g, "")}-${correlativo}`;
 
   const lineas = comprobantes.map((c, i) => `<sac:VoidedDocumentsLine>

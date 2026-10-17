@@ -16,6 +16,7 @@ const {
   consultarEstado,
   descargarPdf,
   descargarXml,
+  descargarCdr,
   recuperarEstados,
 } = require("../../controllers/facturacion/sunat.controller");
 
@@ -146,6 +147,7 @@ router.get("/comprobante/:id/pdf", descargarPdf);
  *         description: Archivo XML
  */
 router.get("/comprobante/:id/xml", descargarXml);
+router.get("/comprobante/:id/cdr", authenticate, descargarCdr);
 
 // Utilidad de recuperación: reescribe estados de comprobantes en masa → solo admin.
 router.post("/admin/recuperar-estados", authenticate, authorize("Administrador"), recuperarEstados);
