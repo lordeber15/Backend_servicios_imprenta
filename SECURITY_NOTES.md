@@ -65,3 +65,13 @@ El `Dockerfile` usa `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true` + Chromium del siste
 
 ### Frontend
 Quedan alertas en dependencias de build (vite/esbuild/rollup) que **no se envían al navegador** (solo se usan al compilar). Sin riesgo en runtime.
+
+## Fase 6 (plan de mejoras) — autorización y validación
+
+- **Matriz central** `web/middleware/permisos.js`, montada tras `authGlobal`: cada ruta autenticada declara qué cargos la usan. **Denegar por defecto**: una ruta sin regla responde 403. `tests/integracion/permisos.prueba.js` recorre el router de Express y falla si una ruta no tiene regla (o una regla no tiene ruta), y verifica que todas las rutas solo-admin den 403 a un Usuario.
+- **Formatos en el servidor**: las escrituras de un Usuario exigen el formato de la pantalla (ticket, boleta, factura, notacredito, guiarem, guiatransp, ingresos, cotizacion). Antes solo ocultaban menús. Asignar formatos es solo de admin (antes cualquiera podía asignárselos).
+- **Credenciales SUNAT cifradas** (migración 0006): clave SOL y client_secret salen de `Emisor` a `EmisorCredenciales`, cifradas con AES-256-GCM (`DATA_ENCRYPTION_KEY`, con AAD por emisor y campo). Ningún modelo asocia esa tabla y la API nunca devuelve los secretos (`tiene_clave_sol` / `tiene_client_secret`). Antes `GET /emisor` se los entregaba a cualquier usuario. Solo `sunatClient`/`sunatRestClient` los descifran, en el momento de autenticarse. El log de depuración SOAP enmascara la contraseña.
+- **Subidas** (`subidaImagen.js`): en memoria, tipo por magic bytes (JPG/PNG/WEBP), nombre aleatorio; el nombre original nunca toca el disco.
+- **Mass assignment**: `soloCampos(Model)` en los CRUD de catálogos (sin id, timestamps ni el correlativo de la serie) y en servicios; zod en clientes, emisor, guías y formatos. Se eliminaron las escrituras crudas de `envio_resumen`, `envio_resumen_detalle` y `cuota`.
+- **Guías**: `POST /guia/emision` guarda cabecera e ítems en una transacción (antes 3 peticiones sueltas).
+- `AUTH_ENFORCE=false` se ignora en producción. API y worker no arrancan en producción sin `DATA_ENCRYPTION_KEY`.

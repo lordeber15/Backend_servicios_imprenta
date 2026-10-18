@@ -1,4 +1,6 @@
 const { Router } = require("express");
+const UnidadModel = require("../../../database/models/facturacion/unidad");
+const soloCampos = require("../../middleware/soloCampos");
 const {
   getUnidad,
   createUnidad,
@@ -18,7 +20,7 @@ const router = Router();
  *         description: Lista de unidades
  */
 router.get("/unidad", getUnidad);
-router.post("/unidad", createUnidad);
+router.post("/unidad", soloCampos(UnidadModel), createUnidad);
 
 /**
  * @swagger
@@ -35,6 +37,6 @@ router.post("/unidad", createUnidad);
  *         description: Unidad eliminada
  */
 router.delete("/unidad/:id", deleteUnidad);
-router.put("/unidad/:id", updateUnidad);
+router.put("/unidad/:id", soloCampos(UnidadModel), updateUnidad);
 
 module.exports = router;

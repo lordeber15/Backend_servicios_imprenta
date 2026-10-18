@@ -13,8 +13,11 @@ require("dotenv").config();
 
 const sequelize = require("./src/infrastructure/database/database");
 const { verificarMigraciones } = require("./src/infrastructure/database/migrator");
+const { verificarSecretos } = require("./src/infrastructure/config/secretos");
 
 async function main() {
+  // El worker no firma JWT, pero sí descifra la clave SOL para enviar a SUNAT.
+  verificarSecretos({ jwt: false });
   try {
     await sequelize.authenticate();
     await verificarMigraciones(sequelize);

@@ -15,29 +15,13 @@ const app = require("./src/infrastructure/web/app.js");
 const sequelize = require("./src/infrastructure/database/database");
 const { closeBrowser } = require("./src/infrastructure/external_services/browserPool");
 const { verificarMigraciones } = require("./src/infrastructure/database/migrator");
+const { verificarSecretos } = require("./src/infrastructure/config/secretos");
 
 // El worker SUNAT corre en su propio proceso: ver worker.js
 
 const port = process.env.PORT || 3000;
 
 let server; // Referencia al servidor HTTP para cerrar en shutdown
-
-/**
- * El JWT_SECRET firma todos los access tokens: uno corto o filtrado permite
- * fabricar tokens de Administrador. En producción se exige ≥ 32 caracteres.
- * Generar uno con: openssl rand -base64 64 | tr -d '\n'
- */
-function verificarSecretos() {
-  const largo = (process.env.JWT_SECRET || "").length;
-  if (largo >= 32) return;
-  const msg = `JWT_SECRET ${largo ? `tiene solo ${largo} caracteres` : "no está definido"} (mínimo 32). ` +
-    "Genere uno con: openssl rand -base64 64 | tr -d '\\n'";
-  if (process.env.NODE_ENV === "production" || !largo) {
-    console.error(`[Seguridad] ${msg}`);
-    process.exit(1);
-  }
-  console.warn(`[Seguridad] ${msg}`);
-}
 
 async function main() {
   verificarSecretos();

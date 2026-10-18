@@ -18,13 +18,11 @@ const storageHelper = require("../../../external_services/sunat/storageHelper");
 const sequelize = require("../../../database/database");
 const { encolarConsultaGuia } = require("../../../queues/sunatQueue");
 const { ValidationError, NotFoundError, ConflictError } = require("../../../utils/errors");
+const { UniqueConstraintError } = require("sequelize");
+const { guiaEmisionSchema, NO_PERSISTIDOS } = require("../../../../application/validation/guia.schema");
+const { mensajeError } = require("../../../../application/validation/emision.schema");
+const { registrar } = require("../../../../application/services/auditoria.service");
 
-const TIPOS_GUIA = ["09", "31"];
-// Campos que decide el servidor: el cliente no puede fijarlos al crear la guía.
-const CAMPOS_PROTEGIDOS = new Set([
-  "id", "serie", "correlativo", "estado_sunat", "codigo_sunat", "mensaje_sunat",
-  "hash_cpe", "nombre_xml", "fecha_envio_sunat", "intentos_envio", "ticket",
-]);
 // Se puede (re)emitir una guía pendiente o rechazada; no una enviada o aceptada.
 const ESTADOS_EMITIBLES = ["PE", "RR"];
 
@@ -53,48 +51,51 @@ const listGuias = async (req, res, next) => {
 };
 
 /**
- * POST /guia
- * Crea la cabecera de la guía. El número lo asigna el servidor: bloquea la
- * fila de la serie (SELECT ... FOR UPDATE), toma su correlativo y la avanza.
- * Body: datos de la guía + serie_id (se ignoran serie/correlativo/estado enviados).
+ * POST /guia/emision
+ * Cabecera + ítems en UNA transacción (el número lo asigna el servidor
+ * bloqueando la serie con SELECT ... FOR UPDATE) y luego el envío a SUNAT.
+ * Si el envío falla, la guía queda guardada en PE/RR con su número y se
+ * reintenta con POST /guia/emitir.
  */
-const createGuia = async (req, res, next) => {
+const emitirGuiaCompleta = async (req, res, next) => {
   try {
-    const { serie_id, ...resto } = req.body || {};
-    if (!serie_id) throw new ValidationError("serie_id es requerido");
-    if (!TIPOS_GUIA.includes(resto.tipo_guia)) throw new ValidationError("tipo_guia debe ser 09 o 31");
-    const datos = Object.fromEntries(Object.entries(resto).filter(([k]) => !CAMPOS_PROTEGIDOS.has(k)));
+    const parsed = guiaEmisionSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError(mensajeError(parsed.error));
+    const g = parsed.data;
+    const datos = Object.fromEntries(Object.entries(g).filter(([k]) => !NO_PERSISTIDOS.includes(k)));
 
     const guia = await sequelize.transaction(async (transaction) => {
-      const serie = await Serie.findByPk(serie_id, { transaction, lock: transaction.LOCK.UPDATE });
+      const emisor = await Emisor.findByPk(g.emisor_id, { transaction, attributes: ["id"] });
+      if (!emisor) throw new NotFoundError("Emisor no encontrado");
+      const serie = await Serie.findByPk(g.serie_id, { transaction, lock: transaction.LOCK.UPDATE });
       if (!serie) throw new NotFoundError("Serie no encontrada");
-      if (serie.tipo_comprobante_id !== datos.tipo_guia) {
-        throw new ValidationError(`La serie ${serie.serie} no corresponde a guías tipo ${datos.tipo_guia}`);
+      if (serie.tipo_comprobante_id !== g.tipo_guia) {
+        throw new ValidationError(`La serie ${serie.serie} no corresponde a guías tipo ${g.tipo_guia}`);
       }
       const correlativo = serie.correlativo || 1;
       await serie.update({ correlativo: correlativo + 1 }, { transaction });
-      return GuiaRemision.create(
+      const nueva = await GuiaRemision.create(
         { ...datos, serie: serie.serie, correlativo, estado_sunat: "PE" },
         { transaction }
       );
+      await DetalleGuia.bulkCreate(
+        g.items.map((it, i) => ({ ...it, item: i + 1, guia_id: nueva.id })),
+        { transaction }
+      );
+      return nueva;
     });
-    return res.status(201).json(guia);
-  } catch (err) {
-    return next(err);
-  }
-};
 
-/** POST /guia/detalle — solo mientras la guía no se haya enviado. */
-const createDetalleGuia = async (req, res, next) => {
-  try {
-    const { guia_id } = req.body || {};
-    const guia = await GuiaRemision.findByPk(guia_id, { attributes: ["id", "estado_sunat"] });
-    if (!guia) throw new NotFoundError("Guía no encontrada");
-    if (guia.estado_sunat !== "PE") throw new ConflictError("La guía ya fue enviada; no se le pueden agregar ítems");
-    const { id: _id, ...datos } = req.body;
-    const detalle = await DetalleGuia.create(datos);
-    return res.status(201).json(detalle);
+    registrar(req, "guia_emitida", {
+      entidad: "GuiaRemision",
+      entidad_id: guia.id,
+      despues: { numero: `${guia.serie}-${guia.correlativo}`, tipo: guia.tipo_guia, items: g.items.length },
+    });
+    req.body = { guia_id: guia.id };
+    return emitirGuia(req, res, next);
   } catch (err) {
+    if (err instanceof UniqueConstraintError) {
+      return next(new ConflictError("El número de guía ya existe. Reintente la emisión."));
+    }
     return next(err);
   }
 };
@@ -107,8 +108,8 @@ const createDetalleGuia = async (req, res, next) => {
  */
 const emitirGuia = async (req, res, next) => {
   try {
-    const { guia_id } = req.body;
-    if (!guia_id) return res.status(400).json({ message: "guia_id es requerido" });
+    const guia_id = Number(req.body?.guia_id);
+    if (!Number.isInteger(guia_id) || guia_id <= 0) return res.status(400).json({ message: "guia_id es requerido" });
 
     const guia = await GuiaRemision.findByPk(guia_id, {
       include: [
@@ -283,4 +284,4 @@ const descargarXmlGuia = async (req, res, next) => {
   }
 };
 
-module.exports = { listGuias, createGuia, createDetalleGuia, emitirGuia, consultarEstadoGuia, descargarPdfGuia, descargarXmlGuia };
+module.exports = { listGuias, emitirGuiaCompleta, emitirGuia, consultarEstadoGuia, descargarPdfGuia, descargarXmlGuia };

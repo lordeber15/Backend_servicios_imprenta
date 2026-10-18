@@ -1,6 +1,7 @@
 const NodeCache = require("node-cache");
 const { UnauthorizedError } = require("../../utils/errors");
 const { Login } = require("../../database/models/login");
+require("../../database/models/usuario_formatos"); // asociación Login ↔ formatos
 
 /**
  * Verifica el access token del header Authorization y expone el usuario en req.user.
@@ -13,7 +14,7 @@ const { Login } = require("../../database/models/login");
  * la que otro proceso se entera; en este proceso se invalida al instante
  * (olvidarUsuario).
  *
- * El cargo de req.user sale de la BD, no del token.
+ * El cargo y los formatos de req.user salen de la BD, no del token.
  */
 const cache = new NodeCache({ stdTTL: Number(process.env.AUTH_CACHE_SEG || 30), useClones: false });
 
@@ -21,8 +22,13 @@ async function estadoUsuario(id) {
   const clave = String(id);
   let estado = cache.get(clave);
   if (estado === undefined) {
-    const u = await Login.findByPk(id, { attributes: ["id", "usuario", "cargo", "activo", "token_version"] });
-    estado = u ? { id: u.id, usuario: u.usuario, cargo: u.cargo, activo: u.activo, tv: u.token_version } : null;
+    const u = await Login.findByPk(id, {
+      attributes: ["id", "usuario", "cargo", "activo", "token_version"],
+      include: [{ association: "formatos", attributes: ["key"] }],
+    });
+    estado = u
+      ? { id: u.id, usuario: u.usuario, cargo: u.cargo, activo: u.activo, tv: u.token_version, formatos: (u.formatos || []).map((f) => f.key) }
+      : null;
     cache.set(clave, estado);
   }
   return estado;
@@ -48,7 +54,7 @@ const authenticate = async (req, _res, next) => {
     if (!u || !u.activo || u.tv !== payload.tv) {
       return next(new UnauthorizedError("La sesión ya no es válida"));
     }
-    req.user = { id: u.id, usuario: u.usuario, cargo: u.cargo, jti: payload.jti };
+    req.user = { id: u.id, usuario: u.usuario, cargo: u.cargo, formatos: u.formatos, jti: payload.jti };
     return next();
   } catch (err) {
     return next(err);

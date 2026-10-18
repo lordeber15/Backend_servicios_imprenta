@@ -66,6 +66,7 @@ const formatosRoutes = require("./routes/formatos.routes"); // Formatos por usua
 // Autenticación global (con lista blanca y modo auditoría)
 const authGlobal = require("./middleware/authGlobal.middleware");
 const { apiLimiter } = require("./middleware/rateLimit.middleware");
+const permisos = require("./middleware/permisos");
 
 // ============================================
 // INICIALIZACIÓN DE EXPRESS
@@ -205,6 +206,8 @@ const apiRouter = express.Router();
  */
 app.use(apiLimiter);
 app.use(authGlobal);
+// Autorización por cargo y formato de TODA ruta autenticada (denegar por defecto).
+app.use(permisos);
 console.log(
   authGlobal.AUTH_ENFORCE
     ? "[Auth] Autenticación global ACTIVA (AUTH_ENFORCE=true)"
@@ -282,6 +285,12 @@ app.use((err, _req, res, _next) => {
   if (err.name === "SequelizeValidationError") {
     err.statusCode = 400;
     err.message = (err.errors || []).map((e) => e.message).join("; ") || "Datos inválidos";
+  }
+  // Una referencia a algo que no existe (unidad, cliente, serie…) también es
+  // un dato inválido del cliente; la transacción ya se revirtió.
+  if (err.name === "SequelizeForeignKeyConstraintError") {
+    err.statusCode = 400;
+    err.message = `Referencia inválida${err.table ? ` (${err.table})` : ""}: verifique los códigos enviados`;
   }
   const status = err.statusCode || err.status || 500;
 

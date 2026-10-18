@@ -1,4 +1,6 @@
 const { Router } = require("express");
+const Tipo_documentoModel = require("../../../database/models/facturacion/tipodocumento");
+const soloCampos = require("../../middleware/soloCampos");
 const {
   getTipo_documento,
   createTipo_documento,
@@ -18,7 +20,7 @@ const router = Router();
  *         description: Lista de tipos de documento
  */
 router.get("/tipo_documento", getTipo_documento);
-router.post("/tipo_documento", createTipo_documento);
+router.post("/tipo_documento", soloCampos(Tipo_documentoModel), createTipo_documento);
 
 /**
  * @swagger
@@ -35,6 +37,6 @@ router.post("/tipo_documento", createTipo_documento);
  *         description: Registro eliminado
  */
 router.delete("/tipo_documento/:id", deleteTipo_documento);
-router.put("/tipo_documento/:id", updateTipo_documento);
+router.put("/tipo_documento/:id", soloCampos(Tipo_documentoModel), updateTipo_documento);
 
 module.exports = router;

@@ -5,7 +5,7 @@
  * Se monta una sola vez en app.js, antes del registro de rutas: todos los
  * routers usan rutas completas sin prefijo, así que este middleware los cubre.
  *
- * MODO AUDITORÍA (AUTH_ENFORCE=false):
+ * MODO AUDITORÍA (AUTH_ENFORCE=false, IGNORADO en producción):
  * Deja pasar las peticiones sin token pero las registra en el log. Sirve para
  * desplegar sin riesgo y comprobar en la práctica qué consumos quedarían fuera
  * antes de activar el bloqueo. Con AUTH_ENFORCE=true (por defecto) se aplica el 401.
@@ -29,7 +29,12 @@ const PUBLIC_EXACT = [
 // (/uploads y /api-docs se montan antes que este middleware, se listan por claridad.)
 const PUBLIC_PREFIXES = ["/health", "/uploads", "/api-docs"];
 
-const AUTH_ENFORCE = process.env.AUTH_ENFORCE !== "false";
+// En producción la autenticación no se puede apagar con una variable de
+// entorno: un .env mal copiado dejaría toda la API abierta.
+const AUTH_ENFORCE = process.env.NODE_ENV === "production" || process.env.AUTH_ENFORCE !== "false";
+if (process.env.NODE_ENV === "production" && process.env.AUTH_ENFORCE === "false") {
+  console.warn("[Auth] AUTH_ENFORCE=false se ignora en producción: la autenticación sigue activa");
+}
 
 function esPublica(req) {
   if (req.method === "OPTIONS") return true; // preflight CORS
@@ -54,3 +59,4 @@ const authGlobal = (req, res, next) => {
 
 module.exports = authGlobal;
 module.exports.AUTH_ENFORCE = AUTH_ENFORCE;
+module.exports.esPublica = esPublica;

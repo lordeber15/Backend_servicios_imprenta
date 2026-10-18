@@ -10,8 +10,7 @@ const { Router } = require("express");
 const authenticate = require("../../middleware/auth.middleware");
 const {
   listGuias,
-  createGuia,
-  createDetalleGuia,
+  emitirGuiaCompleta,
   emitirGuia,
   consultarEstadoGuia,
   descargarPdfGuia,
@@ -41,32 +40,10 @@ const router = Router();
 router.get("/guia", authenticate, listGuias);
 
 /**
- * @swagger
- * /guia:
- *   post:
- *     summary: Crear la cabecera de la Guía de Remisión
- *     tags: [Guías]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       201:
- *         description: Cabecera creada
+ * POST /guia/emision — cabecera + ítems en una transacción y envío a SUNAT.
+ * (Reemplaza a POST /guia + POST /guia/detalle, que no eran atómicos.)
  */
-router.post("/guia", authenticate, createGuia);
-
-/**
- * @swagger
- * /guia/detalle:
- *   post:
- *     summary: Crear un detalle de la Guía de Remisión
- *     tags: [Guías]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       201:
- *         description: Detalle creado
- */
-router.post("/guia/detalle", authenticate, createDetalleGuia);
+router.post("/guia/emision", authenticate, emitirGuiaCompleta);
 
 /**
  * @swagger

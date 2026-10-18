@@ -16,32 +16,9 @@ const authenticate = require("../middleware/auth.middleware");
 const { authorize, authorizeSelfOrAdmin } = require("../middleware/authorize.middleware");
 const { authLimiter, passwordLimiter, sesionLimiter } = require("../middleware/rateLimit.middleware");
 const auth = require("../controllers/auth.controller");
-const multer = require("multer");
-const path = require("path");
+const { subirImagen } = require("../middleware/subidaImagen");
+const { registrar } = require("../../../application/services/auditoria.service");
 const { Login } = require("../../database/models/login");
-
-// Configuración de Multer para fotos de perfil
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "src/uploads/profiles/");
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, `profile-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|webp/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    if (mimetype && extname) return cb(null, true);
-    cb(new Error("Solo se permiten imágenes (jpeg, jpg, png, webp)"));
-  },
-});
 
 // Crear instancia del router de Express
 const router = Router();
@@ -182,23 +159,19 @@ router.put("/login/:id", authenticate, authorize("Administrador"), updateLogin);
  *                 format: binary
  */
 // Propio o admin: un usuario puede cambiar su foto, pero no la de otro.
-router.put("/login/:id/image", authenticate, authorizeSelfOrAdmin("id"), upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No se subió ninguna imagen" });
+router.put("/login/:id/image", authenticate, authorizeSelfOrAdmin("id"),
+  ...subirImagen({ campo: "image", carpeta: "profiles", prefijo: "profile" }),
+  async (req, res, next) => {
+    try {
+      const user = await Login.findByPk(req.params.id);
+      if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+      await user.update({ image_url: req.imagen.url });
+      registrar(req, "usuario_foto", { entidad: "logins", entidad_id: user.id });
+      res.json({ message: "Imagen actualizada con éxito", image_url: user.image_url });
+    } catch (error) {
+      return next(error);
     }
-    const user = await Login.findByPk(req.params.id);
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-
-    // Guardar ruta relativa
-    user.image_url = `/uploads/profiles/${req.file.filename}`;
-    await user.save();
-
-    res.json({ message: "Imagen actualizada con éxito", image_url: user.image_url });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+  });
 
 // Exportar router para registrar en app.js
 module.exports = router;

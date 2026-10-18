@@ -6,6 +6,8 @@
  */
 
 const { Router } = require("express");
+const SerieModel = require("../../../database/models/facturacion/serie");
+const soloCampos = require("../../middleware/soloCampos");
 const {
   getSerie,
   createSerie,
@@ -25,7 +27,7 @@ const router = Router();
  *         description: Lista de series
  */
 router.get("/serie", getSerie);
-router.post("/serie", createSerie);
+router.post("/serie", soloCampos(SerieModel), createSerie);
 
 /**
  * @swagger
@@ -42,6 +44,6 @@ router.post("/serie", createSerie);
  *         description: Serie eliminada
  */
 router.delete("/serie/:id", deleteSerie);
-router.put("/serie/:id", updateSerie);
+router.put("/serie/:id", soloCampos(SerieModel, { excluir: ["correlativo"] }), updateSerie);
 
 module.exports = router;

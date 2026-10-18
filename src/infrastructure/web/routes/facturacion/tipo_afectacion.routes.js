@@ -1,4 +1,6 @@
 const { Router } = require("express");
+const Tipo_afectacionModel = require("../../../database/models/facturacion/tipoafectacion");
+const soloCampos = require("../../middleware/soloCampos");
 const {
   getTipo_afectacion,
   createTipo_afectacion,
@@ -18,7 +20,7 @@ const router = Router();
  *         description: Lista de tipos de afectación
  */
 router.get("/tipo_afectacion", getTipo_afectacion);
-router.post("/tipo_afectacion", createTipo_afectacion);
+router.post("/tipo_afectacion", soloCampos(Tipo_afectacionModel), createTipo_afectacion);
 
 /**
  * @swagger
@@ -35,6 +37,6 @@ router.post("/tipo_afectacion", createTipo_afectacion);
  *         description: Registro eliminado
  */
 router.delete("/tipo_afectacion/:id", deleteTipo_afectacion);
-router.put("/tipo_afectacion/:id", updateTipo_afectacion);
+router.put("/tipo_afectacion/:id", soloCampos(Tipo_afectacionModel), updateTipo_afectacion);
 
 module.exports = router;
