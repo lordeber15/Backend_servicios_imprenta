@@ -30,6 +30,16 @@ const Ticket = sequelize.define("Ticket", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
+  // Lo que realmente entró a caja: en servicios es el adelanto, no el total.
+  monto_cobrado: {
+    type: DataTypes.DECIMAL(11, 2),
+    allowNull: true,
+  },
+  caja_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: { model: "AperturaCajas", key: "id" }, // caja abierta al registrar el movimiento
+  },
   metodo_pago: {
     type: DataTypes.STRING(50),
     allowNull: true,

@@ -20,12 +20,11 @@ const Emisor = sequelize.define(
     distrito: DataTypes.STRING(100),
     ubigeo: DataTypes.CHAR(6),
     usuario_sol: DataTypes.STRING(20),
-    clave_sol: DataTypes.STRING(20),
     telefono: DataTypes.STRING(20),
     logo_url: DataTypes.STRING(255),
     descripcion: DataTypes.STRING(200),
     client_id: DataTypes.STRING(200),
-    client_secret: DataTypes.STRING(200),
+    // clave_sol y client_secret viven cifrados en EmisorCredenciales (migración 0006).
   },
   {
     tableName: "Emisor",

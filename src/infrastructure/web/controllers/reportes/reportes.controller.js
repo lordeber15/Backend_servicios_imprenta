@@ -13,6 +13,7 @@
  */
 
 const { Op, fn, col, literal, where: sqlWhere } = require("sequelize");
+const { hoyLocal } = require("../../../utils/fecha");
 
 const Comprobante             = require("../../../database/models/facturacion/comprobante");
 const GuiaRemision            = require("../../../database/models/facturacion/guiaremision");
@@ -57,13 +58,6 @@ const LIMIT_DEFAULT  = 25;
 const LIMIT_MAX      = 200;
 
 const RE_FECHA = /^\d{4}-\d{2}-\d{2}$/;
-
-/**
- * Devuelve la fecha local en formato YYYY-MM-DD.
- * en-CA produce ese formato directamente, sin el corrimiento de zona horaria
- * que introduce toISOString().
- */
-const hoyLocal = () => new Date().toLocaleDateString("en-CA");
 
 /** Primer día del mes en curso, en formato YYYY-MM-DD. */
 const inicioDeMes = () => `${hoyLocal().slice(0, 7)}-01`;

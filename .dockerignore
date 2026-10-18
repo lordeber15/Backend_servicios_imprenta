@@ -7,13 +7,15 @@
 # El .env se inyecta por env_file en docker-compose, no se hornea.
 .env
 .env.example
-# El certificado SUNAT llega por el volumen ./storage → /app/storage,
-# NO se hornea en la imagen.
+# El certificado SUNAT y las llaves QZ llegan por el volumen ./storage →
+# /app/storage (storage/certs, storage/keys). NO se hornean en la imagen.
 storage/certs
-
-# IMPORTANTE: NO se excluye src/infrastructure/external_services/printer/keys/
-# Esas llaves QZ SÍ deben copiarse con COPY . . (no van por volumen); si se
-# excluyeran aquí, /qz/sign y /qz/certificate dejarían de funcionar.
+storage/keys
+storage/backups-migracion
+**/printer/keys
+*.pfx
+*.p12
+*.pem
 
 # ── Datos de runtime (vienen del volumen storage) ───────────
 storage/xml
@@ -36,5 +38,12 @@ verify_imported_data.js
 
 # ── Backups y varios ────────────────────────────────────────
 create_backup.sh
+backup_automatico.sh
+backups
 restore_backup.sh
 *.DS_Store
+
+# Pruebas (se montan al ejecutarlas, no van en la imagen)
+tests
+.github
+docker-compose.test.yml

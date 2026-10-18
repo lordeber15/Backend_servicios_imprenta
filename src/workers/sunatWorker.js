@@ -4,7 +4,6 @@ const { Worker } = require('bullmq');
 const redis        = require('../infrastructure/config/redis');
 const Comprobante  = require('../infrastructure/database/models/facturacion/comprobante');
 const Emisor       = require('../infrastructure/database/models/facturacion/emisor');
-const Serie        = require('../infrastructure/database/models/facturacion/serie');
 const sunatClient  = require('../infrastructure/external_services/sunat/sunatClient');
 const cdrParser    = require('../infrastructure/external_services/sunat/cdrParser');
 const storageHelper = require('../infrastructure/external_services/sunat/storageHelper');
@@ -13,7 +12,7 @@ require('../infrastructure/database/models/facturacion/asociation');
 
 const { CODIGOS_TERMINAL } = require('../infrastructure/external_services/sunat/sunatCodes');
 
-const PLAZO_DIAS = 3;
+const { vencido, plazoDias } = require('../application/plazosSunat');
 
 const { resolverEstadoCdr } = cdrParser;
 
@@ -47,7 +46,8 @@ function extraerTicket(mensaje) {
   return m ? m[1] : null;
 }
 
-// Guarda el CDR parseado en el comprobante y actualiza serie si es necesario.
+// Guarda el CDR parseado en el comprobante. La serie NO se toca aquí: el número
+// se reserva al emitir (emision.service), no cuando SUNAT acepta.
 async function aplicarCdr(comprobante, cdr) {
   const estadoFinal  = resolverEstadoCdr(cdr);
   const mensajeFinal = cdr.description + (cdr.notes.length ? ' | ' + cdr.notes.join(' | ') : '');
@@ -71,13 +71,6 @@ async function aplicarCdr(comprobante, cdr) {
     intentos_envio:    (comprobante.intentos_envio || 0) + 1,
   });
 
-  if (esTerminal && comprobante.Serie) {
-    await Serie.update(
-      { correlativo: comprobante.correlativo + 1 },
-      { where: { id: comprobante.serie_id } }
-    );
-  }
-
   console.log(`[Worker] Comprobante ${comprobante.id} → ${estadoFinal} (CDR: ${cdr.responseCode})`);
   return estadoFinal;
 }
@@ -88,7 +81,7 @@ const worker = new Worker('sunat-envio', async (job) => {
 
   // 1. Cargar comprobante con emisor y serie
   const comprobante = await Comprobante.findByPk(comprobante_id, {
-    include: [Emisor, Serie],
+    include: [Emisor],
   });
 
   if (!comprobante) {
@@ -101,11 +94,10 @@ const worker = new Worker('sunat-envio', async (job) => {
     return;
   }
 
-  // 2. Verificar plazo de 3 días
-  const diasDesdeEmision = (Date.now() - new Date(comprobante.fecha_emision).getTime()) / 86_400_000;
-  if (diasDesdeEmision > PLAZO_DIAS) {
-    await comprobante.update({ estado_sunat: 'FUERA_PLAZO' });
-    console.warn(`[Worker] Comprobante ${comprobante_id} FUERA_PLAZO (${Math.floor(diasDesdeEmision)} días).`);
+  // 2. Verificar plazo SUNAT (días calendario de Lima, según tipo: ver plazosSunat)
+  if (vencido(comprobante.fecha_emision, comprobante.tipo_comprobante_id, comprobante.serie)) {
+    await comprobante.update({ estado_sunat: 'FUERA_PLAZO', es_terminal: true });
+    console.warn(`[Worker] Comprobante ${comprobante_id} FUERA_PLAZO (plazo ${plazoDias(comprobante.tipo_comprobante_id, comprobante.serie)} días).`);
     return;
   }
 
@@ -153,6 +145,8 @@ const worker = new Worker('sunat-envio', async (job) => {
         try {
           const status = await sunatClient.getStatus(ticket, comprobante.Emisor);
           if (status.statusCode === '0' && status.content) {
+            // Mismo criterio que el envío normal: el CDR (ZIP) queda en disco.
+            storageHelper.saveCdr(archivoXml, status.content);
             const cdr = cdrParser.parseCdr(status.content);
             await aplicarCdr(comprobante, cdr);
             console.log(`[Worker] CDR recuperado via getStatus. Comprobante ${comprobante_id} → ${resolverEstadoCdr(cdr)}`);

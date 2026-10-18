@@ -1,3 +1,4 @@
+const { cdata } = require("./xmlTexto");
 /**
  * GENERADOR DE XML: FACTURAS, BOLETAS Y NOTAS (UBL 2.1)
  * 
@@ -236,7 +237,7 @@ function buildFirmaBlock(emisor) {
         <cbc:ID>${emisor.ruc}</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name><![CDATA[${emisor.razon_social}]]></cbc:Name>
+        <cbc:Name>${cdata(emisor.razon_social)}</cbc:Name>
       </cac:PartyName>
     </cac:SignatoryParty>
     <cac:DigitalSignatureAttachment>
@@ -254,11 +255,11 @@ function buildEmisorBlock(emisor) {
         <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">${emisor.ruc}</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name><![CDATA[${emisor.nombre_comercial || emisor.razon_social}]]></cbc:Name>
+        <cbc:Name>${cdata(emisor.nombre_comercial || emisor.razon_social)}</cbc:Name>
       </cac:PartyName>
       <cac:PostalAddress>
         <cbc:ID>${emisor.ubigeo || "000000"}</cbc:ID>
-        <cbc:StreetName><![CDATA[${emisor.direccion || ""}]]></cbc:StreetName>
+        <cbc:StreetName>${cdata(emisor.direccion || "")}</cbc:StreetName>
         <cbc:CitySubdivisionName>${esc(emisor.distrito || "")}</cbc:CitySubdivisionName>
         <cbc:CityName>${esc(emisor.provincia || "")}</cbc:CityName>
         <cbc:CountrySubentity>${esc(emisor.departamento || "")}</cbc:CountrySubentity>
@@ -267,7 +268,7 @@ function buildEmisorBlock(emisor) {
         </cac:Country>
       </cac:PostalAddress>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName><![CDATA[${emisor.razon_social}]]></cbc:RegistrationName>
+        <cbc:RegistrationName>${cdata(emisor.razon_social)}</cbc:RegistrationName>
         <cac:RegistrationAddress>
           <cbc:AddressTypeCode>0000</cbc:AddressTypeCode>
         </cac:RegistrationAddress>
@@ -280,10 +281,10 @@ function buildClienteBlock(tipoDoc, nroDoc, razonSocial) {
   return `<cac:AccountingCustomerParty>
     <cac:Party>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="${tipoDoc}" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">${nroDoc}</cbc:ID>
+        <cbc:ID schemeID="${tipoDoc}" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">${esc(nroDoc)}</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName><![CDATA[${razonSocial}]]></cbc:RegistrationName>
+        <cbc:RegistrationName>${cdata(razonSocial)}</cbc:RegistrationName>
       </cac:PartyLegalEntity>
     </cac:Party>
   </cac:AccountingCustomerParty>`;
@@ -377,7 +378,7 @@ function buildLinea(d, numero, moneda) {
 
   return `<cac:InvoiceLine>
     <cbc:ID>${numero}</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="${unidad.id || "NIU"}">${cantidad.toFixed(6)}</cbc:InvoicedQuantity>
+    <cbc:InvoicedQuantity unitCode="${unidad.id || d.unidad_id || "NIU"}">${cantidad.toFixed(6)}</cbc:InvoicedQuantity>
     <cbc:LineExtensionAmount currencyID="${moneda}">${valorTotal.toFixed(2)}</cbc:LineExtensionAmount>
     <cac:PricingReference>
       <cac:AlternativeConditionPrice>
@@ -402,7 +403,7 @@ function buildLinea(d, numero, moneda) {
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:Item>
-      <cbc:Description><![CDATA[${producto.nombre || d.descripcion || ""}]]></cbc:Description>
+      <cbc:Description>${cdata(producto.nombre || d.descripcion || "")}</cbc:Description>
       <cac:SellersItemIdentification>
         <cbc:ID>${producto.codigo_sunat || String(numero)}</cbc:ID>
       </cac:SellersItemIdentification>
@@ -431,7 +432,7 @@ function buildLineaNota(d, numero, moneda, esNC) {
 
   return `<${lineTag}>
     <cbc:ID>${numero}</cbc:ID>
-    <cbc:CreditedQuantity unitCode="${unidad.id || "NIU"}">${cantidad.toFixed(6)}</cbc:CreditedQuantity>
+    <cbc:CreditedQuantity unitCode="${unidad.id || d.unidad_id || "NIU"}">${cantidad.toFixed(6)}</cbc:CreditedQuantity>
     <cbc:LineExtensionAmount currencyID="${moneda}">${valorTotal.toFixed(2)}</cbc:LineExtensionAmount>
     <cac:PricingReference>
       <cac:AlternativeConditionPrice>
@@ -456,7 +457,7 @@ function buildLineaNota(d, numero, moneda, esNC) {
       </cac:TaxSubtotal>
     </cac:TaxTotal>
     <cac:Item>
-      <cbc:Description><![CDATA[${producto.nombre || ""}]]></cbc:Description>
+      <cbc:Description>${cdata(producto.nombre || d.descripcion || "")}</cbc:Description>
     </cac:Item>
     <cac:Price>
       <cbc:PriceAmount currencyID="${moneda}">${valorUnitario.toFixed(6)}</cbc:PriceAmount>

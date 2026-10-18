@@ -7,6 +7,9 @@ const {
 } = require("../../controllers/facturacion/envio_resumen.controller");
 const router = Router();
 
+// Solo lectura: estas filas las escriben la emisión, el resumen diario y la
+// baja. Un CRUD crudo permitiría falsear estados y tickets de SUNAT.
+
 /**
  * @swagger
  * /envio_resumen:
@@ -18,23 +21,6 @@ const router = Router();
  *         description: Lista de envíos
  */
 router.get("/envio_resumen", getEnvio_resumen);
-router.post("/envio_resumen", createEnvio_resumen);
 
-/**
- * @swagger
- * /envio_resumen/{id}:
- *   delete:
- *     summary: Eliminar registro de envío de resumen
- *     tags: [SUNAT]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *     responses:
- *       200:
- *         description: Registro eliminado
- */
-router.delete("/envio_resumen/:id", deleteEnvio_resumen);
-router.put("/envio_resumen/:id", updateEnvio_resumen);
 
 module.exports = router;

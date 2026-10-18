@@ -6,6 +6,7 @@
  */
 
 const { Router } = require("express");
+const { authorize } = require("../../middleware/authorize.middleware");
 const {
   getTickets,
   createTicket,
@@ -59,7 +60,7 @@ router.post("/ticket", createTicket);
  *         description: Ticket actualizado
  */
 router.get("/ticket/:id/pdf", getTicketPdf);
-router.delete("/ticket/:id", deleteTicket);
-router.put("/ticket/:id", updateTicket);
+router.delete("/ticket/:id", authorize("Administrador"), deleteTicket);
+router.put("/ticket/:id", authorize("Administrador"), updateTicket);
 
 module.exports = router;

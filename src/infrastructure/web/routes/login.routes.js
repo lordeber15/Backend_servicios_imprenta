@@ -8,67 +8,41 @@
 const { Router } = require("express");
 const {
   getLogin,
-  authLogin,
   createLogin,
   deleteLogin,
   updateLogin,
 } = require("../controllers/login.controller");
 const authenticate = require("../middleware/auth.middleware");
 const { authorize, authorizeSelfOrAdmin } = require("../middleware/authorize.middleware");
-const { authLimiter } = require("../middleware/rateLimit.middleware");
-const multer = require("multer");
-const path = require("path");
+const { authLimiter, passwordLimiter, sesionLimiter } = require("../middleware/rateLimit.middleware");
+const auth = require("../controllers/auth.controller");
+const { subirImagen } = require("../middleware/subidaImagen");
+const { registrar } = require("../../../application/services/auditoria.service");
 const { Login } = require("../../database/models/login");
-
-// Configuración de Multer para fotos de perfil
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "src/uploads/profiles/");
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, `profile-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|webp/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    if (mimetype && extname) return cb(null, true);
-    cb(new Error("Solo se permiten imágenes (jpeg, jpg, png, webp)"));
-  },
-});
 
 // Crear instancia del router de Express
 const router = Router();
 
 /**
- * RUTA PÚBLICA: Autenticación
- * 
- * POST /auth/login
- * 
- * Esta ruta NO requiere autenticación (es pública).
- * Permite que los usuarios inicien sesión y obtengan un token JWT.
- * 
- * Body:
- * {
- *   "usuario": "admin",
- *   "password": "123456"
- * }
- * 
- * Respuesta:
- * {
- *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
- *   "id": 1,
- *   "usuario": "admin",
- *   "cargo": "Administrador"
- * }
+ * RUTAS DE SESIÓN (públicas: no exigen access token)
+ *
+ * POST /auth/login    { usuario, password } → { access_token, expires_in, usuario }
+ *                     + cookie httpOnly con el refresh token (Path=/auth).
+ * POST /auth/refresh  Con la cookie: rota el refresh y devuelve un access token nuevo.
+ * POST /auth/logout   Revoca el refresh y borra la cookie.
+ *
+ * refresh y logout actúan con la cookie, así que exigen un Origin permitido
+ * (defensa CSRF además de SameSite=Strict).
  */
-router.post("/auth/login", authLimiter, authLogin);
+router.post("/auth/login", authLimiter, auth.login);
+router.post("/auth/refresh", sesionLimiter, auth.exigirOrigen, auth.refresh);
+router.post("/auth/logout", sesionLimiter, auth.exigirOrigen, auth.logout);
+
+/**
+ * PUT /auth/password — cambiar la contraseña propia (requiere la actual).
+ * Cualquier usuario autenticado; cierra todas sus sesiones.
+ */
+router.put("/auth/password", authenticate, passwordLimiter, auth.cambiarPassword);
 
 /**
  * RUTAS PROTEGIDAS: Gestión de usuarios
@@ -116,7 +90,7 @@ router.post("/auth/login", authLimiter, authLogin);
  *       201:
  *         description: Usuario creado
  */
-router.get("/login", authenticate, getLogin);
+router.get("/login", authenticate, authorize("Administrador"), getLogin);
 router.post("/login", authenticate, authorize("Administrador"), createLogin);
 
 /**
@@ -185,23 +159,19 @@ router.put("/login/:id", authenticate, authorize("Administrador"), updateLogin);
  *                 format: binary
  */
 // Propio o admin: un usuario puede cambiar su foto, pero no la de otro.
-router.put("/login/:id/image", authenticate, authorizeSelfOrAdmin("id"), upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No se subió ninguna imagen" });
+router.put("/login/:id/image", authenticate, authorizeSelfOrAdmin("id"),
+  ...subirImagen({ campo: "image", carpeta: "profiles", prefijo: "profile" }),
+  async (req, res, next) => {
+    try {
+      const user = await Login.findByPk(req.params.id);
+      if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+      await user.update({ image_url: req.imagen.url });
+      registrar(req, "usuario_foto", { entidad: "logins", entidad_id: user.id });
+      res.json({ message: "Imagen actualizada con éxito", image_url: user.image_url });
+    } catch (error) {
+      return next(error);
     }
-    const user = await Login.findByPk(req.params.id);
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-
-    // Guardar ruta relativa
-    user.image_url = `/uploads/profiles/${req.file.filename}`;
-    await user.save();
-
-    res.json({ message: "Imagen actualizada con éxito", image_url: user.image_url });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+  });
 
 // Exportar router para registrar en app.js
 module.exports = router;

@@ -6,6 +6,8 @@
  */
 
 const { Router } = require("express");
+const MonedaModel = require("../../../database/models/facturacion/moneda");
+const soloCampos = require("../../middleware/soloCampos");
 const {
   getMoneda,
   createMoneda,
@@ -25,7 +27,7 @@ const router = Router();
  *         description: Lista de monedas
  */
 router.get("/moneda", getMoneda);
-router.post("/moneda", createMoneda);
+router.post("/moneda", soloCampos(MonedaModel), createMoneda);
 
 /**
  * @swagger
@@ -42,6 +44,6 @@ router.post("/moneda", createMoneda);
  *         description: Moneda eliminada
  */
 router.delete("/moneda/:id", deleteMoneda);
-router.put("/moneda/:id", updateMoneda);
+router.put("/moneda/:id", soloCampos(MonedaModel), updateMoneda);
 
 module.exports = router;

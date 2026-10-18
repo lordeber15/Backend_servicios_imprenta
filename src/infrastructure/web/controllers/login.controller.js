@@ -1,10 +1,12 @@
 const SequelizeUserRepository = require("../../database/repositories/SequelizeUserRepository");
-const LoginUserUseCase = require("../../../application/use_cases/auth/LoginUser");
 const CreateUserUseCase = require("../../../application/use_cases/auth/CreateUser");
 const DeleteUserUseCase = require("../../../application/use_cases/auth/DeleteUser");
 const UpdateUserUseCase = require("../../../application/use_cases/auth/UpdateUser");
 const { Login } = require("../../database/models/login");
-const { NotFoundError } = require("../../utils/errors");
+const { ValidationError, ConflictError } = require("../../utils/errors");
+const { crearUsuarioSchema, actualizarUsuarioSchema } = require("../../../application/validation/usuario.schema");
+const { mensajeError } = require("../../../application/validation/emision.schema");
+const { registrar } = require("../../../application/services/auditoria.service");
 const path = require("path");
 
 const userRepository = new SequelizeUserRepository();
@@ -33,47 +35,36 @@ const getLogin = async (_req, res, next) => {
 };
 
 /**
- * Autenticar usuario (Login)
- */
-const authLogin = async (req, res, next) => {
-  try {
-    const useCase = new LoginUserUseCase(userRepository);
-    const result = await useCase.execute(req.body);
-    res.json(result);
-  } catch (error) {
-    // Mensajes controlados del caso de uso: seguros de mostrar al cliente.
-    // Cualquier otro error (BD, bcrypt) se delega al handler global (500 genérico).
-    const msg = error.message || "";
-    if (msg.includes("incorrectos")) return res.status(401).json({ message: msg });
-    if (msg.includes("desactivada")) return res.status(403).json({ message: msg });
-    if (msg.includes("requeridos"))  return res.status(400).json({ message: msg });
-    return next(error);
-  }
-};
-
-/**
  * Crear nuevo usuario
  */
 const createLogin = async (req, res, next) => {
   try {
+    const parsed = crearUsuarioSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError(mensajeError(parsed.error));
     const useCase = new CreateUserUseCase(userRepository);
-    const newUser = await useCase.execute(req.body);
-    res.json({ id: newUser.id, usuario: newUser.usuario, cargo: newUser.cargo });
+    const newUser = await useCase.execute(parsed.data);
+    const datos = { id: newUser.id, usuario: newUser.usuario, cargo: newUser.cargo };
+    registrar(req, "usuario_creado", { entidad: "logins", entidad_id: newUser.id, despues: datos });
+    res.json(datos);
   } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") return next(new ConflictError("Ya existe un usuario con ese nombre"));
     return next(error);
   }
 };
 
 /**
- * Eliminar usuario
+ * Eliminar usuario (baja lógica: desactiva y cierra sus sesiones)
  */
 const deleteLogin = async (req, res, next) => {
   try {
+    if (Number(req.params.id) === Number(req.user.id)) {
+      throw new ConflictError("No puede desactivar su propio usuario");
+    }
     const useCase = new DeleteUserUseCase(userRepository);
-    const result = await useCase.execute(req.params.id);
-    res.json(result);
+    const { message, user } = await useCase.execute(req.params.id);
+    registrar(req, "usuario_desactivado", { entidad: "logins", entidad_id: user.id, antes: { activo: true }, despues: { activo: false } });
+    res.json({ message });
   } catch (error) {
-    if (error.message.includes("encontrado")) return next(new NotFoundError(error.message));
     return next(error);
   }
 };
@@ -83,16 +74,20 @@ const deleteLogin = async (req, res, next) => {
  */
 const updateLogin = async (req, res, next) => {
   try {
+    const parsed = actualizarUsuarioSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError(mensajeError(parsed.error));
     const useCase = new UpdateUserUseCase(userRepository);
-    const updatedUser = await useCase.execute(req.params.id, req.body);
-    res.json({
-      id: updatedUser.id,
-      usuario: updatedUser.usuario,
-      cargo: updatedUser.cargo,
-      activo: updatedUser.activo
+    const { user, antes, sesionesRevocadas } = await useCase.execute(req.params.id, parsed.data);
+    const despues = { usuario: user.usuario, cargo: user.cargo, activo: user.activo };
+    registrar(req, "usuario_actualizado", {
+      entidad: "logins",
+      entidad_id: user.id,
+      antes,
+      despues: { ...despues, password_cambiada: Boolean(parsed.data.password), sesiones_revocadas: sesionesRevocadas },
     });
+    res.json({ id: user.id, ...despues });
   } catch (error) {
-    if (error.message.includes("encontrado")) return next(new NotFoundError(error.message));
+    if (error.name === "SequelizeUniqueConstraintError") return next(new ConflictError("Ya existe un usuario con ese nombre"));
     return next(error);
   }
 };
@@ -125,4 +120,4 @@ const uploadImage = async (req, res, next) => {
   }
 };
 
-module.exports = { getLogin, authLogin, createLogin, deleteLogin, updateLogin, uploadImage };
+module.exports = { getLogin, createLogin, deleteLogin, updateLogin, uploadImage };

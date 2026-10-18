@@ -1,3 +1,5 @@
+const { hoyLocal } = require("../../../utils/fecha");
+const { esc, cdata } = require("./xmlTexto");
 /**
  * GENERADOR DE XML: COMUNICACIÓN DE BAJA
  * 
@@ -18,11 +20,13 @@
  * @param {object[]} params.comprobantes    Array de { tipo_comprobante_id, serie, correlativo, motivo_baja }
  * @param {string}   params.fecha_referencia  Fecha YYYY-MM-DD del RC (fecha de las facturas)
  * @param {number}   params.correlativo     Correlativo del RA del día
+ * @param {string}   [params.fecha_emision] YYYY-MM-DD; por defecto hoy en hora Perú
  * @returns {string}  XML del RA sin firma
  */
-function build({ emisor, comprobantes, fecha_referencia, correlativo }) {
+function build({ emisor, comprobantes, fecha_referencia, correlativo, fecha_emision }) {
   const fechaReferencia = formatDate(fecha_referencia);
-  const fechaEmision = formatDate(new Date()); // hoy
+  // Fecha de emisión en hora Perú (no UTC): debe coincidir con la del nombre del archivo.
+  const fechaEmision = fecha_emision || hoyLocal();
   const raId = `RA-${fechaEmision.replace(/-/g, "")}-${correlativo}`;
 
   const lineas = comprobantes.map((c, i) => `<sac:VoidedDocumentsLine>
@@ -30,7 +34,7 @@ function build({ emisor, comprobantes, fecha_referencia, correlativo }) {
     <cbc:DocumentTypeCode>${c.tipo_comprobante_id}</cbc:DocumentTypeCode>
     <sac:DocumentSerialID>${c.serie}</sac:DocumentSerialID>
     <sac:DocumentNumberID>${String(c.correlativo).padStart(8, "0")}</sac:DocumentNumberID>
-    <cbc:VoidReasonDescription><![CDATA[${c.motivo_baja || "Error en emisión"}]]></cbc:VoidReasonDescription>
+    <cbc:VoidReasonDescription>${cdata(c.motivo_baja || "Error en emisión")}</cbc:VoidReasonDescription>
   </sac:VoidedDocumentsLine>`).join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -61,7 +65,7 @@ function build({ emisor, comprobantes, fecha_referencia, correlativo }) {
         <cbc:ID>${emisor.ruc}</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name><![CDATA[${emisor.razon_social}]]></cbc:Name>
+        <cbc:Name>${cdata(emisor.razon_social)}</cbc:Name>
       </cac:PartyName>
     </cac:SignatoryParty>
     <cac:DigitalSignatureAttachment>
@@ -76,7 +80,7 @@ function build({ emisor, comprobantes, fecha_referencia, correlativo }) {
     <cbc:AdditionalAccountID>6</cbc:AdditionalAccountID>
     <cac:Party>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName><![CDATA[${emisor.razon_social}]]></cbc:RegistrationName>
+        <cbc:RegistrationName>${cdata(emisor.razon_social)}</cbc:RegistrationName>
       </cac:PartyLegalEntity>
     </cac:Party>
   </cac:AccountingSupplierParty>

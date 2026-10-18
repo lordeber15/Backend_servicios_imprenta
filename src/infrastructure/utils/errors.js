@@ -47,10 +47,18 @@ class NotFoundError extends AppError {
   }
 }
 
+/** 409 — La operación choca con el estado actual (p. ej. editar un comprobante ya emitido). */
+class ConflictError extends AppError {
+  constructor(message = "La operación no es válida en el estado actual") {
+    super(message, 409);
+  }
+}
+
 module.exports = {
   AppError,
   ValidationError,
   UnauthorizedError,
   ForbiddenError,
   NotFoundError,
+  ConflictError,
 };

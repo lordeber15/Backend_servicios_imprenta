@@ -13,6 +13,15 @@ const xmlSigner = require("../../../external_services/sunat/xmlSigner");
 const sunatClient = require("../../../external_services/sunat/sunatClient");
 const cdrParser = require("../../../external_services/sunat/cdrParser");
 const storageHelper = require("../../../external_services/sunat/storageHelper");
+const sequelize = require("../../../database/database");
+const { hoyLocal } = require("../../../utils/fecha");
+const { consultarResumen } = require("../../../../application/services/ticketsSunat.service");
+
+// NOTA: en este sistema las boletas se envían individualmente (sendBill vía la
+// cola sunat-envio), así que no quedan boletas "pendientes de resumen": la
+// selección de abajo hoy no encuentra registros. Se mantiene el endpoint con
+// numeración, CDR y estados corregidos para cuando se use (p. ej. anulación de
+// boletas con condición 3).
 
 /**
  * POST /resumen-diario
@@ -54,11 +63,24 @@ const generarResumenDiario = async (req, res, next) => {
       });
     }
 
-    // Calcular correlativo del RC del día (puede haber múltiples por día)
-    const rcCount = await EnvioResumen.count({
-      where: { emisor_id, tipo: "RC", fecha_referencia },
+    // Correlativo del RC: bloqueo consultivo por emisor+fecha para que dos
+    // envíos simultáneos no tomen el mismo número (índice único de respaldo).
+    const correlativo = await sequelize.transaction(async (transaction) => {
+      await sequelize.query("SELECT pg_advisory_xact_lock(hashtext(:clave))", {
+        replacements: { clave: `RC:${emisor_id}:${fecha_referencia}` },
+        transaction,
+      });
+      const max = await EnvioResumen.max("correlativo", {
+        where: { emisor_id, tipo: "RC", fecha_referencia },
+        transaction,
+      });
+      const siguiente = (max || 0) + 1;
+      // Se reserva el número creando el registro antes de firmar/enviar.
+      await EnvioResumen.create({
+        emisor_id, fecha_referencia, correlativo: siguiente, tipo: "RC", estado_ticket: "GE", resumen: 1,
+      }, { transaction });
+      return siguiente;
     });
-    const correlativo = rcCount + 1;
 
     // Construir y firmar XML del Resumen Diario
     const xmlSinFirmar = resumenDiarioBuilder.build({
@@ -66,6 +88,7 @@ const generarResumenDiario = async (req, res, next) => {
       boletas,
       fecha_referencia,
       correlativo,
+      fecha_emision: hoyLocal(),
     });
 
     const certPath = process.env.SUNAT_CERT_PATH;
@@ -93,17 +116,13 @@ const generarResumenDiario = async (req, res, next) => {
       });
     }
 
-    // Registrar el envío en EnvioResumen
-    const envio = await EnvioResumen.create({
-      emisor_id,
+    // Completar el registro reservado con el resultado del envío
+    const envio = await EnvioResumen.findOne({ where: { emisor_id, tipo: "RC", fecha_referencia, correlativo } });
+    await envio.update({
       fecha_envio: new Date(),
-      fecha_referencia,
-      correlativo,
       nombrexml: nombreArchivo,
       ticket,
-      tipo: "RC",
       estado_ticket: "PE",
-      resumen: 1,
       xml_firmado: xmlFirmado,
     });
 
@@ -114,7 +133,7 @@ const generarResumenDiario = async (req, res, next) => {
         comprobante_id: boleta.id,
         condicion: 1, // 1=adición
       });
-      await boleta.update({ estado_sunat: "EN" });
+      await boleta.update({ estado_sunat: "ENVIANDO" });
     }
 
     return res.status(201).json({
@@ -132,86 +151,14 @@ const generarResumenDiario = async (req, res, next) => {
 
 /**
  * GET /resumen-diario/:id/consultar-ticket
- * Consulta el estado del Resumen Diario en SUNAT usando el ticket almacenado.
+ * Consulta el estado del Resumen Diario en SUNAT (ver ticketsSunat.service).
  */
 const consultarTicketResumen = async (req, res, next) => {
   try {
-    const envio = await EnvioResumen.findByPk(req.params.id, {
-      include: [
-        { model: Emisor },
-        { model: EnvioResumenDetalle },
-      ],
-    });
-
-    if (!envio) return res.status(404).json({ message: "Resumen no encontrado" });
-    if (!envio.ticket) return res.status(400).json({ message: "No hay ticket para consultar" });
-
-    if (envio.estado_ticket === "PR") {
-      return res.json({
-        message: "Resumen Diario ya fue procesado",
-        estado_ticket: "PR",
-        codigo_sunat: envio.codigo_sunat,
-        mensaje_sunat: envio.mensaje_sunat,
-      });
-    }
-
-    const status = await sunatClient.getStatus(envio.ticket, envio.Emisor);
-
-    if (status.statusCode === "98") {
-      // Aún en proceso, reintentar más tarde
-      return res.json({
-        estado_ticket: "PE",
-        message: "SUNAT aún está procesando el Resumen Diario. Reintente en unos segundos.",
-        statusCode: status.statusCode,
-      });
-    }
-
-    if (status.statusCode === "0" && status.content) {
-      // Procesado correctamente
-      let cdr;
-      try {
-        cdr = cdrParser.parseCdr(status.content);
-      } catch (_) {
-        cdr = { responseCode: "0", description: "Aceptado", digestValue: "", accepted: true, notes: [] };
-      }
-
-      // Actualizar todas las boletas incluidas
-      for (const det of envio.EnvioResumenDetalles) {
-        await Comprobante.update(
-          {
-            estado_sunat: cdr.accepted ? "AC" : "RR",
-            codigo_sunat: cdr.responseCode,
-            mensaje_sunat: cdr.description,
-            hash_cpe: cdr.digestValue,
-          },
-          { where: { id: det.comprobante_id } }
-        );
-      }
-
-      await envio.update({
-        estado_ticket: "PR",
-        codigo_sunat: cdr.responseCode,
-        mensaje_sunat: cdr.description,
-      });
-
-      return res.json({
-        estado_ticket: "PR",
-        codigo_sunat: cdr.responseCode,
-        mensaje_sunat: cdr.description,
-        boletas_actualizadas: envio.EnvioResumenDetalles.length,
-      });
-    }
-
-    // Error en SUNAT
-    await envio.update({ estado_ticket: "ER", codigo_sunat: status.statusCode });
-
-    return res.json({
-      estado_ticket: "ER",
-      statusCode: status.statusCode,
-      message: "SUNAT retornó error al procesar el Resumen Diario",
-    });
+    const r = await consultarResumen(req.params.id, req);
+    return res.status(r.httpStatus).json(r.body);
   } catch (err) {
-    console.error("consultarTicketResumen error:", err);
+    console.error("consultarTicketResumen error:", err.message);
     return next(err);
   }
 };

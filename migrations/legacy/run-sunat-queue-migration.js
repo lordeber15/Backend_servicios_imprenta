@@ -10,7 +10,7 @@ const client = new Client({
   host:     process.env.DB_HOST     || 'localhost',
   port:     parseInt(process.env.DB_PORT) || 5432,
   user:     process.env.DB_USER     || 'servicios',
-  password: process.env.DB_PASSWORD || 'admin123',
+  password: process.env.DB_PASSWORD, // sin valor por defecto: debe venir del .env
   database: process.env.DB_NAME     || 'servicios',
 });
 

@@ -1,30 +1,25 @@
-const rateLimit = require("express-rate-limit");
+const { rateLimit } = require("express-rate-limit");
 
 /**
- * Límite de intentos para el login.
- *
- * Al centralizar la API detrás de la autenticación, /auth/login pasa a ser la
- * única puerta de entrada y por tanto el blanco más valioso para fuerza bruta.
- *
- * CLAVE POR USUARIO, NO POR IP (decisión deliberada):
- * Este es un POS donde varios operarios comparten la misma IP pública (NAT), y
- * en producción el backend está detrás de un proxy TLS, así que req.ip puede
- * ser la del proxy y no la real. Limitar por IP haría que un operario que
- * olvida su contraseña bloquee a toda la imprenta.
- * Contando por nombre de usuario, el límite recae sobre la cuenta atacada —que
- * es justo lo que protege de la fuerza bruta— sin daño colateral entre compañeros.
- *
- * skipSuccessfulRequests: los logins correctos no consumen cuota, así que el
- * uso normal nunca llega al límite.
+ * LÍMITES DE PETICIONES
  *
  * Store en memoria a propósito: hay una sola instancia de backend, así que basta
  * y evita acoplar el login a la disponibilidad de Redis.
+ *
+ * Las claves por IP usan el keyGenerator por defecto, que agrupa IPv6 por
+ * subred /56 (un atacante no puede rotar direcciones dentro de su bloque).
+ * Requiere `trust proxy` bien configurado en app.js para ver la IP real.
  */
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10,
+
+/**
+ * Login por USUARIO: protege la cuenta atacada (fuerza bruta contra una cuenta).
+ * skipSuccessfulRequests: los logins correctos no consumen cuota.
+ */
+const loginPorUsuario = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
   skipSuccessfulRequests: true,
-  standardHeaders: true,
+  standardHeaders: "draft-8",
   legacyHeaders: false,
   keyGenerator: (req) => {
     const usuario = req.body?.usuario;
@@ -36,19 +31,68 @@ const authLimiter = rateLimit({
 });
 
 /**
+ * Login por IP: frena el "password spraying" (una contraseña común probada
+ * contra muchas cuentas, que el límite por usuario no ve). Holgado porque
+ * varios operarios comparten la IP pública de la imprenta.
+ */
+const loginPorIp = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  skipSuccessfulRequests: true,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { message: "Demasiados intentos fallidos desde esta red. Espera 15 minutos." },
+});
+
+/**
+ * Cambio de la contraseña propia: limita adivinar la contraseña ACTUAL con
+ * una sesión robada. Clave por usuario autenticado (va después de authenticate).
+ */
+const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  skipSuccessfulRequests: true,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => `pw:${req.user?.id}`,
+  message: { message: "Demasiados intentos. Espera 15 minutos." },
+});
+
+/** Refresh/logout: el uso normal es ~4 por hora por pestaña. */
+const sesionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { message: "Demasiadas solicitudes de sesión. Espera un momento." },
+});
+
+/** Límite general de la API por IP (contra scraping o un script desbocado). */
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: Number(process.env.API_RATE_LIMIT || 1000),
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  skip: (req) => req.path.startsWith("/health"),
+  message: { message: "Demasiadas solicitudes. Espera un momento." },
+});
+
+/**
  * Límite para la consulta a RENIEC.
  *
- * El endpoint ya exige token (Fase 1), pero cada consulta gasta la API key de
- * DECOLECTA de la empresa. Este límite acota el abuso si una cuenta se ve
- * comprometida o un script itera DNIs. Por IP con ventana corta; los aciertos
- * también cuentan (a diferencia del login) porque el coste está en cada llamada.
+ * Cada consulta gasta la API key de DECOLECTA de la empresa. Este límite acota
+ * el abuso si una cuenta se ve comprometida o un script itera DNIs. Por IP con
+ * ventana corta; los aciertos también cuentan porque el coste está en cada llamada.
  */
 const reniecLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 20,
-  standardHeaders: true,
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { error: "Demasiadas consultas RENIEC. Espera un momento." },
 });
 
-module.exports = { authLimiter, reniecLimiter };
+// authLimiter se mantiene como alias de ambos límites de login.
+const authLimiter = [loginPorIp, loginPorUsuario];
+
+module.exports = { authLimiter, loginPorIp, loginPorUsuario, passwordLimiter, sesionLimiter, apiLimiter, reniecLimiter };

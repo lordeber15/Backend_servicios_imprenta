@@ -6,6 +6,8 @@
  */
 
 const { Router } = require("express");
+const { Servicios } = require("../../database/models/servicios");
+const soloCampos = require("../middleware/soloCampos");
 const {
   getServicios,
   getServiciosStats,
@@ -53,7 +55,7 @@ const router = Router();
  */
 router.get("/servicios", getServicios);
 router.get("/servicios/stats", getServiciosStats);
-router.post("/servicios", createServicios);
+router.post("/servicios", soloCampos(Servicios), createServicios);
 
 /**
  * @swagger
@@ -90,6 +92,6 @@ router.post("/servicios", createServicios);
  *         description: Servicio actualizado
  */
 router.delete("/servicios/:id", deleteServicios);
-router.put("/servicios/:id", updateServicios);
+router.put("/servicios/:id", soloCampos(Servicios), updateServicios);
 
 module.exports = router;

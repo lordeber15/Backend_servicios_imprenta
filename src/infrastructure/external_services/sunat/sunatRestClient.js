@@ -8,6 +8,7 @@
 const axios = require('axios');
 const AdmZip = require('adm-zip');
 const crypto = require('crypto');
+const credenciales = require('../../../application/services/credenciales.service');
 
 /**
  * Obtiene un token oAuth 2.0 de SUNAT
@@ -19,14 +20,19 @@ async function getAccessToken(emisor) {
   const isBeta = process.env.SUNAT_ENV === 'beta' || process.env.SUNAT_WS_FACTURAS?.includes('beta');
   const authHost = isBeta ? 'api-seguridad-test.sunat.gob.pe' : 'api-seguridad.sunat.gob.pe';
   const url = `https://${authHost}/v1/clientessol/${emisor.client_id}/oauth2/token/`;
+  // Secretos descifrados solo para esta petición (credenciales.service).
+  const { clave_sol, client_secret } = await credenciales.obtener(emisor.id);
+  if (!client_secret || !clave_sol) {
+    throw new Error('El emisor no tiene configurado el Client Secret o la clave SOL para guías de remisión.');
+  }
   
   const params = new URLSearchParams();
   params.append('grant_type', 'password');
   params.append('scope', 'https://api-cpe.sunat.gob.pe');
   params.append('client_id', emisor.client_id);
-  params.append('client_secret', emisor.client_secret);
+  params.append('client_secret', client_secret);
   params.append('username', `${emisor.ruc}${emisor.usuario_sol}`);
-  params.append('password', emisor.clave_sol);
+  params.append('password', clave_sol);
 
   try {
     const response = await axios.post(url, params.toString(), {
@@ -53,7 +59,7 @@ async function getAccessToken(emisor) {
  * @returns {Object} { ticket: string, error: object, cdrBase64: string }
  */
 async function sendGuiaRest(xmlBuffer, nombreArchivo, emisor) {
-  if (!emisor.client_id || !emisor.client_secret) {
+  if (!emisor.client_id) {
     throw new Error('El emisor no tiene configurado el Client ID o Client Secret para guías de remisión.');
   }
 

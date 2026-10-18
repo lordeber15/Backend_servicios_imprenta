@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  secretos:
+    name: Secretos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Árbol actual. Cuando se purgue el historial (FASE_0_LIMPIEZA_REPO.md)
+      # puede quitarse --no-git para revisar también todos los commits.
+      - run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 detect --source /repo --no-git --redact -v
+
+  dependencias:
+    name: Vulnerabilidades (npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/auditar-dependencias.js
+
+  pruebas:
+    name: Pruebas (unitarias + integración aisladas)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      # Postgres y Redis desechables en una red sin salida a Internet y con
+      # certificado autofirmado: ninguna prueba puede llegar a SUNAT.
+      - run: docker compose -f docker-compose.test.yml run --rm --build pruebas
+      - if: always()
+        run: docker compose -f docker-compose.test.yml down -v
+
+  imagen:
+    name: Imagen de producción
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target produccion -t imprenta-backend .
+      # La imagen no debe llevar secretos ni pruebas.
+      - run: |
+          docker run --rm --entrypoint sh imprenta-backend -c '
+            ! ls /app/storage/certs /app/storage/keys /app/tests /app/.env 2>/dev/null | grep . &&
+            ! find /app -name "*.pfx" -o -name "*.pem" -o -name "*.p12" | grep -v node_modules | grep . &&
+            ! ls /app/node_modules/jest >/dev/null 2>&1'

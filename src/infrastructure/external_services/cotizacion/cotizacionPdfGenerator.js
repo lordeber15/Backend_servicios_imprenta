@@ -1,4 +1,4 @@
-const { getBrowser } = require("../browserPool");
+const { newSafePage } = require("../browserPool");
 const fs = require("fs");
 const path = require("path");
 
@@ -456,8 +456,7 @@ async function generarCotizacionPdf(cotizacion, detalles, format, emisor) {
     ? buildA4Html(cotizacion, detalles, emisor)
     : buildA5Html(cotizacion, detalles, emisor);
 
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  const page = await newSafePage();
 
   try {
     await page.setContent(html, { waitUntil: "networkidle0" });

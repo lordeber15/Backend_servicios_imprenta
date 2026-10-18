@@ -53,6 +53,10 @@ function existsXml(nombreArchivo) {
   return fs.existsSync(getXmlPath(nombreArchivo));
 }
 
+function existsCdr(nombreArchivo) {
+  return fs.existsSync(getCdrPath(nombreArchivo));
+}
+
 function existsPdf(nombreArchivo) {
   return fs.existsSync(getPdfPath(nombreArchivo));
 }
@@ -65,5 +69,6 @@ module.exports = {
   saveCdr,
   readXml,
   existsXml,
+  existsCdr,
   existsPdf,
 };

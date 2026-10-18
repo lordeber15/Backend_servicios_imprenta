@@ -65,11 +65,27 @@ const formatosRoutes = require("./routes/formatos.routes"); // Formatos por usua
 
 // Autenticación global (con lista blanca y modo auditoría)
 const authGlobal = require("./middleware/authGlobal.middleware");
+const { apiLimiter } = require("./middleware/rateLimit.middleware");
+const permisos = require("./middleware/permisos");
 
 // ============================================
 // INICIALIZACIÓN DE EXPRESS
 // ============================================
 const app = express();
+
+/**
+ * TRUST PROXY
+ *
+ * En producción el backend está detrás del proxy TLS del servidor (y de la
+ * red de Docker), así que req.ip sería la del proxy y todos los límites por
+ * IP caerían en el mismo saco. Se confía en X-Forwarded-For solo cuando la
+ * conexión llega desde direcciones locales/privadas (loopback y redes de
+ * Docker); un cliente de Internet no puede falsear su IP.
+ * TRUST_PROXY admite lo mismo que Express: "false", un número de saltos o una
+ * lista de subredes.
+ */
+const trustProxy = process.env.TRUST_PROXY ?? "loopback, linklocal, uniquelocal";
+app.set("trust proxy", trustProxy === "false" ? false : /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 
 // ============================================
 // CONFIGURACIÓN DE MIDDLEWARES GLOBALES
@@ -99,7 +115,8 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
  * Ejemplo .env:
  * ALLOWED_ORIGINS=http://localhost:5173,https://impalexander.store,https://www.impalexander.store,https://api.impalexander.store
  */
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(origin => origin.trim()) || ["http://localhost:5173"];
+const { allowedOrigins } = require("../config/origenes");
+const { ForbiddenError } = require("../utils/errors");
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -113,7 +130,7 @@ app.use(cors({
       callback(null, true);
     } else {
       console.warn(`⚠️  CORS bloqueado para origen: ${origin}`);
-      callback(new Error('No permitido por CORS'));
+      callback(new ForbiddenError("Origen no permitido"));
     }
   },
   credentials: true,
@@ -146,7 +163,9 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
  * Ejemplo de log:
  * GET /servicios 200 45.123 ms - 1234
  */
-app.use(morgan("dev"));
+// En producción formato "combined" (IP, fecha, user-agent) para auditoría;
+// nunca se registran bodies ni cabeceras Authorization.
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // ============================================
 // DOCUMENTACIÓN DE LA API (SWAGGER)
@@ -185,7 +204,10 @@ const apiRouter = express.Router();
  * Con AUTH_ENFORCE=false arranca en modo auditoría: no bloquea, solo registra
  * en el log lo que rechazaría. Sirve de interruptor de emergencia sin redeploy.
  */
+app.use(apiLimiter);
 app.use(authGlobal);
+// Autorización por cargo y formato de TODA ruta autenticada (denegar por defecto).
+app.use(permisos);
 console.log(
   authGlobal.AUTH_ENFORCE
     ? "[Auth] Autenticación global ACTIVA (AUTH_ENFORCE=true)"
@@ -258,6 +280,18 @@ app.use("/qz", qzRoutes);
 app.use((err, _req, res, _next) => {
   // statusCode lo aportan las clases de utils/errors.js; status se mantiene
   // por compatibilidad con errores lanzados antes de esa convención.
+  // Validaciones del modelo Sequelize (campo requerido, formato…): son errores
+  // del cliente, no del servidor.
+  if (err.name === "SequelizeValidationError") {
+    err.statusCode = 400;
+    err.message = (err.errors || []).map((e) => e.message).join("; ") || "Datos inválidos";
+  }
+  // Una referencia a algo que no existe (unidad, cliente, serie…) también es
+  // un dato inválido del cliente; la transacción ya se revirtió.
+  if (err.name === "SequelizeForeignKeyConstraintError") {
+    err.statusCode = 400;
+    err.message = `Referencia inválida${err.table ? ` (${err.table})` : ""}: verifique los códigos enviados`;
+  }
   const status = err.statusCode || err.status || 500;
 
   // Los 5xx no exponen el detalle interno; los 4xx sí, porque son

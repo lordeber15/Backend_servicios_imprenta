@@ -1,4 +1,6 @@
 const { Router } = require("express");
+const Tipo_comprobanteModel = require("../../../database/models/facturacion/tipocomprobante");
+const soloCampos = require("../../middleware/soloCampos");
 const {
   getTipo_comprobante,
   createTipo_comprobante,
@@ -18,7 +20,7 @@ const router = Router();
  *         description: Lista de tipos de comprobantes
  */
 router.get("/tipo_comprobante", getTipo_comprobante);
-router.post("/tipo_comprobante", createTipo_comprobante);
+router.post("/tipo_comprobante", soloCampos(Tipo_comprobanteModel), createTipo_comprobante);
 
 /**
  * @swagger
@@ -35,6 +37,6 @@ router.post("/tipo_comprobante", createTipo_comprobante);
  *         description: Tipo eliminado
  */
 router.delete("/tipo_comprobante/:id", deleteTipo_comprobante);
-router.put("/tipo_comprobante/:id", updateTipo_comprobante);
+router.put("/tipo_comprobante/:id", soloCampos(Tipo_comprobanteModel), updateTipo_comprobante);
 
 module.exports = router;

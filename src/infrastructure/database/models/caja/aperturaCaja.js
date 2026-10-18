@@ -48,6 +48,11 @@ const AperturaCaja = sequelize.define("AperturaCaja", {
     type: DataTypes.DECIMAL(11, 2),
     allowNull: true,
   },
+  usuario_apertura_id: { type: DataTypes.INTEGER, allowNull: true },
+  usuario_cierre_id: { type: DataTypes.INTEGER, allowNull: true },
+  cerrada_at: { type: DataTypes.DATE, allowNull: true },
+  // Desglose congelado al cerrar: no cambia si luego cambian estados SUNAT.
+  desglose: { type: DataTypes.JSONB, allowNull: true },
 });
 
 module.exports = AperturaCaja;

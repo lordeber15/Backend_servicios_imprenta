@@ -1,4 +1,4 @@
-const { getBrowser } = require("../browserPool");
+const { newSafePage } = require("../browserPool");
 const fs = require("fs");
 const path = require("path");
 
@@ -247,8 +247,7 @@ async function generarTicketPdf(ticket, detalles, format, emisor) {
     ? buildA5Html(ticket, detalles, emisor)
     : build80mmHtml(ticket, detalles, emisor);
 
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  const page = await newSafePage();
 
   try {
     await page.setContent(html, { waitUntil: "networkidle0" });

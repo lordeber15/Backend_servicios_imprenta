@@ -11,6 +11,7 @@
  */
 
 const soap = require("soap");
+const credenciales = require("../../../application/services/credenciales.service");
 const path = require("path");
 const AdmZip = require("adm-zip");
 
@@ -22,11 +23,14 @@ const LOCAL_WSDL = path.resolve(process.cwd(), "storage/wsdl/billService.wsdl");
  * Usa WSDL local para evitar 401 en sub-imports de SUNAT beta.
  *
  * @param {string} endpointUrl - URL del endpoint SOAP remoto de SUNAT.
- * @param {Object} emisor - Datos del emisor (ruc, usuario_sol, clave_sol).
+ * @param {Object} emisor - Datos del emisor (id, ruc, usuario_sol). La clave SOL
+ *   se descifra aquí mismo (credenciales.service) y no sale de esta función.
  * @returns {Promise<Object>} Cliente SOAP listo para usar.
  */
 async function createClient(endpointUrl, emisor) {
   const username = `${emisor.ruc}${emisor.usuario_sol}`;
+  const { clave_sol } = await credenciales.obtener(emisor.id);
+  if (!clave_sol) throw new Error("El emisor no tiene configurada la clave SOL");
 
   // Crear cliente desde WSDL local
   const client = await soap.createClientAsync(LOCAL_WSDL);
@@ -36,7 +40,7 @@ async function createClient(endpointUrl, emisor) {
   client.setEndpoint(endpoint);
 
   // WSSecurity (UsernameToken) — requerido en todos los entornos de SUNAT
-  const wsSecurity = new soap.WSSecurity(username, emisor.clave_sol, {
+  const wsSecurity = new soap.WSSecurity(username, clave_sol, {
     passwordType: "PasswordText",
     hasTimeStamp: false,
     hasTokenCreated: false,
@@ -55,7 +59,7 @@ async function createClient(endpointUrl, emisor) {
 
   if (isBeta) {
     const basicAuth = Buffer.from(
-      `${username}:${emisor.clave_sol}`
+      `${username}:${clave_sol}`
     ).toString("base64");
     client.addHttpHeader("Authorization", `Basic ${basicAuth}`);
   }
@@ -64,7 +68,9 @@ async function createClient(endpointUrl, emisor) {
   if (process.env.SUNAT_DEBUG === "true") {
     client.on("request", (xml, eid) => {
       console.log(`[SUNAT SOAP Request][${eid}] Endpoint: ${endpoint}`);
-      console.log(`[SUNAT SOAP Request][${eid}] XML:\n${xml}`);
+      // La cabecera WSSecurity lleva la clave SOL en texto: nunca al log.
+      const seguro = String(xml).replace(/(<(?:\w+:)?Password[^>]*>)[^<]*/g, "$1***");
+      console.log(`[SUNAT SOAP Request][${eid}] XML:\n${seguro}`);
     });
 
     client.on("response", (body, response, eid) => {

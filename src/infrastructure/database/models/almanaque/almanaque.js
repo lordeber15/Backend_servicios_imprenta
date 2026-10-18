@@ -37,6 +37,11 @@ const Almanaque = sequelize.define("almanaque", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
+  caja_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: { model: "AperturaCajas", key: "id" }, // caja abierta al registrar el movimiento
+  },
   tipo: {
     // Usar STRING en lugar de ENUM para evitar que Sequelize cree su propio tipo
     // El constraint ENUM ya existe en la BD como tipo_almanaque

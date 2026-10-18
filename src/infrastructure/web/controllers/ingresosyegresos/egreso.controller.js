@@ -1,4 +1,5 @@
 const { Egreso } = require("../../../database/models/Ingresosyegresos/egresos");
+const { cajaAbiertaId, exigirCajaNoCerrada } = require("../../../../application/services/caja.service");
 
 const getEgresos = async (req, res, next) => {
   try {
@@ -25,11 +26,13 @@ const getEgresos = async (req, res, next) => {
 const createEgresos = async (req, res, next) => {
   try {
     const { monto, descripcion, fecha, metodo } = req.body;
+    // Si hay caja abierta, el movimiento entra en su cierre (ingreso suma, egreso resta).
     const newEgresos = await Egreso.create({
       monto,
       descripcion,
       fecha,
       metodo,
+      caja_id: await cajaAbiertaId(),
     });
     res.json(newEgresos);
   } catch (error) {
@@ -45,6 +48,9 @@ const deleteEgresos = async (req, res, next) => {
     if (!egreso) {
       return res.status(404).json({ message: "elemento no encontrado" });
     }
+
+    await exigirCajaNoCerrada(egreso.caja_id);
+
 
     await egreso.destroy();
 
@@ -68,6 +74,9 @@ const updateEgresos = async (req, res, next) => {
     egresoupdate.descripcion = descripcion;
     egresoupdate.fecha = fecha;
     egresoupdate.metodo = metodo;
+
+    await exigirCajaNoCerrada(egresoupdate.caja_id);
+
 
     await egresoupdate.save();
 

@@ -1,0 +1,30 @@
+{
+  "node-forge": {
+    "motivo": "Sin versión corregida. La falla está en VERIFICAR firmas RSA PKCS#1; el sistema solo FIRMA XML con su propio certificado.",
+    "revisar_antes": "2027-01-31"
+  },
+  "uuid": {
+    "motivo": "Lo trae sequelize 6 (la 'corrección' propuesta es bajar a sequelize 3). La falla solo aplica a v3/v5/v6 con buffer de salida; sequelize usa v1/v4 sin buffer.",
+    "revisar_antes": "2027-01-31"
+  },
+  "sequelize": {
+    "motivo": "Solo por su dependencia uuid (ver arriba).",
+    "revisar_antes": "2027-01-31"
+  },
+  "sprintf-js": {
+    "motivo": "Lo trae el CLI de umzug (argparse); las migraciones se ejecutan por código, nunca por ese CLI.",
+    "revisar_antes": "2027-01-31"
+  },
+  "argparse": {
+    "motivo": "Igual que sprintf-js: CLI de umzug no usado.",
+    "revisar_antes": "2027-01-31"
+  },
+  "@rushstack/ts-command-line": {
+    "motivo": "Igual que sprintf-js: CLI de umzug no usado.",
+    "revisar_antes": "2027-01-31"
+  },
+  "umzug": {
+    "motivo": "Solo por su CLI (ver sprintf-js). La 'corrección' propuesta es bajar a umzug 2.",
+    "revisar_antes": "2027-01-31"
+  }
+}

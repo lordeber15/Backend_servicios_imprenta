@@ -19,6 +19,7 @@ const ComunicacionBajaDetalle = sequelize.define(
     serie: DataTypes.STRING(4),
     correlativo: DataTypes.INTEGER,
     motivo_baja: DataTypes.STRING(100),
+    estado_previo: DataTypes.STRING(15), // estado del comprobante antes de la baja (para revertir si SUNAT la rechaza)
   },
   { tableName: "ComunicacionBajaDetalle", timestamps: false }
 );

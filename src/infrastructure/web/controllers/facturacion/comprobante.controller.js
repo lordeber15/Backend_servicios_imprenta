@@ -1,13 +1,26 @@
+const { UniqueConstraintError } = require("sequelize");
+const { registrar } = require("../../../../application/services/auditoria.service");
 const Comprobante = require("../../../database/models/facturacion/comprobante");
-const Moneda = require("../../../database/models/facturacion/moneda"); // Assuming Moneda model is needed for new functions
+const { emisionSchema, mensajeError } = require("../../../../application/validation/emision.schema");
+const emisionService = require("../../../../application/services/emision.service");
+const { ValidationError, NotFoundError, ConflictError } = require("../../../utils/errors");
+
+// Solo un comprobante que aún no se firmó ni envió puede editarse o borrarse.
+// Uno emitido (aceptado o no) se corrige con nota de crédito o comunicación de baja.
+const ESTADO_EDITABLE = "GENERADO";
+// Campos de cabecera editables en GENERADO. Nunca numeración, montos ni estado SUNAT.
+const CAMPOS_EDITABLES = ["forma_pago", "fecha_vencimiento", "metodo_pago", "descripcion_nota"];
 
 /**
- * Obtener listado de comprobantes
- * @route GET /api/comprobante
+ * Listado de comprobantes (sin el CDR ni campos pesados).
+ * @route GET /comprobante
  */
-const getComprobante = async (req, res, next) => {
+const getComprobante = async (_req, res, next) => {
   try {
-    const comprobantes = await Comprobante.findAll();
+    const comprobantes = await Comprobante.findAll({
+      attributes: { exclude: ["cdr_xml"] },
+      order: [["id", "DESC"]],
+    });
     res.json(comprobantes);
   } catch (error) {
     return next(error);
@@ -15,82 +28,86 @@ const getComprobante = async (req, res, next) => {
 };
 
 /**
- * Obtener listado de series configuradas (Ej: F001, B001)
- * @route GET /api/serie
+ * Emisión completa en una transacción: el servidor asigna el número y calcula los montos.
+ * @route POST /comprobante/emision
  */
-const getSerie = async (req, res, next) => {
+const emitirComprobanteCompleto = async (req, res, next) => {
   try {
-    const series = await Serie.findAll();
-    res.json(series);
-  } catch (error) {
-    return next(error);
-  }
-};
+    const parsed = emisionSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError(mensajeError(parsed.error));
 
-/**
- * Crear una nueva serie de facturación
- * @route POST /api/serie
- */
-const createSerie = async (req, res, next) => {
-  try {
-    const serieData = req.body;
-    const newSerie = await Serie.create({
-      ...serieData,
+    const { comprobante: c, firmado, error_firma, job_id } = await emisionService.emitir(parsed.data);
+    registrar(req, c.tipo_comprobante_id === "07" ? "nota_credito_emitida" : "comprobante_emitido", {
+      entidad: "Comprobante",
+      entidad_id: c.id,
+      despues: {
+        numero: `${c.serie}-${c.correlativo}`, tipo: c.tipo_comprobante_id, total: c.total,
+        metodo_pago: c.metodo_pago, forma_pago: c.forma_pago, comprobante_ref_id: c.comprobante_ref_id, caja_id: c.caja_id,
+      },
     });
-    res.json(newSerie);
-  } catch (error) {
-    return next(error);
-  }
-};
 
-/**
- * Registrar un nuevo comprobante (Solo cabecera)
- * @route POST /api/comprobante
- */
-const createComprobante = async (req, res, next) => {
-  try {
-    const comprobanteData = req.body;
-    const newComprobante = await Comprobante.create({
-      ...comprobanteData,
+    return res.status(201).json({
+      comprobante_id: c.id,
+      tipo_comprobante_id: c.tipo_comprobante_id,
+      serie: c.serie,
+      correlativo: c.correlativo,
+      numero: `${c.serie}-${String(c.correlativo).padStart(8, "0")}`,
+      op_gravadas: c.op_gravadas,
+      igv: c.igv,
+      total: c.total,
+      estado_sunat: c.estado_sunat,
+      firmado,
+      job_id: job_id ?? null,
+      advertencia: error_firma ?? null,
+      estado_url: `/comprobante/${c.id}/estado`,
     });
-    res.json(newComprobante);
   } catch (error) {
+    // Respaldo del índice único: no debería ocurrir con el bloqueo de la serie.
+    if (error instanceof UniqueConstraintError) {
+      return next(new ConflictError("El número de comprobante ya existe. Reintente la emisión."));
+    }
     return next(error);
   }
 };
 
+async function cargarEditable(id) {
+  const comprobante = await Comprobante.findByPk(id);
+  if (!comprobante) throw new NotFoundError("Comprobante no encontrado");
+  if (comprobante.estado_sunat !== ESTADO_EDITABLE) {
+    throw new ConflictError(
+      `El comprobante ${comprobante.serie}-${comprobante.correlativo} está en estado ${comprobante.estado_sunat} ` +
+      "y no puede modificarse. Use una nota de crédito o una comunicación de baja."
+    );
+  }
+  return comprobante;
+}
+
+/** @route DELETE /comprobante/:id  (solo Administrador, solo GENERADO) */
 const deleteComprobante = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const comprobante = await Comprobante.findByPk(id);
-
-    if (!comprobante) {
-      return res.status(404).json({ message: "Elemento no encontrado" });
-    }
-
+    const comprobante = await cargarEditable(req.params.id);
     await comprobante.destroy();
-    res.json({ message: "Elemento eliminado correctamente" });
+    registrar(req, "comprobante_eliminado", { entidad: "Comprobante", entidad_id: comprobante.id, antes: comprobante });
+    res.json({ message: "Comprobante eliminado" });
   } catch (error) {
     return next(error);
   }
 };
 
+/** @route PUT /comprobante/:id  (solo Administrador, solo GENERADO, campos permitidos) */
 const updateComprobante = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const comprobanteData = req.body;
-
-    const comprobanteToUpdate = await Comprobante.findByPk(id);
-
-    if (!comprobanteToUpdate) {
-      return res.status(404).json({ message: "Elemento no encontrado" });
+    const comprobante = await cargarEditable(req.params.id);
+    const cambios = Object.fromEntries(
+      Object.entries(req.body || {}).filter(([k]) => CAMPOS_EDITABLES.includes(k))
+    );
+    if (!Object.keys(cambios).length) {
+      throw new ValidationError(`Solo se pueden editar: ${CAMPOS_EDITABLES.join(", ")}`);
     }
-
-    await comprobanteToUpdate.update({
-      ...comprobanteData,
-    });
-
-    res.json(comprobanteToUpdate);
+    const antes = Object.fromEntries(Object.keys(cambios).map((k) => [k, comprobante[k]]));
+    await comprobante.update(cambios);
+    registrar(req, "comprobante_editado", { entidad: "Comprobante", entidad_id: comprobante.id, antes, despues: cambios });
+    res.json(comprobante);
   } catch (error) {
     return next(error);
   }
@@ -98,7 +115,8 @@ const updateComprobante = async (req, res, next) => {
 
 module.exports = {
   getComprobante,
-  createComprobante,
+  emitirComprobanteCompleto,
   deleteComprobante,
   updateComprobante,
+  cargarEditable,
 };

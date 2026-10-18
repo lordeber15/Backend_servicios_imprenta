@@ -1,15 +1,15 @@
-const bcrypt = require("bcryptjs");
+const { hashear } = require("../../services/password.service");
 
 class CreateUser {
   constructor(userRepository) {
     this.userRepository = userRepository;
   }
 
+  /** @param {object} datos ya validados con crearUsuarioSchema */
   async execute({ usuario, password, cargo }) {
-    const hashedPassword = await bcrypt.hash(password, 10);
     return await this.userRepository.save({
       usuario,
-      password: hashedPassword,
+      password: await hashear(password),
       cargo,
       activo: true
     });

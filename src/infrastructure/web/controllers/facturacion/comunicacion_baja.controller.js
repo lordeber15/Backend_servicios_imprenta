@@ -1,5 +1,8 @@
 "use strict";
 
+const { Op } = require("sequelize");
+const { registrar } = require("../../../../application/services/auditoria.service");
+const sequelize = require("../../../database/database");
 const Comprobante = require("../../../database/models/facturacion/comprobante");
 const Emisor = require("../../../database/models/facturacion/emisor");
 const ComunicacionBaja = require("../../../database/models/facturacion/comunicacionbaja");
@@ -11,180 +14,168 @@ const xmlSigner = require("../../../external_services/sunat/xmlSigner");
 const sunatClient = require("../../../external_services/sunat/sunatClient");
 const cdrParser = require("../../../external_services/sunat/cdrParser");
 const storageHelper = require("../../../external_services/sunat/storageHelper");
+const { hoyLocal } = require("../../../utils/fecha");
+const { ValidationError, NotFoundError, ConflictError } = require("../../../utils/errors");
+const { consultarBaja, revertirComprobantes } = require("../../../../application/services/ticketsSunat.service");
+
+// Solo se da de baja lo que SUNAT tiene registrado.
+const ESTADOS_ANULABLES = ["ACEPTADO", "OBSERVADO"];
 
 /**
  * POST /comunicacion-baja
  * Body: {
  *   emisor_id: number,
- *   fecha_referencia: "YYYY-MM-DD",   // fecha de los comprobantes a anular
+ *   fecha_referencia: "YYYY-MM-DD",   // fecha de emisión de los comprobantes a anular
  *   comprobantes: [{ id, motivo_baja }]
  * }
  *
- * Solo para Facturas (01), NC (07) y ND (08) ya ACEPTADAS por SUNAT.
+ * Solo para Facturas (01), NC (07) y ND (08) ya ACEPTADAS u OBSERVADAS por SUNAT.
  * Las boletas (03) se anulan a través del Resumen Diario (condicion=3).
+ *
+ * 1. En una transacción: valida y bloquea los comprobantes, reserva el
+ *    correlativo del RA del día (bloqueo consultivo por emisor+fecha) y los
+ *    marca EN_BAJA.
+ * 2. Fuera de la transacción: firma y envía. Si el envío falla, revierte.
  */
 const crearComunicacionBaja = async (req, res, next) => {
   try {
-    const { emisor_id, fecha_referencia, comprobantes: compIds } = req.body;
+    const { emisor_id, fecha_referencia, comprobantes: compIds } = req.body || {};
 
-    if (!emisor_id || !fecha_referencia || !compIds || !compIds.length) {
-      return res.status(400).json({
-        message: "emisor_id, fecha_referencia y comprobantes[] son requeridos",
-      });
+    if (!emisor_id || !fecha_referencia || !Array.isArray(compIds) || !compIds.length) {
+      throw new ValidationError("emisor_id, fecha_referencia y comprobantes[] son requeridos");
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_referencia)) {
+      throw new ValidationError("fecha_referencia debe tener formato YYYY-MM-DD");
     }
 
     const emisor = await Emisor.findByPk(emisor_id);
-    if (!emisor) return res.status(404).json({ message: "Emisor no encontrado" });
+    if (!emisor) throw new NotFoundError("Emisor no encontrado");
 
-    // Cargar y validar cada comprobante
-    const comprobantesData = [];
-    for (const item of compIds) {
-      const c = await Comprobante.findByPk(item.id);
-      if (!c) {
-        return res.status(404).json({ message: `Comprobante id=${item.id} no encontrado` });
-      }
-      if (c.estado_sunat !== "AC") {
-        return res.status(400).json({
-          message: `El comprobante ${c.serie}-${c.correlativo} no está en estado ACEPTADO (AC). Estado actual: ${c.estado_sunat}`,
+    const fechaEmision = hoyLocal();
+
+    const { baja, comprobantesData } = await sequelize.transaction(async (transaction) => {
+      const comprobantesData = [];
+      for (const item of compIds) {
+        const c = await Comprobante.findByPk(item.id, { transaction, lock: transaction.LOCK.UPDATE });
+        if (!c) throw new NotFoundError(`Comprobante id=${item.id} no encontrado`);
+        if (c.emisor_id !== Number(emisor_id)) {
+          throw new ValidationError(`El comprobante ${c.serie}-${c.correlativo} pertenece a otro emisor`);
+        }
+        if (c.tipo_comprobante_id === "03") {
+          throw new ValidationError("Las boletas (03) no se anulan por Comunicación de Baja; use Resumen Diario con condición 3.");
+        }
+        if (!ESTADOS_ANULABLES.includes(c.estado_sunat)) {
+          throw new ConflictError(
+            `El comprobante ${c.serie}-${c.correlativo} no puede darse de baja en estado ${c.estado_sunat}`
+          );
+        }
+        comprobantesData.push({
+          ...c.dataValues,
+          motivo_baja: String(item.motivo_baja || "Anulación por error en emisión").slice(0, 100),
         });
       }
-      if (c.tipo_comprobante_id === "03") {
-        return res.status(400).json({
-          message: `Las boletas (03) no se anulan por Comunicación de Baja. Use Resumen Diario con condición=3.`,
-        });
-      }
-      comprobantesData.push({
-        ...c.dataValues,
-        motivo_baja: item.motivo_baja || "Anulación por error en emisión",
+
+      // Serializa la numeración del RA del día por emisor (dos bajas
+      // simultáneas no pueden tomar el mismo correlativo).
+      await sequelize.query("SELECT pg_advisory_xact_lock(hashtext(:clave))", {
+        replacements: { clave: `RA:${emisor_id}:${fechaEmision}` },
+        transaction,
       });
-    }
+      const max = await ComunicacionBaja.max("correlativo", {
+        where: { emisor_id, fecha_emision: fechaEmision },
+        transaction,
+      });
+      const correlativo = (max || 0) + 1;
+      const nombreArchivo = `${emisor.ruc}-RA-${fechaEmision.replace(/-/g, "")}-${correlativo}`;
 
-    // Correlativo del RA del día
-    const raCount = await ComunicacionBaja.count({ where: { emisor_id, fecha_emision: new Date().toISOString().split("T")[0] } });
-    const correlativo = raCount + 1;
-    const fechaStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
-    const nombreArchivo = `${emisor.ruc}-RA-${fechaStr}-${correlativo}`;
+      const baja = await ComunicacionBaja.create({
+        emisor_id,
+        correlativo,
+        fecha_emision: fechaEmision,
+        fecha_referencia,
+        nombre_xml: nombreArchivo,
+        estado_ticket: "GE", // generada, aún no enviada
+      }, { transaction });
 
-    // Construir y firmar XML
-    const xmlSinFirmar = comunicacionBajaBuilder.build({
-      emisor,
-      comprobantes: comprobantesData,
-      fecha_referencia,
-      correlativo,
+      for (const c of comprobantesData) {
+        await ComunicacionBajaDetalle.create({
+          baja_id: baja.id,
+          comprobante_id: c.id,
+          tipo_comprobante_id: c.tipo_comprobante_id,
+          serie: c.serie,
+          correlativo: c.correlativo,
+          motivo_baja: c.motivo_baja,
+          estado_previo: c.estado_sunat,
+        }, { transaction });
+        await Comprobante.update({ estado_sunat: "EN_BAJA" }, { where: { id: c.id }, transaction });
+      }
+      return { baja, comprobantesData };
     });
 
-    const certPath = process.env.SUNAT_CERT_PATH;
-    const certPassword = process.env.SUNAT_CERT_PASSWORD;
-
-    if (!certPath || !certPassword) {
-      return res.status(500).json({ message: "Certificado digital no configurado" });
-    }
-
-    const xmlFirmado = xmlSigner.signXml(xmlSinFirmar, certPath, certPassword);
-    storageHelper.saveXml(nombreArchivo, xmlFirmado);
-
-    // Enviar a SUNAT (asíncrono)
-    const xmlBuffer = Buffer.from(xmlFirmado, "utf8");
+    // ── Firma y envío (fuera de la transacción: llamada externa) ──────────
     let ticket;
     try {
-      ticket = await sunatClient.sendSummary(xmlBuffer, nombreArchivo, emisor);
-    } catch (soapErr) {
+      const certPath = process.env.SUNAT_CERT_PATH;
+      const certPassword = process.env.SUNAT_CERT_PASSWORD;
+      if (!certPath || !certPassword) throw new Error("Certificado digital no configurado");
+
+      const xmlFirmado = xmlSigner.signXml(
+        comunicacionBajaBuilder.build({
+          emisor,
+          comprobantes: comprobantesData,
+          fecha_referencia,
+          correlativo: baja.correlativo,
+          fecha_emision: fechaEmision,
+        }),
+        certPath,
+        certPassword
+      );
+      storageHelper.saveXml(baja.nombre_xml, xmlFirmado);
+      ticket = await sunatClient.sendSummary(Buffer.from(xmlFirmado, "utf8"), baja.nombre_xml, emisor);
+    } catch (envioErr) {
+      const detalles = await ComunicacionBajaDetalle.findAll({ where: { baja_id: baja.id } });
+      await sequelize.transaction(async (transaction) => {
+        await revertirComprobantes(detalles, transaction);
+        await baja.update({
+          estado_ticket: "ER",
+          mensaje_sunat: String(envioErr.message).substring(0, 500),
+        }, { transaction });
+      });
       return res.status(422).json({
-        message: "Error al enviar Comunicación de Baja a SUNAT",
-        error: soapErr.message,
-      });
-    }
-
-    // Registrar la baja en BD
-    const baja = await ComunicacionBaja.create({
-      emisor_id,
-      correlativo,
-      fecha_emision: new Date().toISOString().split("T")[0],
-      fecha_referencia,
-      nombre_xml: nombreArchivo,
-      ticket,
-      estado_ticket: "PE",
-      fecha_envio: new Date(),
-    });
-
-    for (const c of comprobantesData) {
-      await ComunicacionBajaDetalle.create({
+        message: "No se pudo enviar la Comunicación de Baja a SUNAT; los comprobantes siguen vigentes",
+        error: envioErr.message,
         baja_id: baja.id,
-        comprobante_id: c.id,
-        tipo_comprobante_id: c.tipo_comprobante_id,
-        serie: c.serie,
-        correlativo: c.correlativo,
-        motivo_baja: c.motivo_baja,
       });
-      // Marcar como anulación en proceso
-      await Comprobante.update({ estado_sunat: "EN" }, { where: { id: c.id } });
     }
+
+    await baja.update({ ticket, estado_ticket: "PE", fecha_envio: new Date() });
+    registrar(req, "baja_enviada", {
+      entidad: "ComunicacionBaja",
+      entidad_id: baja.id,
+      despues: { ticket, comprobantes: comprobantesData.map((c) => ({ id: c.id, numero: `${c.serie}-${c.correlativo}`, motivo: c.motivo_baja })) },
+    });
 
     return res.status(201).json({
       baja_id: baja.id,
       ticket,
-      nombre_xml: nombreArchivo,
+      nombre_xml: baja.nombre_xml,
       comprobantes_incluidos: comprobantesData.length,
       message: `Comunicación de Baja enviada. Use GET /comunicacion-baja/${baja.id}/consultar-ticket para confirmar.`,
     });
   } catch (err) {
-    console.error("crearComunicacionBaja error:", err);
     return next(err);
   }
 };
 
 /**
  * GET /comunicacion-baja/:id/consultar-ticket
- * Consulta el resultado del ticket de la Comunicación de Baja.
+ * Consulta el resultado de la baja en SUNAT (ver ticketsSunat.service).
+ * El vigilante del worker también la consulta solo cada 15 min.
  */
 const consultarTicketBaja = async (req, res, next) => {
   try {
-    const baja = await ComunicacionBaja.findByPk(req.params.id, {
-      include: [{ model: Emisor }, { model: ComunicacionBajaDetalle }],
-    });
-
-    if (!baja) return res.status(404).json({ message: "Comunicación de Baja no encontrada" });
-
-    if (baja.estado_ticket === "PR") {
-      return res.json({
-        message: "Baja ya fue procesada",
-        estado_ticket: "PR",
-        codigo_sunat: baja.codigo_sunat,
-      });
-    }
-
-    const status = await sunatClient.getStatus(baja.ticket, baja.Emisor);
-
-    if (status.statusCode === "98") {
-      return res.json({ estado_ticket: "PE", message: "SUNAT aún procesando. Reintente pronto." });
-    }
-
-    if (status.statusCode === "0") {
-      let cdr = { responseCode: "0", accepted: true, description: "Aceptado", digestValue: "" };
-      if (status.content) {
-        try { cdr = cdrParser.parseCdr(status.content); } catch (_) {}
-      }
-
-      // Marcar comprobantes como anulados
-      for (const det of baja.ComunicacionBajaDetalles) {
-        await Comprobante.update({ estado_sunat: "AN" }, { where: { id: det.comprobante_id } });
-      }
-
-      await baja.update({
-        estado_ticket: "PR",
-        codigo_sunat: cdr.responseCode,
-        mensaje_sunat: cdr.description,
-      });
-
-      return res.json({
-        estado_ticket: "PR",
-        codigo_sunat: cdr.responseCode,
-        comprobantes_anulados: baja.ComunicacionBajaDetalles.length,
-      });
-    }
-
-    await baja.update({ estado_ticket: "ER", codigo_sunat: status.statusCode });
-    return res.json({ estado_ticket: "ER", statusCode: status.statusCode });
+    const r = await consultarBaja(req.params.id, req);
+    return res.status(r.httpStatus).json(r.body);
   } catch (err) {
     return next(err);
   }

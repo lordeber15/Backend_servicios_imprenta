@@ -1,0 +1,1218 @@
+{
+  "AperturaCajas": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "fecha_apertura": {
+      "tipo": "date",
+      "nulo": false
+    },
+    "hora_apertura": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "monto_apertura": {
+      "tipo": "numeric",
+      "nulo": false
+    },
+    "estado": {
+      "tipo": "enum_AperturaCajas_estado",
+      "nulo": false
+    },
+    "total_ventas": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "monto_cierre_fisico": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "diferencia": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "observacion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "total_efectivo": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "total_yape": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  },
+  "Cliente": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "tipo_documento_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "nrodoc": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "razon_social": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "direccion": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "Comprobante": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "emisor_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "tipo_comprobante_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "serie_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "serie": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "correlativo": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "forma_pago": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "fecha_emision": {
+      "tipo": "timestamptz",
+      "nulo": true
+    },
+    "fecha_vencimiento": {
+      "tipo": "timestamptz",
+      "nulo": true
+    },
+    "moneda_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "op_gravadas": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "op_exoneradas": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "op_inafectas": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "igv": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "total": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "cliente_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "estado_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "cdr_code": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "cdr_xml": {
+      "tipo": "text",
+      "nulo": true
+    },
+    "xml_path": {
+      "tipo": "text",
+      "nulo": true
+    },
+    "hash": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "enviado_at": {
+      "tipo": "timestamptz",
+      "nulo": true
+    },
+    "codigo_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "mensaje_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "hash_cpe": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "nombre_xml": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "fecha_envio_sunat": {
+      "tipo": "timestamptz",
+      "nulo": true
+    },
+    "intentos_envio": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "es_terminal": {
+      "tipo": "bool",
+      "nulo": true
+    },
+    "tipo_nota_id": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "descripcion_nota": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "comprobante_ref_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "op_gratuitas": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "icbper": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "metodo_pago": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "ComunicacionBaja": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "emisor_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "correlativo": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "fecha_emision": {
+      "tipo": "date",
+      "nulo": true
+    },
+    "fecha_referencia": {
+      "tipo": "date",
+      "nulo": true
+    },
+    "nombre_xml": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "ticket": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "estado_ticket": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "codigo_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "mensaje_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "fecha_envio": {
+      "tipo": "timestamptz",
+      "nulo": true
+    }
+  },
+  "ComunicacionBajaDetalle": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "baja_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "comprobante_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "tipo_comprobante_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "serie": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "correlativo": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "motivo_baja": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "Cuota": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "comprobante_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "numero": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "importe": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "fecha_vencimiento": {
+      "tipo": "timestamptz",
+      "nulo": true
+    },
+    "estado": {
+      "tipo": "bpchar",
+      "nulo": true
+    }
+  },
+  "Detalle": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "comprobante_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "item": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "unidad_id": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "producto_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "cantidad": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "valor_unitario": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "precio_unitario": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "igv": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "porcentaje_igv": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "valor_total": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "importe_total": {
+      "tipo": "numeric",
+      "nulo": true
+    }
+  },
+  "DetalleAlmanaques": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "cantidad": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "unidad": {
+      "tipo": "bpchar",
+      "nulo": false
+    },
+    "precioUnitario": {
+      "tipo": "float8",
+      "nulo": false
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "AlmanaqueId": {
+      "tipo": "int4",
+      "nulo": true
+    }
+  },
+  "DetalleGuia": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "guia_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "item": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "cantidad": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "unidad_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "numero_serie": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "codigo_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "DetalleTickets": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "cantidad": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "precioUnitario": {
+      "tipo": "float8",
+      "nulo": false
+    },
+    "subtotal": {
+      "tipo": "float8",
+      "nulo": false
+    },
+    "producto_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "es_servicio": {
+      "tipo": "bool",
+      "nulo": true
+    },
+    "adelanto": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "ticketId": {
+      "tipo": "int4",
+      "nulo": true
+    }
+  },
+  "Emisor": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "tipodoc": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "ruc": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "razon_social": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "nombre_comercial": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "direccion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "pais": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "departamento": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "provincia": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "distrito": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "ubigeo": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "usuario_sol": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "clave_sol": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "telefono": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "logo_url": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "client_id": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "client_secret": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "EnvioResumen": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "fecha_envio": {
+      "tipo": "timestamptz",
+      "nulo": true
+    },
+    "fecha_referencia": {
+      "tipo": "timestamptz",
+      "nulo": true
+    },
+    "correlativo": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "resumen": {
+      "tipo": "int2",
+      "nulo": true
+    },
+    "baja": {
+      "tipo": "int2",
+      "nulo": true
+    },
+    "nombrexml": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "mensaje_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "codigo_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "ticket": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "estado": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "emisor_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "tipo": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "estado_ticket": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "xml_firmado": {
+      "tipo": "text",
+      "nulo": true
+    }
+  },
+  "EnvioResumenDetalle": {
+    "iddetalle": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "envio_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "comprobante_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "condicion": {
+      "tipo": "int2",
+      "nulo": true
+    }
+  },
+  "GuiaRemision": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "emisor_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "tipo_guia": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "serie": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "correlativo": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "fecha_emision": {
+      "tipo": "date",
+      "nulo": true
+    },
+    "fecha_traslado": {
+      "tipo": "date",
+      "nulo": true
+    },
+    "motivo_traslado_id": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "descripcion_motivo": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "indicador_transborde": {
+      "tipo": "bool",
+      "nulo": true
+    },
+    "peso_bruto_total": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "unidad_peso_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "numero_bultos": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "numero_contenedor": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "codigo_puerto": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "modalidad_traslado": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "transportista_ruc": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "transportista_razon_social": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "mtc_numero": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "conductor_nrodoc": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "conductor_tipo_doc": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "conductor_nombres": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "conductor_licencia": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "vehiculo_placa": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "destinatario_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "ubigeo_partida": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "direccion_partida": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "ubigeo_llegada": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "direccion_llegada": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "comprobante_rel_id": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "estado_sunat": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "codigo_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "mensaje_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "hash_cpe": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "nombre_xml": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "fecha_envio_sunat": {
+      "tipo": "timestamptz",
+      "nulo": true
+    },
+    "intentos_envio": {
+      "tipo": "int4",
+      "nulo": true
+    }
+  },
+  "Moneda": {
+    "id": {
+      "tipo": "bpchar",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "Producto": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "nombre": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "valor_unitario": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "tipo_afectacion_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "unidad_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "codigo_sunat": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "codigo_barras": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "afecto_icbper": {
+      "tipo": "int2",
+      "nulo": true
+    },
+    "factor_icbper": {
+      "tipo": "numeric",
+      "nulo": true
+    },
+    "stock": {
+      "tipo": "int4",
+      "nulo": true
+    },
+    "es_servicio": {
+      "tipo": "bool",
+      "nulo": true
+    }
+  },
+  "Serie": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "tipo_comprobante_id": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "serie": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "correlativo": {
+      "tipo": "int4",
+      "nulo": true
+    }
+  },
+  "TablaParametrica": {
+    "tipo": {
+      "tipo": "bpchar",
+      "nulo": false
+    },
+    "codigo": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "Tickets": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "cliente": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "tipoDocumento": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "numeroDocumento": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "direccion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "fechaEmision": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "precioTotal": {
+      "tipo": "float8",
+      "nulo": false
+    },
+    "metodo_pago": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "monto_recibido": {
+      "tipo": "float8",
+      "nulo": true
+    },
+    "vuelto": {
+      "tipo": "float8",
+      "nulo": true
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  },
+  "TipoAfectacion": {
+    "id": {
+      "tipo": "bpchar",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "letra": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "codigo": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "nombre": {
+      "tipo": "bpchar",
+      "nulo": true
+    },
+    "tipo": {
+      "tipo": "bpchar",
+      "nulo": true
+    }
+  },
+  "TipoComprobante": {
+    "id": {
+      "tipo": "bpchar",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "TipoDocumento": {
+    "id": {
+      "tipo": "bpchar",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "Unidad": {
+    "id": {
+      "tipo": "bpchar",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    }
+  },
+  "almanaque": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "cliente": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "tipoDocumento": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "numeroDocumento": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "direccion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "telefono": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "fechaEmision": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "aCuenta": {
+      "tipo": "float8",
+      "nulo": false
+    },
+    "precioTotal": {
+      "tipo": "float8",
+      "nulo": false
+    },
+    "tipo": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "impreso": {
+      "tipo": "bool",
+      "nulo": false
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  },
+  "egresos": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "monto": {
+      "tipo": "numeric",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "fecha": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "metodo": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  },
+  "formatos": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "key": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "nombre": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  },
+  "ingresos": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "monto": {
+      "tipo": "numeric",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "fecha": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "metodo": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  },
+  "logins": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "usuario": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "password": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "cargo": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "image_url": {
+      "tipo": "varchar",
+      "nulo": true
+    },
+    "activo": {
+      "tipo": "bool",
+      "nulo": false
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  },
+  "servicios": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "nombre": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "cantidad": {
+      "tipo": "numeric",
+      "nulo": false
+    },
+    "descripcion": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "estado": {
+      "tipo": "varchar",
+      "nulo": false
+    },
+    "total": {
+      "tipo": "numeric",
+      "nulo": false
+    },
+    "acuenta": {
+      "tipo": "numeric",
+      "nulo": false
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  },
+  "usuario_formatos": {
+    "id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "usuario_id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "formato_id": {
+      "tipo": "int4",
+      "nulo": false
+    },
+    "createdAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    },
+    "updatedAt": {
+      "tipo": "timestamptz",
+      "nulo": false
+    }
+  }
+}

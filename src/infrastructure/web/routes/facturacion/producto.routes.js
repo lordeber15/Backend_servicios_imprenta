@@ -6,6 +6,8 @@
  */
 
 const { Router } = require("express");
+const ProductoModel = require("../../../database/models/facturacion/producto");
+const soloCampos = require("../../middleware/soloCampos");
 const {
   getProducto,
   createProducto,
@@ -50,7 +52,7 @@ const router = Router();
  *         description: Producto creado
  */
 router.get("/producto", getProducto);
-router.post("/producto", createProducto);
+router.post("/producto", soloCampos(ProductoModel), createProducto);
 
 /**
  * @swagger
@@ -87,6 +89,6 @@ router.post("/producto", createProducto);
  *         description: Producto actualizado
  */
 router.delete("/producto/:id", deleteProducto);
-router.put("/producto/:id", updateProducto);
+router.put("/producto/:id", soloCampos(ProductoModel), updateProducto);
 
 module.exports = router;

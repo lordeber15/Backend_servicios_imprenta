@@ -1,4 +1,6 @@
 const { Router } = require("express");
+const Tabla_parametricaModel = require("../../../database/models/facturacion/tablaparametrica");
+const soloCampos = require("../../middleware/soloCampos");
 const {
   getTabla_parametrica,
   createTabla_parametrica,
@@ -8,8 +10,8 @@ const {
 const router = Router();
 
 router.get("/tabla_parametrica", getTabla_parametrica);
-router.post("/tabla_parametrica", createTabla_parametrica);
+router.post("/tabla_parametrica", soloCampos(Tabla_parametricaModel), createTabla_parametrica);
 router.delete("/tabla_parametrica/:id", deleteTabla_parametrica);
-router.put("/tabla_parametrica/:id", updateTabla_parametrica);
+router.put("/tabla_parametrica/:id", soloCampos(Tabla_parametricaModel), updateTabla_parametrica);
 
 module.exports = router;

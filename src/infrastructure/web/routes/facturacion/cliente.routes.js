@@ -6,6 +6,8 @@
  */
 
 const { Router } = require("express");
+const validar = require("../../middleware/validar");
+const { clienteSchema } = require("../../../../application/validation/cliente.schema");
 const {
   getCliente,
   createCliente,
@@ -68,7 +70,7 @@ const router = Router();
  */
 router.get("/cliente/buscar/:nrodoc", buscarCliente);
 router.get("/cliente", getCliente);
-router.post("/cliente", createCliente);
+router.post("/cliente", validar(clienteSchema), createCliente);
 
 /**
  * @swagger
@@ -119,7 +121,7 @@ router.delete("/cliente/:id", deleteCliente);
  *       200:
  *         description: Datos del cliente actualizados exitosamente.
  */
-router.put("/cliente/:id", updateCliente);
+router.put("/cliente/:id", validar(clienteSchema), updateCliente);
 
 
 module.exports = router;
