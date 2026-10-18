@@ -1,0 +1,189 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`XML UBL de boleta/factura snapshot: cualquier cambio en la estructura del XML se revisa a propósito 1`] = `
+"<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+  xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+
+  <ext:UBLExtensions>
+    <ext:UBLExtension>
+      <ext:ExtensionContent/>
+    </ext:UBLExtension>
+  </ext:UBLExtensions>
+
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>2.0</cbc:CustomizationID>
+  <cbc:ID>B001-00000042</cbc:ID>
+  <cbc:IssueDate>2026-01-10</cbc:IssueDate>
+  <cbc:IssueTime>00:00:00</cbc:IssueTime>
+  <cbc:InvoiceTypeCode
+    listAgencyName="PE:SUNAT"
+    listName="Tipo de Documento"
+    listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo01"
+    listID="0101">03</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode listID="ISO 4217 Alpha" listName="Currency" listAgencyName="United Nations Economic Commission for Europe">PEN</cbc:DocumentCurrencyCode>
+  <cbc:LineCountNumeric>2</cbc:LineCountNumeric>
+
+  <cac:Signature>
+    <cbc:ID>IDSignKG</cbc:ID>
+    <cac:SignatoryParty>
+      <cac:PartyIdentification>
+        <cbc:ID>20000000001</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name><![CDATA[IMPRENTA DE PRUEBA S.A.C.]]></cbc:Name>
+      </cac:PartyName>
+    </cac:SignatoryParty>
+    <cac:DigitalSignatureAttachment>
+      <cac:ExternalReference>
+        <cbc:URI>#IDSignKG</cbc:URI>
+      </cac:ExternalReference>
+    </cac:DigitalSignatureAttachment>
+  </cac:Signature>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20000000001</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name><![CDATA[IMPRENTA]]></cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:ID>150101</cbc:ID>
+        <cbc:StreetName><![CDATA[Av. Siempre Viva 123]]></cbc:StreetName>
+        <cbc:CitySubdivisionName>LIMA</cbc:CitySubdivisionName>
+        <cbc:CityName>LIMA</cbc:CityName>
+        <cbc:CountrySubentity>LIMA</cbc:CountrySubentity>
+        <cac:Country>
+          <cbc:IdentificationCode>PE</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName><![CDATA[IMPRENTA DE PRUEBA S.A.C.]]></cbc:RegistrationName>
+        <cac:RegistrationAddress>
+          <cbc:AddressTypeCode>0000</cbc:AddressTypeCode>
+        </cac:RegistrationAddress>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="0" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">0</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName><![CDATA[CLIENTE VARIOS]]></cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+
+  <cac:PaymentTerms>
+    <cbc:ID>FormaPago</cbc:ID>
+    <cbc:PaymentMeansID>Contado</cbc:PaymentMeansID>
+  </cac:PaymentTerms>
+
+  
+
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="PEN">9.92</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="PEN">55.08</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="PEN">9.92</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cac:TaxScheme>
+          <cbc:ID>1000</cbc:ID>
+          <cbc:Name>IGV</cbc:Name>
+          <cbc:TaxTypeCode>VAT</cbc:TaxTypeCode>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="PEN">55.08</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="PEN">55.08</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="PEN">65.00</cbc:TaxInclusiveAmount>
+    <cbc:AllowanceTotalAmount currencyID="PEN">0.00</cbc:AllowanceTotalAmount>
+    <cbc:ChargeTotalAmount currencyID="PEN">0.00</cbc:ChargeTotalAmount>
+    <cbc:PayableAmount currencyID="PEN">65.00</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="NIU">100.000000</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="PEN">12.71</cbc:LineExtensionAmount>
+    <cac:PricingReference>
+      <cac:AlternativeConditionPrice>
+        <cbc:PriceAmount currencyID="PEN">0.150000</cbc:PriceAmount>
+        <cbc:PriceTypeCode>01</cbc:PriceTypeCode>
+      </cac:AlternativeConditionPrice>
+    </cac:PricingReference>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="PEN">2.29</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="PEN">12.71</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="PEN">2.29</cbc:TaxAmount>
+        <cac:TaxCategory>
+          <cbc:Percent>18.00</cbc:Percent>
+          <cbc:TaxExemptionReasonCode>10</cbc:TaxExemptionReasonCode>
+          <cac:TaxScheme>
+            <cbc:ID>1000</cbc:ID>
+            <cbc:Name>IGV</cbc:Name>
+            <cbc:TaxTypeCode>VAT</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Description><![CDATA[Tarjetas de presentación]]></cbc:Description>
+      <cac:SellersItemIdentification>
+        <cbc:ID>1</cbc:ID>
+      </cac:SellersItemIdentification>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="PEN">0.127119</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+<cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="NIU">1.000000</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="PEN">42.37</cbc:LineExtensionAmount>
+    <cac:PricingReference>
+      <cac:AlternativeConditionPrice>
+        <cbc:PriceAmount currencyID="PEN">50.000000</cbc:PriceAmount>
+        <cbc:PriceTypeCode>01</cbc:PriceTypeCode>
+      </cac:AlternativeConditionPrice>
+    </cac:PricingReference>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="PEN">7.63</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="PEN">42.37</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="PEN">7.63</cbc:TaxAmount>
+        <cac:TaxCategory>
+          <cbc:Percent>18.00</cbc:Percent>
+          <cbc:TaxExemptionReasonCode>10</cbc:TaxExemptionReasonCode>
+          <cac:TaxScheme>
+            <cbc:ID>1000</cbc:ID>
+            <cbc:Name>IGV</cbc:Name>
+            <cbc:TaxTypeCode>VAT</cbc:TaxTypeCode>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Description><![CDATA[Diseño]]></cbc:Description>
+      <cac:SellersItemIdentification>
+        <cbc:ID>2</cbc:ID>
+      </cac:SellersItemIdentification>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="PEN">42.372881</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+</Invoice>"
+`;

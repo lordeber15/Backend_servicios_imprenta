@@ -83,3 +83,10 @@ Quedan alertas en dependencias de build (vite/esbuild/rollup) que **no se envía
 - `GET /sunat/pendientes` alimenta el panel del dashboard. `GET /health/ready` revisa BD y Redis (503 si fallan) y es el healthcheck del contenedor. El worker publica un latido (Redis y `/tmp/latido`) para su healthcheck.
 - `GET /health` ya no expone memoria ni configuración. `GET /health/cors` solo existe fuera de producción.
 - Las consultas de ticket de baja y de resumen pasan a `ticketsSunat.service.js`. Un resumen rechazado queda RR (antes PR).
+
+## Fase 8 (plan de mejoras) — pruebas y CI
+
+- Pruebas aisladas (`TESTS.md`): red sin Internet, BD/Redis desechables, certificado autofirmado y secretos aleatorios.
+- **XML**: texto del usuario escapado (`xmlBuilders/xmlTexto.js`). Antes un `]]>` en una descripción cerraba el CDATA e inyectaba elementos en el XML que luego se firma; varios campos de la guía (placa, licencia, contenedor, número de serie, MTC) iban sin escapar. La línea de una NC sin producto ya no queda con la descripción vacía.
+- **Dependencias**: `npm audit fix` en ambos repos (incluye `proxy-addr`, crítica: falsificación de IP con trust proxy) y `puppeteer` → `puppeteer-core` 25 (sin la cadena de descarga de navegadores). Las restantes están justificadas en `audit-excepciones.json` con fecha de revisión.
+- CI con gitleaks, auditoría, pruebas y verificación de la imagen.

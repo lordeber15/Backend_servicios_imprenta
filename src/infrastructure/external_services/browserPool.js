@@ -12,15 +12,17 @@
  *   await page.close(); // Solo cerrar la página, NO el browser
  */
 
-const puppeteer = require("puppeteer");
+// puppeteer-core: usa el Chromium del sistema (apk) y no trae la cadena de
+// descarga de navegadores (@puppeteer/browsers, extract-zip, proxy-agent…).
+const puppeteer = require("puppeteer-core");
 
 let browserInstance = null;
 
 async function getBrowser() {
   if (!browserInstance || !browserInstance.connected) {
     browserInstance = await puppeteer.launch({
-      headless: "new",
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
   }

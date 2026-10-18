@@ -1,0 +1,66 @@
+# PRUEBAS AISLADAS (local y CI)
+#
+#   docker compose -f docker-compose.test.yml run --rm --build pruebas
+#   docker compose -f docker-compose.test.yml run --rm pruebas node tests/integracion/ejecutar.js caja
+#   docker compose -f docker-compose.test.yml down -v
+#
+# Garantías:
+# - Red `aislada` con internal: true: los contenedores NO tienen salida a
+#   Internet. Ninguna prueba puede llegar a SUNAT (ni beta ni producción).
+# - Postgres y Redis propios, en memoria (tmpfs): nada toca la BD local.
+# - Certificado autofirmado generado al vuelo: nunca se usa el real.
+# - Sin volumen de storage: los XML de prueba mueren con el contenedor.
+name: imprenta-pruebas
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: prueba
+      POSTGRES_PASSWORD: prueba
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prueba"]
+      interval: 2s
+      retries: 30
+    networks: [aislada]
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 30
+    networks: [aislada]
+
+  pruebas:
+    build:
+      context: .
+      target: test
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      NODE_ENV: production          # se prueba el comportamiento de producción
+      DB_HOST: postgres
+      DB_USER: prueba
+      DB_PASSWORD: prueba
+      REDIS_HOST: redis
+      # JWT_SECRET y DATA_ENCRYPTION_KEY: aleatorios en cada corrida (tests/integracion/ejecutar.js).
+      ALLOWED_ORIGINS: http://localhost:8080
+      SUNAT_ENV: beta
+      # Inalcanzables a propósito (además la red no tiene salida).
+      SUNAT_WS_FACTURAS: http://127.0.0.1:9/sunat
+      SUNAT_WS_RESUMEN: http://127.0.0.1:9/sunat
+      SUNAT_WS_GUIAS: http://127.0.0.1:9/sunat
+      SEED_ADMIN_PASSWORD: ""
+    volumes:
+      - ./tests:/app/tests:ro
+    command: ["sh", "-c", "npx jest --ci && node tests/integracion/ejecutar.js"]
+    networks: [aislada]
+
+networks:
+  aislada:
+    internal: true

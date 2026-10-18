@@ -45,3 +45,5 @@ restore_backup.sh
 
 # Pruebas (se montan al ejecutarlas, no van en la imagen)
 tests
+.github
+docker-compose.test.yml

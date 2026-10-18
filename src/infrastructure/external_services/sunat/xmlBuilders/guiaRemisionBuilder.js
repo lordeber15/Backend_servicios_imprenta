@@ -1,3 +1,4 @@
+const { esc, cdata } = require("./xmlTexto");
 /**
  * GENERADOR DE XML: GUÍA DE REMISIÓN
  * 
@@ -45,12 +46,12 @@ function build(guia) {
     g.modalidad_traslado === "01" && g.transportista_ruc
       ? `<cac:CarrierParty>
         <cac:PartyIdentification>
-          <cbc:ID schemeID="6">${g.transportista_ruc}</cbc:ID>
+          <cbc:ID schemeID="6">${esc(g.transportista_ruc)}</cbc:ID>
         </cac:PartyIdentification>
         <cac:PartyName>
-          <cbc:Name><![CDATA[${g.transportista_razon_social || ""}]]></cbc:Name>
+          <cbc:Name>${cdata(g.transportista_razon_social || "")}</cbc:Name>
         </cac:PartyName>
-        ${g.mtc_numero ? `<cac:PartyLegalEntity><cbc:RegistrationName>${g.mtc_numero}</cbc:RegistrationName></cac:PartyLegalEntity>` : ""}
+        ${g.mtc_numero ? `<cac:PartyLegalEntity><cbc:RegistrationName>${esc(g.mtc_numero)}</cbc:RegistrationName></cac:PartyLegalEntity>` : ""}
       </cac:CarrierParty>`
       : "";
 
@@ -58,9 +59,9 @@ function build(guia) {
   const conductorXml =
     g.conductor_nrodoc
       ? `<cac:DriverPerson>
-        <cbc:ID schemeID="${g.conductor_tipo_doc || "1"}">${g.conductor_nrodoc}</cbc:ID>
-        <cbc:FirstName><![CDATA[${g.conductor_nombres || ""}]]></cbc:FirstName>
-        <cbc:JobTitle>${g.conductor_licencia || ""}</cbc:JobTitle>
+        <cbc:ID schemeID="${esc(g.conductor_tipo_doc || "1")}">${esc(g.conductor_nrodoc)}</cbc:ID>
+        <cbc:FirstName>${cdata(g.conductor_nombres || "")}</cbc:FirstName>
+        <cbc:JobTitle>${esc(g.conductor_licencia)}</cbc:JobTitle>
       </cac:DriverPerson>`
       : "";
 
@@ -84,7 +85,7 @@ function build(guia) {
   <cbc:IssueDate>${fechaEmision}</cbc:IssueDate>
   <cbc:IssueTime>00:00:00</cbc:IssueTime>
   <cbc:DespatchAdviceTypeCode listAgencyName="PE:SUNAT" listName="Tipo de Documento" listID="0">${g.tipo_guia}</cbc:DespatchAdviceTypeCode>
-  <cbc:Note><![CDATA[${g.descripcion_motivo || "Traslado de bienes"}]]></cbc:Note>
+  <cbc:Note>${cdata(g.descripcion_motivo || "Traslado de bienes")}</cbc:Note>
 
   <cac:Signature>
     <cbc:ID>IDSignKG</cbc:ID>
@@ -93,7 +94,7 @@ function build(guia) {
         <cbc:ID>${emisor.ruc}</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyName>
-        <cbc:Name><![CDATA[${emisor.razon_social}]]></cbc:Name>
+        <cbc:Name>${cdata(emisor.razon_social)}</cbc:Name>
       </cac:PartyName>
     </cac:SignatoryParty>
     <cac:DigitalSignatureAttachment>
@@ -111,7 +112,7 @@ function build(guia) {
         <cbc:ID schemeID="6">${emisor.ruc}</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName><![CDATA[${emisor.razon_social}]]></cbc:RegistrationName>
+        <cbc:RegistrationName>${cdata(emisor.razon_social)}</cbc:RegistrationName>
       </cac:PartyLegalEntity>
     </cac:Party>
   </cac:DespatchSupplierParty>
@@ -119,10 +120,10 @@ function build(guia) {
   <cac:DeliveryCustomerParty>
     <cac:Party>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="${mapTipoDoc(destinatario.tipo_documento_id)}">${destinatario.nrodoc || ""}</cbc:ID>
+        <cbc:ID schemeID="${mapTipoDoc(destinatario.tipo_documento_id)}">${esc(destinatario.nrodoc)}</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyLegalEntity>
-        <cbc:RegistrationName><![CDATA[${destinatario.razon_social || ""}]]></cbc:RegistrationName>
+        <cbc:RegistrationName>${cdata(destinatario.razon_social || "")}</cbc:RegistrationName>
       </cac:PartyLegalEntity>
     </cac:Party>
   </cac:DeliveryCustomerParty>
@@ -130,11 +131,11 @@ function build(guia) {
   <cac:Shipment>
     <cbc:ID>SUNAT_Envio</cbc:ID>
     <cbc:HandlingCode listAgencyName="PE:SUNAT" listName="Motivo de Traslado" listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo20">${g.motivo_traslado_id || "01"}</cbc:HandlingCode>
-    <cbc:Information><![CDATA[${g.descripcion_motivo || "Venta"}]]></cbc:Information>
+    <cbc:Information>${cdata(g.descripcion_motivo || "Venta")}</cbc:Information>
     <cbc:GrossWeightMeasure unitCode="${g.unidad_peso_id || "KGM"}">${parseDecimal(g.peso_bruto_total).toFixed(3)}</cbc:GrossWeightMeasure>
     <cbc:TotalTransportHandlingUnitQuantity>${g.numero_bultos || 1}</cbc:TotalTransportHandlingUnitQuantity>
     ${g.indicador_transborde ? "<cbc:SplitConsignmentIndicator>true</cbc:SplitConsignmentIndicator>" : ""}
-    ${g.numero_contenedor ? `<cbc:ShippingMarks>${g.numero_contenedor}</cbc:ShippingMarks>` : ""}
+    ${g.numero_contenedor ? `<cbc:ShippingMarks>${esc(g.numero_contenedor)}</cbc:ShippingMarks>` : ""}
 
     <cac:ShipmentStage>
       <cbc:TransportModeCode>${g.modalidad_traslado || "02"}</cbc:TransportModeCode>
@@ -143,19 +144,19 @@ function build(guia) {
       </cac:TransitPeriod>
       ${transportistaXml}
       ${conductorXml}
-      ${g.vehiculo_placa ? `<cac:TransportMeans><cac:RoadTransport><cbc:LicensePlateID>${g.vehiculo_placa}</cbc:LicensePlateID></cac:RoadTransport></cac:TransportMeans>` : ""}
+      ${g.vehiculo_placa ? `<cac:TransportMeans><cac:RoadTransport><cbc:LicensePlateID>${esc(g.vehiculo_placa)}</cbc:LicensePlateID></cac:RoadTransport></cac:TransportMeans>` : ""}
     </cac:ShipmentStage>
 
     <cac:Delivery>
       <cac:DeliveryAddress>
         <cbc:ID>${g.ubigeo_llegada || "000000"}</cbc:ID>
-        <cbc:StreetName><![CDATA[${g.direccion_llegada || ""}]]></cbc:StreetName>
+        <cbc:StreetName>${cdata(g.direccion_llegada || "")}</cbc:StreetName>
       </cac:DeliveryAddress>
     </cac:Delivery>
 
     <cac:OriginAddress>
       <cbc:ID>${g.ubigeo_partida || "000000"}</cbc:ID>
-      <cbc:StreetName><![CDATA[${g.direccion_partida || ""}]]></cbc:StreetName>
+      <cbc:StreetName>${cdata(g.direccion_partida || "")}</cbc:StreetName>
     </cac:OriginAddress>
   </cac:Shipment>
 
@@ -173,10 +174,10 @@ function buildLinea(d, numero) {
     <cac:OrderLineReference>
       <cbc:LineID>${numero}</cbc:LineID>
     </cac:OrderLineReference>
-    ${d.numero_serie ? `<cbc:Note>${d.numero_serie}</cbc:Note>` : ""}
+    ${d.numero_serie ? `<cbc:Note>${esc(d.numero_serie)}</cbc:Note>` : ""}
     <cac:Item>
-      <cbc:Description><![CDATA[${d.descripcion || ""}]]></cbc:Description>
-      ${d.codigo_sunat ? `<cac:SellersItemIdentification><cbc:ID>${d.codigo_sunat}</cbc:ID></cac:SellersItemIdentification>` : ""}
+      <cbc:Description>${cdata(d.descripcion || "")}</cbc:Description>
+      ${d.codigo_sunat ? `<cac:SellersItemIdentification><cbc:ID>${esc(d.codigo_sunat)}</cbc:ID></cac:SellersItemIdentification>` : ""}
     </cac:Item>
   </cac:DespatchLine>`;
 }

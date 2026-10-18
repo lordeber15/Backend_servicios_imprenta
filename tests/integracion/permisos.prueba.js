@@ -142,6 +142,7 @@ function rutasExpress() {
   ok(r.status === 200 && /^\/uploads\/empresa\/logo-[0-9a-f]{32}\.png$/.test(r.body.logo_url) && fs.existsSync(archivo),
     `PNG real → guardado con nombre aleatorio (${r.body?.logo_url})`);
   if (archivo) fs.rmSync(archivo, { force: true });
+  fs.mkdirSync("/app/src/uploads/profiles", { recursive: true });
   const antes = fs.readdirSync("/app/src/uploads/profiles").length;
   form = new FormData();
   form.append("image", new Blob(["<html><script>alert(1)</script></html>"], { type: "image/png" }), "foto.png");
