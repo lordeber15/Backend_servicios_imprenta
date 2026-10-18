@@ -12,7 +12,7 @@ require('../infrastructure/database/models/facturacion/asociation');
 
 const { CODIGOS_TERMINAL } = require('../infrastructure/external_services/sunat/sunatCodes');
 
-const PLAZO_DIAS = 3;
+const { vencido, plazoDias } = require('../application/plazosSunat');
 
 const { resolverEstadoCdr } = cdrParser;
 
@@ -94,11 +94,10 @@ const worker = new Worker('sunat-envio', async (job) => {
     return;
   }
 
-  // 2. Verificar plazo de 3 días
-  const diasDesdeEmision = (Date.now() - new Date(comprobante.fecha_emision).getTime()) / 86_400_000;
-  if (diasDesdeEmision > PLAZO_DIAS) {
-    await comprobante.update({ estado_sunat: 'FUERA_PLAZO' });
-    console.warn(`[Worker] Comprobante ${comprobante_id} FUERA_PLAZO (${Math.floor(diasDesdeEmision)} días).`);
+  // 2. Verificar plazo SUNAT (días calendario de Lima, según tipo: ver plazosSunat)
+  if (vencido(comprobante.fecha_emision, comprobante.tipo_comprobante_id, comprobante.serie)) {
+    await comprobante.update({ estado_sunat: 'FUERA_PLAZO', es_terminal: true });
+    console.warn(`[Worker] Comprobante ${comprobante_id} FUERA_PLAZO (plazo ${plazoDias(comprobante.tipo_comprobante_id, comprobante.serie)} días).`);
     return;
   }
 

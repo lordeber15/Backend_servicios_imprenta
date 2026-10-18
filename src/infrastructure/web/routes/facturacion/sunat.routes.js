@@ -152,4 +152,18 @@ router.get("/comprobante/:id/cdr", authenticate, descargarCdr);
 // Utilidad de recuperación: reescribe estados de comprobantes en masa → solo admin.
 router.post("/admin/recuperar-estados", authenticate, authorize("Administrador"), recuperarEstados);
 
+/**
+ * GET /sunat/pendientes — lo que falta resolver con SUNAT (contador del dashboard):
+ * pendientes con días de plazo, rechazados, fuera de plazo, bajas, guías,
+ * estado del worker y del certificado.
+ */
+router.get("/sunat/pendientes", authenticate, async (_req, res, next) => {
+  try {
+    res.set("Cache-Control", "no-store");
+    res.json(await require("../../../../application/services/pendientesSunat.service").pendientesSunat());
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

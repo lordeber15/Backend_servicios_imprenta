@@ -75,3 +75,11 @@ Quedan alertas en dependencias de build (vite/esbuild/rollup) que **no se envía
 - **Mass assignment**: `soloCampos(Model)` en los CRUD de catálogos (sin id, timestamps ni el correlativo de la serie) y en servicios; zod en clientes, emisor, guías y formatos. Se eliminaron las escrituras crudas de `envio_resumen`, `envio_resumen_detalle` y `cuota`.
 - **Guías**: `POST /guia/emision` guarda cabecera e ítems en una transacción (antes 3 peticiones sueltas).
 - `AUTH_ENFORCE=false` se ignora en producción. API y worker no arrancan en producción sin `DATA_ENCRYPTION_KEY`.
+
+## Fase 7 (plan de mejoras) — operación SUNAT
+
+- **Vigilante** (`src/workers/vigilanteSunat.js`, en el worker, cada 15 min vía `upsertJobScheduler`): reencola comprobantes sin resolver cuyo job ya no está en la cola (regenera el XML si falta), marca FUERA_PLAZO lo vencido, consulta tickets de bajas y resúmenes, reencola consultas de guías y avisa del certificado. Tope de reintentos: `VIGILANTE_MAX_INTENTOS`.
+- **Plazos** (`src/application/plazosSunat.js`): días calendario de Lima, D+3 para facturas y sus notas, D+5 para boletas y sus notas. Antes eran 3 días para todo, medidos en horas desde la medianoche UTC.
+- `GET /sunat/pendientes` alimenta el panel del dashboard. `GET /health/ready` revisa BD y Redis (503 si fallan) y es el healthcheck del contenedor. El worker publica un latido (Redis y `/tmp/latido`) para su healthcheck.
+- `GET /health` ya no expone memoria ni configuración. `GET /health/cors` solo existe fuera de producción.
+- Las consultas de ticket de baja y de resumen pasan a `ticketsSunat.service.js`. Un resumen rechazado queda RR (antes PR).

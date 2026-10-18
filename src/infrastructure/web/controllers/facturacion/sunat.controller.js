@@ -152,7 +152,7 @@ const reenviarComprobante = async (req, res, next) => {
     }
 
     if (comprobante.estado_sunat === "FUERA_PLAZO") {
-      return res.status(400).json({ message: "El comprobante está fuera del plazo permitido (>3 días)" });
+      return res.status(400).json({ message: "El comprobante está fuera del plazo de envío a SUNAT" });
     }
 
     // Irrecuperables: numeración ya registrada, comprobante de baja, etc.

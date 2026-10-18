@@ -52,6 +52,7 @@ const REGLAS = [
   ["PUT", "/comprobante/:id", A],
   ["DELETE", "/comprobante/:id", A],
   ["POST", "/admin/recuperar-estados", A],
+  ["GET", "/sunat/pendientes", T],
   ["GET", "/detalle", T],
   ["PUT", "/detalle/:id", A],
   ["DELETE", "/detalle/:id", A],

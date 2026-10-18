@@ -30,13 +30,14 @@ async function main() {
   // Los Worker de BullMQ empiezan a consumir al instanciarse (al hacer require).
   const sunatWorker = require("./src/workers/sunatWorker");
   const guiaWorker = require("./src/workers/guiaWorker");
-  console.log("[Worker] Workers activos: sunat-envio (concurrency 3), sunat-guia (concurrency 2)");
+  const vigilante = await require("./src/workers/vigilanteSunat").iniciar();
+  console.log("[Worker] Workers activos: sunat-envio (concurrency 3), sunat-guia (concurrency 2), sunat-vigilante (cada 15 min)");
 
   async function shutdown(signal) {
     console.log(`\n[Worker] ${signal} recibido. Cerrando...`);
     try {
       // close() espera a que terminen los jobs en curso antes de salir.
-      await Promise.all([sunatWorker.close(), guiaWorker.close()]);
+      await Promise.all([sunatWorker.close(), guiaWorker.close(), vigilante.close()]);
       await sequelize.close();
     } catch (err) {
       console.error("[Worker] Error durante shutdown:", err);

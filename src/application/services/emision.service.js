@@ -37,21 +37,15 @@ const { ValidationError, NotFoundError, ConflictError } = require("../../infrast
 // SUNAT exige identificar al comprador en boletas por encima de este monto.
 const BOLETA_MONTO_SIN_DOC = 700;
 // Mismo plazo que aplica el worker (FUERA_PLAZO): no tiene sentido crear algo que no se podrá enviar.
-const PLAZO_DIAS = 3;
+const { vencido, plazoDias } = require("../plazosSunat");
 const ESTADOS_REF_VALIDOS = ["ACEPTADO", "OBSERVADO"];
 const ESTADOS_NO_CUENTAN = ["RECHAZADO", "FUERA_PLAZO", "ANULADO"];
 
-const restarDias = (fecha, dias) => {
-  const d = new Date(`${fecha}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - dias);
-  return d.toISOString().slice(0, 10);
-};
-
-function validarFecha(fecha) {
+function validarFecha(fecha, tipo, serie) {
   const hoy = hoyLocal();
   if (fecha > hoy) throw new ValidationError("La fecha de emisión no puede ser futura");
-  if (fecha < restarDias(hoy, PLAZO_DIAS)) {
-    throw new ValidationError(`La fecha de emisión no puede tener más de ${PLAZO_DIAS} días de antigüedad`);
+  if (vencido(fecha, tipo, serie, hoy)) {
+    throw new ValidationError(`La fecha de emisión supera el plazo de envío a SUNAT (${plazoDias(tipo, serie)} días)`);
   }
 }
 
@@ -115,7 +109,6 @@ async function validarNota(d, serie, totalNota, transaction) {
  */
 async function emitir(d) {
   const fecha = d.fecha_emision || hoyLocal();
-  validarFecha(fecha);
 
   const lineas = d.items.map(calcularLinea);
   const totales = calcularTotales(lineas);
@@ -138,6 +131,8 @@ async function emitir(d) {
     if (serie.tipo_comprobante_id !== d.tipo_comprobante_id) {
       throw new ValidationError(`La serie ${serie.serie} no corresponde al tipo de comprobante ${d.tipo_comprobante_id}`);
     }
+    // El plazo depende del tipo y de la serie (una NC sobre boleta usa serie B…).
+    validarFecha(fecha, d.tipo_comprobante_id, serie.serie);
 
     let clienteId = null;
     let ref = null;

@@ -56,7 +56,7 @@ const boleta = (extra = {}) => ({
   e = await espera(() => emitir(parse(boleta({ serie_id: 2 }))));
   ok(e && /no corresponde/.test(e.message), `serie de otro tipo: ${e?.message}`);
   e = await espera(() => emitir(parse(boleta({ fecha_emision: "2020-01-01" }))));
-  ok(e && /antigüedad/.test(e.message), `fecha fuera de plazo: ${e?.message}`);
+  ok(e && /plazo de envío/.test(e.message), `fecha fuera de plazo: ${e?.message}`);
 
   console.log("4) Rollback: un error a mitad de la transacción no deja nada");
   const antes = await Comprobante.count();

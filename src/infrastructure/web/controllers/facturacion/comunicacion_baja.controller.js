@@ -16,22 +16,10 @@ const cdrParser = require("../../../external_services/sunat/cdrParser");
 const storageHelper = require("../../../external_services/sunat/storageHelper");
 const { hoyLocal } = require("../../../utils/fecha");
 const { ValidationError, NotFoundError, ConflictError } = require("../../../utils/errors");
+const { consultarBaja, revertirComprobantes } = require("../../../../application/services/ticketsSunat.service");
 
 // Solo se da de baja lo que SUNAT tiene registrado.
 const ESTADOS_ANULABLES = ["ACEPTADO", "OBSERVADO"];
-
-/**
- * Devuelve los comprobantes de una baja a su estado anterior (la baja falló o
- * SUNAT la rechazó: el comprobante sigue vigente).
- */
-async function revertirComprobantes(detalles, transaction) {
-  for (const det of detalles) {
-    await Comprobante.update(
-      { estado_sunat: det.estado_previo || "ACEPTADO" },
-      { where: { id: det.comprobante_id, estado_sunat: "EN_BAJA" }, transaction }
-    );
-  }
-}
 
 /**
  * POST /comunicacion-baja
@@ -181,84 +169,13 @@ const crearComunicacionBaja = async (req, res, next) => {
 
 /**
  * GET /comunicacion-baja/:id/consultar-ticket
- * Consulta el resultado de la baja en SUNAT.
- *   - CDR con ResponseCode 0 → comprobantes ANULADO, baja PR (procesada).
- *   - CDR de rechazo         → comprobantes vuelven a su estado previo, baja RR.
- *   - CDR ilegible           → baja ER; NO se asume aceptada (se puede volver a consultar).
- * El CDR (ZIP) se guarda en storage/cdr en todos los casos en que SUNAT lo envía.
+ * Consulta el resultado de la baja en SUNAT (ver ticketsSunat.service).
+ * El vigilante del worker también la consulta solo cada 15 min.
  */
 const consultarTicketBaja = async (req, res, next) => {
   try {
-    const baja = await ComunicacionBaja.findByPk(req.params.id, {
-      include: [{ model: Emisor }, { model: ComunicacionBajaDetalle }],
-    });
-
-    if (!baja) return res.status(404).json({ message: "Comunicación de Baja no encontrada" });
-    if (["PR", "RR"].includes(baja.estado_ticket)) {
-      return res.json({
-        message: baja.estado_ticket === "PR" ? "Baja ya procesada" : "Baja rechazada por SUNAT",
-        estado_ticket: baja.estado_ticket,
-        codigo_sunat: baja.codigo_sunat,
-        mensaje_sunat: baja.mensaje_sunat,
-      });
-    }
-    if (!baja.ticket) return res.status(409).json({ message: "La baja no tiene ticket (no se envió)", estado_ticket: baja.estado_ticket });
-
-    const status = await sunatClient.getStatus(baja.ticket, baja.Emisor);
-
-    if (status.statusCode === "98") {
-      return res.json({ estado_ticket: "PE", message: "SUNAT aún procesando. Reintente pronto." });
-    }
-
-    if (!status.content) {
-      await baja.update({ estado_ticket: "ER", codigo_sunat: status.statusCode, mensaje_sunat: "SUNAT no devolvió CDR" });
-      return res.json({ estado_ticket: "ER", statusCode: status.statusCode, message: "SUNAT no devolvió CDR; vuelva a consultar" });
-    }
-
-    storageHelper.saveCdr(baja.nombre_xml, status.content);
-
-    let cdr;
-    try {
-      cdr = cdrParser.parseCdr(status.content);
-    } catch (parseErr) {
-      await baja.update({
-        estado_ticket: "ER",
-        codigo_sunat: status.statusCode,
-        mensaje_sunat: `CDR guardado pero ilegible: ${parseErr.message}`.substring(0, 500),
-      });
-      return res.json({ estado_ticket: "ER", message: "No se pudo leer el CDR; los comprobantes siguen en baja pendiente" });
-    }
-
-    const aceptada = cdr.responseCode === "0";
-    await sequelize.transaction(async (transaction) => {
-      if (aceptada) {
-        await Comprobante.update(
-          { estado_sunat: "ANULADO" },
-          { where: { id: { [Op.in]: baja.ComunicacionBajaDetalles.map((d) => d.comprobante_id) } }, transaction }
-        );
-      } else {
-        await revertirComprobantes(baja.ComunicacionBajaDetalles, transaction);
-      }
-      await baja.update({
-        estado_ticket: aceptada ? "PR" : "RR",
-        codigo_sunat: cdr.responseCode,
-        mensaje_sunat: String(cdr.description + (cdr.notes.length ? " | " + cdr.notes.join(" | ") : "")).substring(0, 500),
-      }, { transaction });
-    });
-
-    registrar(req, aceptada ? "baja_aceptada" : "baja_rechazada", {
-      entidad: "ComunicacionBaja",
-      entidad_id: baja.id,
-      despues: { codigo_sunat: cdr.responseCode, comprobantes: baja.ComunicacionBajaDetalles.map((d) => d.comprobante_id) },
-    });
-
-    return res.json({
-      estado_ticket: aceptada ? "PR" : "RR",
-      codigo_sunat: cdr.responseCode,
-      mensaje_sunat: cdr.description,
-      comprobantes: baja.ComunicacionBajaDetalles.length,
-      resultado: aceptada ? "anulados" : "baja rechazada: comprobantes vigentes",
-    });
+    const r = await consultarBaja(req.params.id, req);
+    return res.status(r.httpStatus).json(r.body);
   } catch (err) {
     return next(err);
   }
