@@ -22,7 +22,25 @@ const port = process.env.PORT || 3000;
 
 let server; // Referencia al servidor HTTP para cerrar en shutdown
 
+/**
+ * El JWT_SECRET firma todos los access tokens: uno corto o filtrado permite
+ * fabricar tokens de Administrador. En producción se exige ≥ 32 caracteres.
+ * Generar uno con: openssl rand -base64 64 | tr -d '\n'
+ */
+function verificarSecretos() {
+  const largo = (process.env.JWT_SECRET || "").length;
+  if (largo >= 32) return;
+  const msg = `JWT_SECRET ${largo ? `tiene solo ${largo} caracteres` : "no está definido"} (mínimo 32). ` +
+    "Genere uno con: openssl rand -base64 64 | tr -d '\\n'";
+  if (process.env.NODE_ENV === "production" || !largo) {
+    console.error(`[Seguridad] ${msg}`);
+    process.exit(1);
+  }
+  console.warn(`[Seguridad] ${msg}`);
+}
+
 async function main() {
+  verificarSecretos();
   try {
     // El esquema NUNCA se modifica al arrancar: solo con migraciones
     // (servicio `migrate` en docker-compose). Si falta alguna, no se arranca:

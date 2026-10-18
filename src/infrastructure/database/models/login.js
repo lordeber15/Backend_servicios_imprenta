@@ -103,6 +103,18 @@ const Login = sequelize.define("login", {
     allowNull: false,
     defaultValue: true,
   },
+
+  /**
+   * TOKEN_VERSION - Versión de credenciales
+   *
+   * Viaja en el access token. Al cambiar contraseña, cargo o desactivar al
+   * usuario se incrementa y todos sus tokens emitidos dejan de ser válidos.
+   */
+  token_version: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  },
 });
 
 // Exportar modelo para usar en controllers y routes

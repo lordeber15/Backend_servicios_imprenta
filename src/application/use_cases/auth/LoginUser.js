@@ -1,53 +1,46 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const { Login } = require("../../../infrastructure/database/models/login");
+const { verificar, hashear, necesitaRehash } = require("../../services/password.service");
+
+/** Error de login con código HTTP y el motivo real (solo para la bitácora). */
+class LoginError extends Error {
+  constructor(message, statusCode, motivo) {
+    super(message);
+    this.statusCode = statusCode;
+    this.motivo = motivo;
+  }
+}
 
 class LoginUser {
   constructor(userRepository) {
     this.userRepository = userRepository;
   }
 
+  /**
+   * @returns {Promise<Login>} el usuario autenticado (modelo Sequelize)
+   * @throws {LoginError}
+   */
   async execute({ usuario, password }) {
-    if (!usuario || !password) {
-      throw new Error("Usuario y contraseña son requeridos");
-    }
-
-    const user = await this.userRepository.findByUsuario(usuario);
-    if (!user) {
-      throw new Error("Usuario o contraseña incorrectos");
-    }
-
-    const passwordValid = await bcrypt.compare(password, user.password);
-
-    if (!passwordValid) {
-      throw new Error("Usuario o contraseña incorrectos");
-    }
-
-    if (!user.activo) {
-      throw new Error("Tu cuenta ha sido desactivada. Contacta al administrador.");
-    }
-
-    // Obtener formatos asignados al usuario
-    const userWithFormatos = await Login.findByPk(user.id, {
-      include: [{ association: "formatos", attributes: ["key"] }],
+    // Búsqueda sin distinguir mayúsculas (el índice único es sobre lower(usuario)).
+    const user = await Login.findOne({
+      where: Login.sequelize.where(Login.sequelize.fn("lower", Login.sequelize.col("usuario")), usuario.trim().toLowerCase()),
     });
-    const formatos = (userWithFormatos?.formatos || []).map((f) => f.key);
 
-    const token = jwt.sign(
-      { id: user.id, usuario: user.usuario, cargo: user.cargo, image_url: user.image_url, formatos },
-      process.env.JWT_SECRET,
-      { expiresIn: "8h" }
-    );
+    // Se verifica siempre (con un hash ficticio si no existe) para no revelar por tiempo qué usuarios existen.
+    const passwordValid = await verificar(password, user?.password);
+    if (!user || !passwordValid) {
+      throw new LoginError("Usuario o contraseña incorrectos", 401, user ? "password_incorrecta" : "usuario_inexistente");
+    }
+    // Solo se informa la desactivación a quien ya demostró conocer la contraseña.
+    if (!user.activo) {
+      throw new LoginError("Tu cuenta ha sido desactivada. Contacta al administrador.", 403, "cuenta_desactivada");
+    }
 
-    return {
-      token,
-      id: user.id,
-      usuario: user.usuario,
-      cargo: user.cargo,
-      image_url: user.image_url,
-      formatos
-    };
+    if (necesitaRehash(user.password)) {
+      await user.update({ password: await hashear(password) });
+    }
+    return user;
   }
 }
 
 module.exports = LoginUser;
+module.exports.LoginError = LoginError;

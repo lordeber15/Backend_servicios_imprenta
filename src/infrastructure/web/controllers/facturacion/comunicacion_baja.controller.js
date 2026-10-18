@@ -1,6 +1,7 @@
 "use strict";
 
 const { Op } = require("sequelize");
+const { registrar } = require("../../../../application/services/auditoria.service");
 const sequelize = require("../../../database/database");
 const Comprobante = require("../../../database/models/facturacion/comprobante");
 const Emisor = require("../../../database/models/facturacion/emisor");
@@ -160,6 +161,11 @@ const crearComunicacionBaja = async (req, res, next) => {
     }
 
     await baja.update({ ticket, estado_ticket: "PE", fecha_envio: new Date() });
+    registrar(req, "baja_enviada", {
+      entidad: "ComunicacionBaja",
+      entidad_id: baja.id,
+      despues: { ticket, comprobantes: comprobantesData.map((c) => ({ id: c.id, numero: `${c.serie}-${c.correlativo}`, motivo: c.motivo_baja })) },
+    });
 
     return res.status(201).json({
       baja_id: baja.id,
@@ -238,6 +244,12 @@ const consultarTicketBaja = async (req, res, next) => {
         codigo_sunat: cdr.responseCode,
         mensaje_sunat: String(cdr.description + (cdr.notes.length ? " | " + cdr.notes.join(" | ") : "")).substring(0, 500),
       }, { transaction });
+    });
+
+    registrar(req, aceptada ? "baja_aceptada" : "baja_rechazada", {
+      entidad: "ComunicacionBaja",
+      entidad_id: baja.id,
+      despues: { codigo_sunat: cdr.responseCode, comprobantes: baja.ComunicacionBajaDetalles.map((d) => d.comprobante_id) },
     });
 
     return res.json({

@@ -1,4 +1,5 @@
 const Emisor = require("../../../database/models/facturacion/emisor");
+const { registrar } = require("../../../../application/services/auditoria.service");
 
 const getEmisor = async (req, res, next) => {
   try {
@@ -15,6 +16,7 @@ const createEmisor = async (req, res, next) => {
     const newEmisor = await Emisor.create({
       ...emisorData,
     });
+    registrar(req, "emisor_creado", { entidad: "Emisor", entidad_id: newEmisor.id, despues: newEmisor });
     res.json(newEmisor);
   } catch (error) {
     return next(error);
@@ -31,6 +33,7 @@ const deleteEmisor = async (req, res, next) => {
     }
 
     await emisor.destroy();
+    registrar(req, "emisor_eliminado", { entidad: "Emisor", entidad_id: emisor.id, antes: emisor });
     res.json({ message: "Elemento eliminado correctamente" });
   } catch (error) {
     return next(error);
@@ -48,10 +51,12 @@ const updateEmisor = async (req, res, next) => {
       return res.status(404).json({ message: "Elemento no encontrado" });
     }
 
+    const antes = emisorToUpdate.toJSON();
     await emisorToUpdate.update({
       ...emisorData,
     });
 
+    registrar(req, "emisor_actualizado", { entidad: "Emisor", entidad_id: emisorToUpdate.id, antes, despues: emisorToUpdate });
     res.json(emisorToUpdate);
   } catch (error) {
     return next(error);

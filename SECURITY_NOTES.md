@@ -22,8 +22,25 @@ Todos los controllers delegan los errores en el manejador global (`app.js`) vía
 `app.js` permite peticiones sin cabecera `Origin` (health checks, curl, server-to-server). **No es un agujero de acceso:** desde la Fase 1 toda ruta de negocio exige token JWT, así que CORS ya no es la barrera de autenticación, solo controla qué orígenes de navegador pueden leer respuestas. Se mantiene por compatibilidad con sondas de salud y clientes no-navegador.
 
 ### Rate limiting
-- `POST /auth/login`: por usuario, 10 intentos/15 min, no cuenta los aciertos (`rateLimit.middleware.js` → `authLimiter`).
+- `POST /auth/login`: por usuario 10 fallos/15 min **y** por IP 30 fallos/15 min (contra password spraying); no cuenta los aciertos → `authLimiter`.
+- `PUT /auth/password`: 5 fallos/15 min por usuario autenticado → `passwordLimiter`.
+- `POST /auth/refresh` y `/auth/logout`: 30/min por IP → `sesionLimiter`.
+- Toda la API: 1000/min por IP (`API_RATE_LIMIT`) → `apiLimiter`.
 - `GET /api/reniec/:dni`: por IP, 20/min, cuenta todo (cada llamada gasta la API key de DECOLECTA) → `reniecLimiter`.
+- Los límites por IP dependen de `trust proxy` (`TRUST_PROXY`, por defecto solo redes locales/privadas): detrás del proxy TLS, sin él todos compartirían la IP del proxy.
+
+## Fase 5 (plan de mejoras) — sesión
+
+- **Access token** JWT HS256 de 15 min, solo en memoria del navegador (nunca en localStorage). `verify` fija el algoritmo (`alg: none` u otro secreto → 401).
+- **Refresh token** de 32 bytes en cookie `imprenta_rt`: `HttpOnly`, `Secure` (producción), `SameSite=Strict`, `Path=/auth`. En la tabla `RefreshTokens` solo se guarda su SHA-256.
+- **Rotación**: cada `/auth/refresh` revoca el token usado y emite otro de la misma familia. Si vuelve a llegar un token *rotado*, se revoca la familia entera y se registra `refresh_reutilizado` en la bitácora (robo de cookie). Un token revocado por logout o cambio de credenciales solo da 401.
+- **Duración**: 7 días sin uso; 30 días máximo desde el login aunque se use a diario.
+- **CSRF**: `/auth/refresh` y `/auth/logout` exigen un `Origin` de `ALLOWED_ORIGINS` además de `SameSite=Strict`. El resto de la API usa el header `Authorization`, que un sitio ajeno no puede enviar.
+- **Revocación inmediata**: `logins.token_version` viaja en el token; `authenticate` lo compara con la BD (caché de 30 s) y verifica `activo`. Cambiar contraseña, cargo o desactivar sube la versión y revoca los refresh. El cargo de `req.user` sale de la BD, no del token.
+- **Contraseñas**: bcrypt cost 12 (los hashes viejos se rehacen al iniciar sesión), mínimo 10 caracteres, máximo 72 bytes, sin el nombre de usuario ni contraseñas comunes. El login compara contra un hash ficticio si el usuario no existe (sin enumeración por tiempo) y responde el mismo 401 genérico.
+- **Usuarios**: nombre único sin distinguir mayúsculas (índice `logins_usuario_unico`); no se puede quitar el último Administrador activo ni desactivarse a uno mismo. Cada usuario cambia su propia contraseña con `PUT /auth/password` (exige la actual).
+- **Bitácora** `AuditLog` (migración 0005): login ok/fallido, logout, refresh reutilizado, usuarios, contraseña, emisión, notas de crédito, reenvío, bajas, edición/borrado de comprobantes, caja, emisor y series. Nunca guarda contraseñas, hashes ni tokens. Con `scripts/roles-bd.sql` el rol de la app no puede modificarla ni borrarla.
+- **JWT_SECRET**: el backend no arranca en producción con menos de 32 caracteres.
 
 ## Vulnerabilidades de dependencias
 

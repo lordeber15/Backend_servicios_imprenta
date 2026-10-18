@@ -8,14 +8,14 @@
 const { Router } = require("express");
 const {
   getLogin,
-  authLogin,
   createLogin,
   deleteLogin,
   updateLogin,
 } = require("../controllers/login.controller");
 const authenticate = require("../middleware/auth.middleware");
 const { authorize, authorizeSelfOrAdmin } = require("../middleware/authorize.middleware");
-const { authLimiter } = require("../middleware/rateLimit.middleware");
+const { authLimiter, passwordLimiter, sesionLimiter } = require("../middleware/rateLimit.middleware");
+const auth = require("../controllers/auth.controller");
 const multer = require("multer");
 const path = require("path");
 const { Login } = require("../../database/models/login");
@@ -47,28 +47,25 @@ const upload = multer({
 const router = Router();
 
 /**
- * RUTA PÚBLICA: Autenticación
- * 
- * POST /auth/login
- * 
- * Esta ruta NO requiere autenticación (es pública).
- * Permite que los usuarios inicien sesión y obtengan un token JWT.
- * 
- * Body:
- * {
- *   "usuario": "admin",
- *   "password": "123456"
- * }
- * 
- * Respuesta:
- * {
- *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
- *   "id": 1,
- *   "usuario": "admin",
- *   "cargo": "Administrador"
- * }
+ * RUTAS DE SESIÓN (públicas: no exigen access token)
+ *
+ * POST /auth/login    { usuario, password } → { access_token, expires_in, usuario }
+ *                     + cookie httpOnly con el refresh token (Path=/auth).
+ * POST /auth/refresh  Con la cookie: rota el refresh y devuelve un access token nuevo.
+ * POST /auth/logout   Revoca el refresh y borra la cookie.
+ *
+ * refresh y logout actúan con la cookie, así que exigen un Origin permitido
+ * (defensa CSRF además de SameSite=Strict).
  */
-router.post("/auth/login", authLimiter, authLogin);
+router.post("/auth/login", authLimiter, auth.login);
+router.post("/auth/refresh", sesionLimiter, auth.exigirOrigen, auth.refresh);
+router.post("/auth/logout", sesionLimiter, auth.exigirOrigen, auth.logout);
+
+/**
+ * PUT /auth/password — cambiar la contraseña propia (requiere la actual).
+ * Cualquier usuario autenticado; cierra todas sus sesiones.
+ */
+router.put("/auth/password", authenticate, passwordLimiter, auth.cambiarPassword);
 
 /**
  * RUTAS PROTEGIDAS: Gestión de usuarios
@@ -116,7 +113,7 @@ router.post("/auth/login", authLimiter, authLogin);
  *       201:
  *         description: Usuario creado
  */
-router.get("/login", authenticate, getLogin);
+router.get("/login", authenticate, authorize("Administrador"), getLogin);
 router.post("/login", authenticate, authorize("Administrador"), createLogin);
 
 /**

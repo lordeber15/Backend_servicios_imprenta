@@ -65,11 +65,26 @@ const formatosRoutes = require("./routes/formatos.routes"); // Formatos por usua
 
 // Autenticación global (con lista blanca y modo auditoría)
 const authGlobal = require("./middleware/authGlobal.middleware");
+const { apiLimiter } = require("./middleware/rateLimit.middleware");
 
 // ============================================
 // INICIALIZACIÓN DE EXPRESS
 // ============================================
 const app = express();
+
+/**
+ * TRUST PROXY
+ *
+ * En producción el backend está detrás del proxy TLS del servidor (y de la
+ * red de Docker), así que req.ip sería la del proxy y todos los límites por
+ * IP caerían en el mismo saco. Se confía en X-Forwarded-For solo cuando la
+ * conexión llega desde direcciones locales/privadas (loopback y redes de
+ * Docker); un cliente de Internet no puede falsear su IP.
+ * TRUST_PROXY admite lo mismo que Express: "false", un número de saltos o una
+ * lista de subredes.
+ */
+const trustProxy = process.env.TRUST_PROXY ?? "loopback, linklocal, uniquelocal";
+app.set("trust proxy", trustProxy === "false" ? false : /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 
 // ============================================
 // CONFIGURACIÓN DE MIDDLEWARES GLOBALES
@@ -99,7 +114,8 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
  * Ejemplo .env:
  * ALLOWED_ORIGINS=http://localhost:5173,https://impalexander.store,https://www.impalexander.store,https://api.impalexander.store
  */
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(origin => origin.trim()) || ["http://localhost:5173"];
+const { allowedOrigins } = require("../config/origenes");
+const { ForbiddenError } = require("../utils/errors");
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -113,7 +129,7 @@ app.use(cors({
       callback(null, true);
     } else {
       console.warn(`⚠️  CORS bloqueado para origen: ${origin}`);
-      callback(new Error('No permitido por CORS'));
+      callback(new ForbiddenError("Origen no permitido"));
     }
   },
   credentials: true,
@@ -187,6 +203,7 @@ const apiRouter = express.Router();
  * Con AUTH_ENFORCE=false arranca en modo auditoría: no bloquea, solo registra
  * en el log lo que rechazaría. Sirve de interruptor de emergencia sin redeploy.
  */
+app.use(apiLimiter);
 app.use(authGlobal);
 console.log(
   authGlobal.AUTH_ENFORCE

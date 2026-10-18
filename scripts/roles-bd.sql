@@ -39,3 +39,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE :"owner" IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO :"app_user";
 ALTER DEFAULT PRIVILEGES FOR ROLE :"owner" IN SCHEMA public
   GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO :"app_user";
+
+-- La bitácora es de solo-anexar: la app inserta y lee, nunca modifica ni borra.
+-- (La migración 0005 hace lo mismo al crearla; esto cubre bases ya migradas.)
+SELECT format('REVOKE UPDATE, DELETE, TRUNCATE ON %I FROM %I', 'AuditLog', :'app_user')
+WHERE to_regclass('public."AuditLog"') IS NOT NULL \gexec

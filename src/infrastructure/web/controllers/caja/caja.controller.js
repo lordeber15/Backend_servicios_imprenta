@@ -1,4 +1,5 @@
 const { Op, UniqueConstraintError } = require("sequelize");
+const { registrar } = require("../../../../application/services/auditoria.service");
 const sequelize = require("../../../database/database");
 const { hoyLocal, horaLocal } = require("../../../utils/fecha");
 const AperturaCaja = require("../../../database/models/caja/aperturaCaja");
@@ -32,6 +33,7 @@ const abrirCaja = async (req, res, next) => {
       observacion: observacion ? String(observacion).slice(0, 250) : null,
       usuario_apertura_id: req.user?.id ?? null,
     });
+    registrar(req, "caja_abierta", { entidad: "AperturaCajas", entidad_id: caja.id, despues: { monto_apertura: monto } });
     res.json(caja);
   } catch (error) {
     if (error instanceof UniqueConstraintError) {
@@ -103,6 +105,12 @@ const cerrarCaja = async (req, res, next) => {
         cerrada_at: new Date(),
         desglose: d,
       }, { transaction });
+      await registrar(req, "caja_cerrada", {
+        entidad: "AperturaCajas",
+        entidad_id: caja.id,
+        despues: { monto_cierre_fisico: montoCierre, efectivo_esperado: d.efectivo_esperado, diferencia },
+        transaction,
+      });
 
       return {
         status: 200,

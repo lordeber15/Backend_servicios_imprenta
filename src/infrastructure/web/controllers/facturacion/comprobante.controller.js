@@ -1,4 +1,5 @@
 const { UniqueConstraintError } = require("sequelize");
+const { registrar } = require("../../../../application/services/auditoria.service");
 const Comprobante = require("../../../database/models/facturacion/comprobante");
 const { emisionSchema, mensajeError } = require("../../../../application/validation/emision.schema");
 const emisionService = require("../../../../application/services/emision.service");
@@ -36,6 +37,14 @@ const emitirComprobanteCompleto = async (req, res, next) => {
     if (!parsed.success) throw new ValidationError(mensajeError(parsed.error));
 
     const { comprobante: c, firmado, error_firma, job_id } = await emisionService.emitir(parsed.data);
+    registrar(req, c.tipo_comprobante_id === "07" ? "nota_credito_emitida" : "comprobante_emitido", {
+      entidad: "Comprobante",
+      entidad_id: c.id,
+      despues: {
+        numero: `${c.serie}-${c.correlativo}`, tipo: c.tipo_comprobante_id, total: c.total,
+        metodo_pago: c.metodo_pago, forma_pago: c.forma_pago, comprobante_ref_id: c.comprobante_ref_id, caja_id: c.caja_id,
+      },
+    });
 
     return res.status(201).json({
       comprobante_id: c.id,
@@ -78,6 +87,7 @@ const deleteComprobante = async (req, res, next) => {
   try {
     const comprobante = await cargarEditable(req.params.id);
     await comprobante.destroy();
+    registrar(req, "comprobante_eliminado", { entidad: "Comprobante", entidad_id: comprobante.id, antes: comprobante });
     res.json({ message: "Comprobante eliminado" });
   } catch (error) {
     return next(error);
@@ -94,7 +104,9 @@ const updateComprobante = async (req, res, next) => {
     if (!Object.keys(cambios).length) {
       throw new ValidationError(`Solo se pueden editar: ${CAMPOS_EDITABLES.join(", ")}`);
     }
+    const antes = Object.fromEntries(Object.keys(cambios).map((k) => [k, comprobante[k]]));
     await comprobante.update(cambios);
+    registrar(req, "comprobante_editado", { entidad: "Comprobante", entidad_id: comprobante.id, antes, despues: cambios });
     res.json(comprobante);
   } catch (error) {
     return next(error);

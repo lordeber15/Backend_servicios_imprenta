@@ -1,6 +1,7 @@
 "use strict";
 
 const Comprobante    = require("../../../database/models/facturacion/comprobante");
+const { registrar } = require("../../../../application/services/auditoria.service");
 const Emisor         = require("../../../database/models/facturacion/emisor");
 const Cliente        = require("../../../database/models/facturacion/cliente");
 const TipoDocumento  = require("../../../database/models/facturacion/tipodocumento");
@@ -188,6 +189,12 @@ const reenviarComprobante = async (req, res, next) => {
     }
 
     const job = await encolarEnvio(comprobante.id, archivoXml);
+    registrar(req, "comprobante_reenviado", {
+      entidad: "Comprobante",
+      entidad_id: comprobante.id,
+      antes: { estado_sunat: comprobante.estado_sunat, cdr_code: comprobante.cdr_code },
+      despues: { xml_regenerado: debeRegenerar },
+    });
 
     return res.json({
       message:        "Comprobante reingresado a la cola de envío",

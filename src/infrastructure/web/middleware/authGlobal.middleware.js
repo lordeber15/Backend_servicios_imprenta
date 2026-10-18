@@ -20,7 +20,9 @@ const authenticate = require("./auth.middleware");
 
 // Rutas públicas: no requieren token.
 const PUBLIC_EXACT = [
-  { method: "POST", path: "/auth/login" }, // necesario para obtener el token
+  { method: "POST", path: "/auth/login" },   // necesario para obtener el token
+  { method: "POST", path: "/auth/refresh" }, // se autentica con la cookie httpOnly
+  { method: "POST", path: "/auth/logout" },  // debe funcionar con el access token ya vencido
 ];
 
 // Prefijos públicos: health check, imágenes estáticas y documentación.
