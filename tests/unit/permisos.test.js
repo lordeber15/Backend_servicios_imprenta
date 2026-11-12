@@ -45,6 +45,19 @@ describe("matriz de permisos", () => {
     expect(evaluar("POST", "/auth/login", undefined)).toBeNull();
     expect(evaluar("GET", "/health/ready", undefined)).toBeNull();
   });
+  test.each([
+    ["GET", "/api/v1/payments"], ["GET", "/api/v1/payments/summary"], ["GET", "/api/v1/payments/export.csv"],
+    ["POST", "/api/v1/devices/enroll-tokens"], ["DELETE", "/api/v1/devices/abc"], ["GET", "/api/v1/notifications/unparsed"],
+  ])("pagos Yape/Plin solo admin: %s %s", (m, r) => {
+    expect(evaluar(m, r, cajero(["ticket", "boleta", "factura", "ingresos"]))?.statusCode).toBe(403);
+    expect(evaluar(m, r, admin)).toBeNull();
+  });
+  test("las rutas del teléfono son públicas para la matriz (usan X-Device-Key)", () => {
+    expect(evaluar("POST", "/api/v1/notifications", undefined)).toBeNull();
+    expect(evaluar("GET", "/api/v1/devices/me", undefined)).toBeNull();
+    expect(evaluar("POST", "/api/v1/devices/enroll", undefined)).toBeNull();
+    expect(evaluar("GET", "/api/v1/devices", undefined)?.statusCode).toBe(401);
+  });
   test("ninguna regla duplicada (la segunda nunca se aplicaría)", () => {
     const claves = REGLAS.map(([m, r]) => `${m} ${r}`);
     expect(claves.length).toBe(new Set(claves).size);

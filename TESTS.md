@@ -25,8 +25,10 @@ tests/integracion/correr.sh caja sesion  # solo esas pruebas de integración
 | Unitaria | `tests/unit/cdrParser.test.js` | ACEPTADO / OBSERVADO / RECHAZADO, CDR ilegible |
 | Unitaria | `tests/unit/xmlBuilders.test.js` | XML bien formado, IGV de línea, inyección por `]]>`, snapshot |
 | Unitaria | `tests/unit/permisos.test.js` | Matriz: denegar por defecto, solo-admin, formatos |
+| Unitaria | `tests/unit/notifierParsers.test.js` | Parsers Yape/Plin con muestras reales, montos string, CSV, hora de Lima |
 | Unitaria | `tests/unit/validaciones.test.js` | Contraseñas, documentos, emisión, guía, magic bytes, lista blanca |
 | Integración | `emision.prueba.js` | 20 emisiones concurrentes, rollback, NC, inmutabilidad |
+| Integración | `pagos.prueba.js` | Pagos Yape/Plin: QR, enlace del teléfono, ingesta idempotente, Socket.IO solo admin, CSV, retención |
 | Integración | `caja.prueba.js` | Caja global, desglose, cierre, caja cerrada inmutable |
 | Integración | `sesion.prueba.js` | Login, refresh rotativo, robo de refresh, revocación, rate limit |
 | Integración | `permisos.prueba.js` | Cobertura de la matriz sobre el router real, credenciales cifradas, subidas, guía atómica |

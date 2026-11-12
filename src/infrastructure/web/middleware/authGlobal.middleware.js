@@ -23,6 +23,11 @@ const PUBLIC_EXACT = [
   { method: "POST", path: "/auth/login" },   // necesario para obtener el token
   { method: "POST", path: "/auth/refresh" }, // se autentica con la cookie httpOnly
   { method: "POST", path: "/auth/logout" },  // debe funcionar con el access token ya vencido
+  // Teléfono de Pagos Yape/Plin: se autentica con X-Device-Key (dispositivo.middleware),
+  // salvo enroll, que canjea un código QR de un solo uso.
+  { method: "POST", path: "/api/v1/devices/enroll" },
+  { method: "GET", path: "/api/v1/devices/me" },
+  { method: "POST", path: "/api/v1/notifications" },
 ];
 
 // Prefijos públicos: health check, imágenes estáticas y documentación.

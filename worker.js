@@ -31,12 +31,15 @@ async function main() {
   const sunatWorker = require("./src/workers/sunatWorker");
   const guiaWorker = require("./src/workers/guiaWorker");
   const vigilante = await require("./src/workers/vigilanteSunat").iniciar();
-  console.log("[Worker] Workers activos: sunat-envio (concurrency 3), sunat-guia (concurrency 2), sunat-vigilante (cada 15 min)");
+  // Retención de datos personales de los pagos Yape/Plin (una vez al día).
+  const retencionPagos = require("./src/application/services/notifier/retencion.service").programarRetencion();
+  console.log("[Worker] Workers activos: sunat-envio (concurrency 3), sunat-guia (concurrency 2), sunat-vigilante (cada 15 min), retención de pagos (diaria)");
 
   async function shutdown(signal) {
     console.log(`\n[Worker] ${signal} recibido. Cerrando...`);
     try {
       // close() espera a que terminen los jobs en curso antes de salir.
+      retencionPagos.close();
       await Promise.all([sunatWorker.close(), guiaWorker.close(), vigilante.close()]);
       await sequelize.close();
     } catch (err) {
