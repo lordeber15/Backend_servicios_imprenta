@@ -9,6 +9,7 @@ const app = require("/app/src/infrastructure/web/app");
 const sequelize = require("/app/src/infrastructure/database/database");
 const { Login } = require("/app/src/infrastructure/database/models/login");
 const { REGLAS, buscarRegla } = require("/app/src/infrastructure/web/middleware/permisos");
+const { esPublica } = require("/app/src/infrastructure/web/middleware/authGlobal.middleware");
 const credenciales = require("/app/src/application/services/credenciales.service");
 const EmisorCredencial = require("/app/src/infrastructure/database/models/facturacion/emisorCredencial");
 
@@ -76,7 +77,8 @@ function rutasExpress() {
   const cajero = await login("cajero", "Clave-Prueba-2026");
 
   console.log("1) Cobertura de la matriz");
-  const rutas = rutasExpress().filter((r) => r.metodo !== "OPTIONS" && !r.ruta.startsWith("/health") && !r.ruta.startsWith("/auth/l") && r.ruta !== "/auth/refresh");
+  // Las rutas públicas (lista blanca de authGlobal) no pasan por la matriz.
+  const rutas = rutasExpress().filter((r) => r.metodo !== "OPTIONS" && !esPublica({ method: r.metodo, path: r.ruta }));
   const sinRegla = rutas.filter((r) => !buscarRegla(r.metodo, r.ruta.replace(/:[A-Za-z_]+/g, "1")));
   ok(sinRegla.length === 0, `toda ruta tiene regla (${rutas.length} rutas)${sinRegla.length ? ": " + sinRegla.map((r) => `${r.metodo} ${r.ruta}`).join(", ") : ""}`);
   const huerfanas = REGLAS.filter(([m, ruta]) => !rutas.some((r) => r.metodo === m && r.ruta === ruta));

@@ -36,6 +36,8 @@ async function main() {
     server = app.listen(port, () => {
       console.log("Escuchando en el puerto:", port);
     });
+    // Tiempo real de Pagos Yape/Plin (Socket.IO /live) sobre el mismo servidor HTTP.
+    require("./src/infrastructure/web/realtime/notifier.gateway").iniciar(server);
   } catch (error) {
     console.error("Error al iniciar el servidor:", error);
     process.exit(1);

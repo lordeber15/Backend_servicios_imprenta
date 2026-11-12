@@ -125,6 +125,18 @@ const REGLAS = [
   ["GET", "/api/reniec/:dni", T],
   ["GET", "/qz/certificate", T],
   ["POST", "/qz/sign", T],
+
+  // ── Pagos Yape/Plin (panel): solo el administrador ─────────────────────
+  // Las rutas del teléfono son públicas para authGlobal (usan X-Device-Key).
+  ["POST", "/api/v1/devices/enroll-tokens", A],
+  ["GET", "/api/v1/devices", A],
+  ["DELETE", "/api/v1/devices/:id", A],
+  ["GET", "/api/v1/notifications/unparsed", A],
+  ["GET", "/api/v1/payments", A],
+  ["GET", "/api/v1/payments/summary", A],
+  ["GET", "/api/v1/payments/totals", A],
+  ["GET", "/api/v1/payments/export.csv", A],
+  ["GET", "/api/v1/payments/:id", A],
 ];
 
 const aRegex = (ruta) => new RegExp(`^${ruta.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/:[A-Za-z_]+/g, "[^/]+")}/?$`);

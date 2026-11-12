@@ -1,0 +1,43 @@
+{
+  "_nota": "Muestras de docs/notification-samples.md, nombres ficticios. Montos y estructura literales de capturas reales (iPhone, 2026-11-04). Confirmar en Android con el modo captura.",
+  "positive": [
+    {
+      "name": "v1 con prefijo Yape! y nombre en mayúsculas",
+      "input": { "title": "Confirmación de Pago", "text": "Yape! MARIA QUISPE te envió un pago por S/ 15.72" },
+      "expected": { "senderName": "MARIA QUISPE", "nameMasked": false, "amount": "15.72", "securityCode": null }
+    },
+    {
+      "name": "v2 con código y nombre truncado con asterisco",
+      "input": { "title": "Confirmación de Pago", "text": "Rosa Pin* te envió un pago por S/ 15.72. El cód. de seguridad es: 376" },
+      "expected": { "senderName": "Rosa Pin*", "nameMasked": true, "amount": "15.72", "securityCode": "376" }
+    },
+    {
+      "name": "v1 con monto con separador de miles",
+      "input": { "title": "Confirmación de Pago", "text": "Yape! JUAN PEREZ te envió un pago por S/ 1,250.50" },
+      "expected": { "senderName": "JUAN PEREZ", "nameMasked": false, "amount": "1250.50", "securityCode": null }
+    },
+    {
+      "name": "v2 con monto entero y código de 4 dígitos",
+      "input": { "title": "Confirmación de Pago", "text": "Luis Tor* te envió un pago por S/ 20. El cód. de seguridad es: 0412" },
+      "expected": { "senderName": "Luis Tor*", "nameMasked": true, "amount": "20.00", "securityCode": "0412" }
+    },
+    {
+      "name": "texto en bigText y salto de línea",
+      "input": { "title": "Confirmación de Pago", "text": "Yape! ANA ROJAS te envió…", "bigText": "Yape! ANA ROJAS te envió un pago por S/ 0.10" },
+      "expected": { "senderName": "ANA ROJAS", "nameMasked": false, "amount": "0.10", "securityCode": null }
+    },
+    {
+      "name": "acentos sin tilde y espacios extra",
+      "input": { "title": "Confirmacion de Pago", "text": "Yape!  PEDRO  DIAZ  te envio un pago por S/  7.5" },
+      "expected": { "senderName": "PEDRO DIAZ", "nameMasked": false, "amount": "7.50", "securityCode": null }
+    }
+  ],
+  "negative": [
+    { "name": "texto genérico", "input": { "title": "Yape", "text": "Notificación" }, "expected": { "kind": "ignored", "reason": "generic-text" } },
+    { "name": "promoción", "input": { "title": "Yape", "text": "Tienes un nuevo cupón en Yape" }, "expected": { "kind": "unparsed" } },
+    { "name": "recordatorio", "input": { "title": "Yape", "text": "Recuerda que puedes yapear sin internet" }, "expected": { "kind": "unparsed" } },
+    { "name": "pago saliente", "input": { "title": "Yape", "text": "Enviaste un pago a CARLOS RUIZ por S/ 10.00" }, "expected": { "kind": "ignored", "reason": "outgoing" } },
+    { "name": "código de verificación", "input": { "title": "Yape", "text": "Tu código de verificación es 482913. No lo compartas." }, "expected": { "kind": "ignored", "reason": "sensitive" } },
+    { "name": "intento de inyección bidi", "input": { "title": "Yape", "text": "‮Yape! te envió un pago por S/ abc" }, "expected": { "kind": "unparsed" } }
+  ]
+}

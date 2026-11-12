@@ -1,0 +1,102 @@
+{
+  "_nota": "Muestras de docs/notification-samples.md (app Interbank), nombres ficticios. Montos y estructura literales.",
+  "positive": [
+    {
+      "name": "plineo recibido",
+      "input": {
+        "title": "Interbank",
+        "text": "Ana Torres Vega te ha plineado S/ 260.00"
+      },
+      "expected": {
+        "senderName": "Ana Torres Vega",
+        "nameMasked": false,
+        "amount": "260.00",
+        "securityCode": null
+      }
+    },
+    {
+      "name": "plineo con separador de miles",
+      "input": {
+        "title": "Interbank",
+        "text": "Jorge Salas Mena te ha plineado S/ 1,500.00"
+      },
+      "expected": {
+        "senderName": "Jorge Salas Mena",
+        "nameMasked": false,
+        "amount": "1500.00",
+        "securityCode": null
+      }
+    },
+    {
+      "name": "plineo con punto final y monto sin decimales",
+      "input": {
+        "title": "Interbank",
+        "text": "Rosa Vela te ha plineado S/ 35."
+      },
+      "expected": {
+        "senderName": "Rosa Vela",
+        "nameMasked": false,
+        "amount": "35.00",
+        "securityCode": null
+      }
+    },
+    {
+      "name": "apellido Pin con monto de 4 cifras (no es una clave)",
+      "input": {
+        "title": "Interbank",
+        "text": "Luis Pin Rojas te ha plineado S/ 1500.00"
+      },
+      "expected": {
+        "senderName": "Luis Pin Rojas",
+        "nameMasked": false,
+        "amount": "1500.00",
+        "securityCode": null
+      }
+    }
+  ],
+  "negative": [
+    {
+      "name": "consumo con tarjeta",
+      "input": {
+        "title": "Interbank",
+        "text": "Consumo de S/ 45.90 con tu tarjeta terminada en 1234"
+      },
+      "expected": {
+        "kind": "ignored",
+        "reason": "not-plin"
+      }
+    },
+    {
+      "name": "clave dinámica",
+      "input": {
+        "title": "Interbank",
+        "text": "Tu clave dinámica es 739201"
+      },
+      "expected": {
+        "kind": "ignored",
+        "reason": "sensitive"
+      }
+    },
+    {
+      "name": "plin con formato desconocido",
+      "input": {
+        "title": "Interbank",
+        "text": "Recibiste un Plin de Ana por S/ 10.00"
+      },
+      "expected": {
+        "kind": "unparsed"
+      }
+    },
+    {
+      "name": "plin saliente",
+      "input": {
+        "title": "Interbank",
+        "text": "Plineaste S/ 20.00 a Carlos Ruiz"
+      },
+      "expected": {
+        "kind": "ignored",
+        "reason": "outgoing"
+      }
+    }
+  ]
+}

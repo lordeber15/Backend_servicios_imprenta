@@ -62,6 +62,7 @@ const guiaRoutes = require("./routes/facturacion/guia.routes");
 const reportesRoutes = require("./routes/reportes/reportes.routes"); // Reportes administrativos
 const qzRoutes = require("./routes/qz.routes"); // Rutas para QZ Tray
 const formatosRoutes = require("./routes/formatos.routes"); // Formatos por usuario
+const notifierRoutes = require("./routes/notifier/notifier.routes"); // Pagos Yape/Plin (app Android)
 
 // Autenticación global (con lista blanca y modo auditoría)
 const authGlobal = require("./middleware/authGlobal.middleware");
@@ -250,6 +251,7 @@ app.use(comunicacionBajaRoutes);
 app.use(guiaRoutes);
 app.use(reportesRoutes);       // Reportes administrativos (solo Administrador)
 app.use(formatosRoutes);       // Formatos por usuario
+app.use(notifierRoutes);       // Pagos Yape/Plin: teléfono (X-Device-Key) y panel (solo Administrador)
 
 // Nuevas rutas con prefijo /api
 app.use("/qz", qzRoutes);
